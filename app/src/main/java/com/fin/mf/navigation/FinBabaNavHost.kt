@@ -13,6 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.fin.mf.tools.terminal.ui.MarketTerminalScreen
 import com.fin.mf.ui.PortfolioViewModel
 import com.fin.mf.ui.screens.PortfolioTrackerWorkspace
 import com.fin.mf.ui.screens.VaultHubScreen
@@ -23,6 +24,7 @@ import com.fin.mf.ui.screens.VaultHubScreen
 object FinBabaDestinations {
     const val VAULT_HUB_ROUTE = "vault_hub"
     const val PORTFOLIO_TOOL_BASE_ROUTE = "tool_portfolio_tracker"
+    const val MARKET_TERMINAL_ROUTE = "market_terminal"
     const val ARG_INITIAL_TAB = "initialTab"
     const val PORTFOLIO_TOOL_ROUTE_WITH_ARG =
         "$PORTFOLIO_TOOL_BASE_ROUTE?$ARG_INITIAL_TAB={$ARG_INITIAL_TAB}"
@@ -80,6 +82,11 @@ fun FinBabaNavHost(
                     ) {
                         launchSingleTop = true
                     }
+                },
+                onOpenMarketTerminal = {
+                    navController.navigate(FinBabaDestinations.MARKET_TERMINAL_ROUTE) {
+                        launchSingleTop = true
+                    }
                 }
             )
         }
@@ -98,6 +105,19 @@ fun FinBabaNavHost(
             PortfolioTrackerWorkspace(
                 portfolioViewModel = portfolioViewModel,
                 initialTabIndex = initialTab,
+                onNavigateBackToHub = {
+                    if (!navController.popBackStack()) {
+                        navController.navigate(FinBabaDestinations.VAULT_HUB_ROUTE) {
+                            popUpTo(FinBabaDestinations.VAULT_HUB_ROUTE) { inclusive = true }
+                        }
+                    }
+                }
+            )
+        }
+
+        // Tool #2 Destination: Global Market Terminal & Broker Studio
+        composable(route = FinBabaDestinations.MARKET_TERMINAL_ROUTE) {
+            MarketTerminalScreen(
                 onNavigateBackToHub = {
                     if (!navController.popBackStack()) {
                         navController.navigate(FinBabaDestinations.VAULT_HUB_ROUTE) {

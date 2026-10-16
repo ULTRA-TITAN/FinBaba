@@ -60,7 +60,8 @@ data class PortfolioUiState(
     val isPortfolioAvgOverlayEnabled: Boolean = false,
     val comparisonTimeframe: ChartTimeframe = ChartTimeframe.ONE_YEAR,
     val customComparisonStartEpochMs: Long? = null,
-    val customComparisonEndEpochMs: Long? = null
+    val customComparisonEndEpochMs: Long? = null,
+    val inspectedExternalScheme: MutualFundScheme? = null
 ) {
     /**
      * Dynamically filtered and sorted schemes based on the user's search query and asset class filter.
@@ -89,10 +90,11 @@ data class PortfolioUiState(
         }
 
     /**
-     * Returns the currently selected scheme for the deep-dive detail modal/screen.
+     * Returns the currently selected scheme for the deep-dive/MF-Hunter detail modal/screen.
+     * Checks user's portfolio first, then falls back to any external AMFI searched scheme.
      */
     val selectedScheme: MutualFundScheme?
-        get() = portfolioData?.schemes?.find { it.schemeCode == selectedSchemeCode }
+        get() = portfolioData?.schemes?.find { it.schemeCode == selectedSchemeCode } ?: inspectedExternalScheme
 }
 
 /**
@@ -301,7 +303,8 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
                         isLoading = false,
                         portfolioData = updatedPortfolio,
                         analytics = updatedAnalytics,
-                        selectedSchemeCode = schemeCode
+                        selectedSchemeCode = schemeCode,
+                        inspectedExternalScheme = null
                     )
                 }
                 postStatusBanner("Added scheme #$schemeCode to active portfolio.")
@@ -435,9 +438,11 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
      * Selects a specific scheme for deep-dive inspection and fetches its live historical NAV chart series.
      */
     fun selectSchemeForDeepDive(schemeCode: Int) {
+        val existingInPortfolio = _uiState.value.portfolioData?.schemes?.find { it.schemeCode == schemeCode }
         _uiState.update {
             it.copy(
                 selectedSchemeCode = schemeCode,
+                inspectedExternalScheme = existingInPortfolio,
                 isHistoryLoading = true,
                 selectedSchemeHistory = emptyList(),
                 historyErrorMessage = null
@@ -445,6 +450,19 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
         }
 
         viewModelScope.launch {
+            // If the scheme is not currently in the active portfolio, hydrate its metadata and authentic holdings
+            if (existingInPortfolio == null) {
+                repository.getSchemeDetails(schemeCode)
+                    .onSuccess { externalScheme ->
+                        _uiState.update { current ->
+                            if (current.selectedSchemeCode == schemeCode) {
+                                current.copy(inspectedExternalScheme = externalScheme)
+                            } else current
+                        }
+                    }
+            }
+
+            // Fetch historical NAV series for charting
             repository.fetchSchemeHistoricalNavs(schemeCode)
                 .onSuccess { navHistory ->
                     _uiState.update {

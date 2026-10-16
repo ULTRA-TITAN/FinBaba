@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
+import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.AccountBalance
@@ -124,7 +125,8 @@ private val HubColorScheme = lightColorScheme(
 @Composable
 fun VaultHubScreen(
     portfolioViewModel: PortfolioViewModel,
-    onOpenPortfolioTracker: (initialTabIndex: Int) -> Unit
+    onOpenPortfolioTracker: (initialTabIndex: Int) -> Unit,
+    onOpenMarketTerminal: () -> Unit = {}
 ) {
     val uiState by portfolioViewModel.uiState.collectAsState()
     val analytics = uiState.analytics
@@ -380,33 +382,36 @@ fun VaultHubScreen(
                     )
                 }
 
-                // 3. TOOL #2 CARD: Multi-Fund Peer Comparison (ACTIVE)
+                // 3. TOOL #2 CARD: Global Market Terminal & Broker Studio (TOOL #2 ACTIVE)
                 item {
                     StudioToolCard(
                         toolNumber = "TOOL #2",
-                        statusLabel = "ACTIVE • 5-SCHEME ENGINE",
+                        statusLabel = "TOOL #2 ACTIVE",
                         isActive = true,
-                        icon = Icons.AutoMirrored.Filled.CompareArrows,
-                        title = "Multi-Fund Comparison & Factor Matrix",
-                        description = "Rebased base-100 normalized performance charts across 7D–10Y, custom calendar date-to-date window, side-by-side factor matrix, and portfolio average overlay.",
-                        metricsHighlight = "Compare up to 5 schemes simultaneously with custom date picker",
-                        primaryButtonText = "Open Comparison Window",
-                        onActionClick = { onOpenPortfolioTracker(4) }
+                        icon = Icons.AutoMirrored.Filled.ShowChart,
+                        title = "Global Market Terminal & Broker Studio",
+                        description = "Real-time quotes, multi-timeframe charts, dual-pointer scrubbing, and Nifty 50 benchmark comparison for any Indian or global asset.",
+                        metricsHighlight = "NSE/BSE Equities & Global Assets • Benchmark Alpha",
+                        primaryButtonText = "Launch Terminal",
+                        onActionClick = onOpenMarketTerminal
                     )
                 }
 
-                // 4. TOOL #3 CARD: MF-Hunter & Look-Through Analyzer (ACTIVE)
+                // 4. TOOL #3 CARD: CAGR & Step-Up SIP Simulator (UPCOMING / PREVIEW)
                 item {
+                    val context = LocalContext.current
                     StudioToolCard(
                         toolNumber = "TOOL #3",
-                        statusLabel = "ACTIVE • MF-HUNTER",
-                        isActive = true,
-                        icon = Icons.Default.AutoGraph,
-                        title = "MF-Hunter & Historical Chart Studio",
-                        description = "Explore 4,000+ AMFI mutual funds with smart indexing, zoomable pinch-and-pan charts, two-point delta return analyzer, and 100% look-through holdings.",
-                        metricsHighlight = "Smart AMFI Hunter • Top 10/15/All Constituents",
-                        primaryButtonText = "Launch MF-Hunter",
-                        onActionClick = { onOpenPortfolioTracker(3) }
+                        statusLabel = "UPCOMING",
+                        isActive = false,
+                        icon = Icons.Default.Analytics,
+                        title = "CAGR & Step-Up SIP Simulator",
+                        description = "Model multi-decade wealth compounding combining your active portfolio equity with annual step-up SIP contributions and custom CAGR projections.",
+                        metricsHighlight = "Interactive 3–30 Year Wealth Compounding Architect",
+                        primaryButtonText = "Preview Coming Soon",
+                        onActionClick = {
+                            Toast.makeText(context, "Tool #3 CAGR & Step-Up SIP Simulator preview coming in the next build!", Toast.LENGTH_SHORT).show()
+                        }
                     )
                 }
             }

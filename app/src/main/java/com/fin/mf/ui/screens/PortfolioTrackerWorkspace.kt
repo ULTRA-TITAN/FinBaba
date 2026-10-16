@@ -1338,7 +1338,7 @@ private fun WorkspaceMfHunterTab(
             }
         }
 
-        // Horizontal chips row of active portfolio schemes
+        // Horizontal chips row of active portfolio schemes (+ external inspected scheme if active)
         item {
             Row(
                 modifier = Modifier
@@ -1346,8 +1346,26 @@ private fun WorkspaceMfHunterTab(
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                if (!isSchemeInPortfolio) {
+                    FilterChip(
+                        selected = true,
+                        onClick = {},
+                        label = {
+                            Text(
+                                text = "🔍 " + scheme.schemeName.take(22) + "...",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = WsEmeraldPositive,
+                            selectedLabelColor = Color.White
+                        )
+                    )
+                }
+
                 allSchemes.forEach { itemScheme ->
-                    val isSelected = itemScheme.schemeCode == scheme.schemeCode
+                    val isSelected = isSchemeInPortfolio && itemScheme.schemeCode == scheme.schemeCode
                     FilterChip(
                         selected = isSelected,
                         onClick = { portfolioViewModel.selectSchemeForDeepDive(itemScheme.schemeCode) },
