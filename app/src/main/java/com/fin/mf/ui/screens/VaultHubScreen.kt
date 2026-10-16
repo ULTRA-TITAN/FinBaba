@@ -6,10 +6,14 @@ import android.content.Context
 import android.graphics.BitmapFactory
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import com.fin.mf.core.theme.AppearanceSettingsSheet
+import com.fin.mf.core.theme.LocalVaultGradient
+import com.fin.mf.core.theme.VaultThemeManager
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -34,6 +38,7 @@ import androidx.compose.material.icons.filled.AutoGraph
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Restore
@@ -126,12 +131,15 @@ private val HubColorScheme = lightColorScheme(
 fun VaultHubScreen(
     portfolioViewModel: PortfolioViewModel,
     onOpenPortfolioTracker: (initialTabIndex: Int) -> Unit,
-    onOpenMarketTerminal: () -> Unit = {}
+    onOpenMarketTerminal: () -> Unit = {},
+    themeManager: VaultThemeManager = VaultThemeManager.getInstance(LocalContext.current)
 ) {
+    val gradient = LocalVaultGradient.current
     val uiState by portfolioViewModel.uiState.collectAsState()
     val analytics = uiState.analytics
     val isMasked = uiState.isPrivacyMasked
     var showSettingsModal by rememberSaveable { mutableStateOf(false) }
+    var showAppearanceSheet by rememberSaveable { mutableStateOf(false) }
 
     MaterialTheme(colorScheme = HubColorScheme) {
         Scaffold(
@@ -162,6 +170,13 @@ fun VaultHubScreen(
                         }
                     },
                     actions = {
+                        IconButton(onClick = { showAppearanceSheet = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Palette,
+                                contentDescription = "Studio Visual Identity & Gradients",
+                                tint = gradient.startColor
+                            )
+                        }
                         IconButton(onClick = { portfolioViewModel.togglePrivacyMask() }) {
                             Icon(
                                 imageVector = if (isMasked) Icons.Default.VisibilityOff else Icons.Default.Visibility,
@@ -210,133 +225,139 @@ fun VaultHubScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = HubSurfaceWhite),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, HubSlateBorder),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, gradient.startColor.copy(alpha = 0.35f)),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                     ) {
-                        Column(modifier = Modifier.padding(20.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    FinBabaMascotBadge(modifier = Modifier.size(48.dp))
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column {
-                                        Text(
-                                            text = uiState.portfolioData?.portfolioName ?: "FinBaba Institutional Core",
-                                            fontSize = 15.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = HubSlatePrimary
-                                        )
-                                        val schemeCount = uiState.portfolioData?.schemes?.size ?: 20
-                                        Text(
-                                            text = "$schemeCount Schemes • AMFI Connected",
-                                            fontSize = 12.sp,
-                                            color = HubSlateSecondary
-                                        )
-                                    }
-                                }
-
-                                if (analytics != null) {
-                                    val isPositive = analytics.totalGain >= 0
-                                    Surface(
-                                        color = if (isPositive) HubEmeraldSoft else HubCrimsonSoft,
-                                        shape = RoundedCornerShape(20.dp)
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Icon(
-                                                imageVector = if (isPositive) {
-                                                    Icons.AutoMirrored.Filled.TrendingUp
-                                                } else {
-                                                    Icons.AutoMirrored.Filled.TrendingDown
-                                                },
-                                                contentDescription = null,
-                                                tint = if (isPositive) HubEmeraldPositive else HubCrimsonNegative,
-                                                modifier = Modifier.size(14.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text(
-                                                text = formatHubSignedPercent(analytics.totalReturnPercent),
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isPositive) HubEmeraldPositive else HubCrimsonNegative
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(16.dp))
-                            HorizontalDivider(color = HubSlateBorder)
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            if (analytics != null) {
+                        Box(
+                            modifier = Modifier
+                                .background(gradient.brush)
+                                .padding(20.dp)
+                        ) {
+                            Column {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column {
-                                        Text(
-                                            text = "Total Portfolio Value",
-                                            fontSize = 12.sp,
-                                            color = HubSlateSecondary
-                                        )
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text(
-                                            text = formatHubInr(analytics.totalCurrentValue, isMasked),
-                                            fontSize = 26.sp,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            color = HubSlatePrimary
-                                        )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        FinBabaMascotBadge(modifier = Modifier.size(48.dp))
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(
+                                                text = uiState.portfolioData?.portfolioName ?: "FinBaba Institutional Core",
+                                                fontSize = 15.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White
+                                            )
+                                            val schemeCount = uiState.portfolioData?.schemes?.size ?: 20
+                                            Text(
+                                                text = "$schemeCount Schemes • AMFI Connected",
+                                                fontSize = 12.sp,
+                                                color = Color.White.copy(alpha = 0.85f)
+                                            )
+                                        }
                                     }
 
-                                    Column(horizontalAlignment = Alignment.End) {
-                                        Text(
-                                            text = "Total Gain / Loss",
-                                            fontSize = 12.sp,
-                                            color = HubSlateSecondary
-                                        )
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text(
-                                            text = formatHubInr(analytics.totalGain, isMasked, showPlus = true),
-                                            fontSize = 18.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (analytics.totalGain >= 0) HubEmeraldPositive else HubCrimsonNegative
-                                        )
+                                    if (analytics != null) {
+                                        val isPositive = analytics.totalGain >= 0
+                                        Surface(
+                                            color = if (isPositive) HubEmeraldSoft else HubCrimsonSoft,
+                                            shape = RoundedCornerShape(20.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    imageVector = if (isPositive) {
+                                                        Icons.AutoMirrored.Filled.TrendingUp
+                                                    } else {
+                                                        Icons.AutoMirrored.Filled.TrendingDown
+                                                    },
+                                                    contentDescription = null,
+                                                    tint = if (isPositive) HubEmeraldPositive else HubCrimsonNegative,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(
+                                                    text = formatHubSignedPercent(analytics.totalReturnPercent),
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = if (isPositive) HubEmeraldPositive else HubCrimsonNegative
+                                                )
+                                            }
+                                        }
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(10.dp))
+                                Spacer(modifier = Modifier.height(16.dp))
+                                HorizontalDivider(color = Color.White.copy(alpha = 0.20f))
+                                Spacer(modifier = Modifier.height(16.dp))
 
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        text = "Invested Principal: ${formatHubInr(analytics.totalInvested, isMasked)}",
-                                        fontSize = 12.sp,
-                                        color = HubSlateSecondary
-                                    )
-                                    val syncTimeText = remember(uiState.portfolioData?.lastSyncedEpochMs) {
-                                        val ms = uiState.portfolioData?.lastSyncedEpochMs ?: 0L
-                                        if (ms > 0L) {
-                                            SimpleDateFormat("dd MMM, hh:mm a", Locale.US).format(Date(ms))
-                                        } else {
-                                            "Seed Ready"
+                                if (analytics != null) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column {
+                                            Text(
+                                                text = "Total Portfolio Value",
+                                                fontSize = 12.sp,
+                                                color = Color.White.copy(alpha = 0.8f)
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = formatHubInr(analytics.totalCurrentValue, isMasked),
+                                                fontSize = 26.sp,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = Color.White
+                                            )
+                                        }
+
+                                        Column(horizontalAlignment = Alignment.End) {
+                                            Text(
+                                                text = "Total Gain / Loss",
+                                                fontSize = 12.sp,
+                                                color = Color.White.copy(alpha = 0.8f)
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = formatHubInr(analytics.totalGain, isMasked, showPlus = true),
+                                                fontSize = 18.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (analytics.totalGain >= 0) Color(0xFF34D399) else Color(0xFFF87171)
+                                            )
                                         }
                                     }
-                                    Text(
-                                        text = "Synced: $syncTimeText",
-                                        fontSize = 11.sp,
-                                        color = HubAccentRoyal,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
+
+                                    Spacer(modifier = Modifier.height(10.dp))
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = "Invested Principal: ${formatHubInr(analytics.totalInvested, isMasked)}",
+                                            fontSize = 12.sp,
+                                            color = Color.White.copy(alpha = 0.85f)
+                                        )
+                                        val syncTimeText = remember(uiState.portfolioData?.lastSyncedEpochMs) {
+                                            val ms = uiState.portfolioData?.lastSyncedEpochMs ?: 0L
+                                            if (ms > 0L) {
+                                                SimpleDateFormat("dd MMM, hh:mm a", Locale.US).format(Date(ms))
+                                            } else {
+                                                "Seed Ready"
+                                            }
+                                        }
+                                        Text(
+                                            text = "Synced: $syncTimeText",
+                                            fontSize = 11.sp,
+                                            color = Color.White.copy(alpha = 0.95f),
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -422,7 +443,15 @@ fun VaultHubScreen(
         HubSettingsModal(
             uiState = uiState,
             portfolioViewModel = portfolioViewModel,
+            onOpenAppearanceSheet = { showAppearanceSheet = true },
             onDismiss = { showSettingsModal = false }
+        )
+    }
+
+    if (showAppearanceSheet) {
+        AppearanceSettingsSheet(
+            themeManager = themeManager,
+            onDismiss = { showAppearanceSheet = false }
         )
     }
 }
@@ -432,6 +461,7 @@ fun VaultHubScreen(
  */
 @Composable
 private fun FinBabaMascotBadge(modifier: Modifier = Modifier) {
+    val gradient = LocalVaultGradient.current
     val context = LocalContext.current
     val decodedBitmap = remember(context) {
         runCatching {
@@ -451,12 +481,12 @@ private fun FinBabaMascotBadge(modifier: Modifier = Modifier) {
             contentScale = ContentScale.Crop,
             modifier = modifier
                 .clip(CircleShape)
-                .border(1.5.dp, HubPrimaryIndigo, CircleShape)
+                .border(1.5.dp, gradient.startColor, CircleShape)
         )
     } else {
         Surface(
             shape = CircleShape,
-            color = HubPrimaryIndigo,
+            color = gradient.startColor,
             modifier = modifier
         ) {
             Box(contentAlignment = Alignment.Center) {
@@ -483,13 +513,14 @@ private fun StudioToolCard(
     primaryButtonText: String,
     onActionClick: () -> Unit
 ) {
+    val gradient = LocalVaultGradient.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = HubSurfaceWhite),
         border = androidx.compose.foundation.BorderStroke(
             width = if (isActive) 1.5.dp else 1.dp,
-            color = if (isActive) HubAccentRoyal.copy(alpha = 0.45f) else HubSlateBorder
+            color = if (isActive) gradient.startColor.copy(alpha = 0.45f) else HubSlateBorder
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -505,7 +536,7 @@ private fun StudioToolCard(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = if (isActive) HubPrimaryIndigo else Color(0xFFF1F5F9),
+                        color = if (isActive) gradient.startColor else Color(0xFFF1F5F9),
                         modifier = Modifier.size(42.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -523,7 +554,7 @@ private fun StudioToolCard(
                             text = toolNumber,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = HubAccentRoyal
+                            color = gradient.startColor
                         )
                         Surface(
                             color = if (isActive) HubEmeraldSoft else HubAmberSoft,
@@ -587,7 +618,7 @@ private fun StudioToolCard(
                     Icon(
                         imageVector = Icons.Default.Layers,
                         contentDescription = null,
-                        tint = HubAccentRoyal,
+                        tint = gradient.startColor,
                         modifier = Modifier.size(15.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -608,7 +639,7 @@ private fun StudioToolCard(
                 onClick = onActionClick,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = HubPrimaryIndigo),
+                colors = ButtonDefaults.buttonColors(containerColor = gradient.startColor),
                 contentPadding = PaddingValues(vertical = 11.dp)
             ) {
                 Text(
@@ -632,8 +663,10 @@ private fun StudioToolCard(
 private fun HubSettingsModal(
     uiState: PortfolioUiState,
     portfolioViewModel: PortfolioViewModel,
+    onOpenAppearanceSheet: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val gradient = LocalVaultGradient.current
     val context = LocalContext.current
     var showResetDialog by remember { mutableStateOf(false) }
 
@@ -641,13 +674,47 @@ private fun HubSettingsModal(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Settings, contentDescription = null, tint = HubPrimaryIndigo)
+                Icon(Icons.Default.Settings, contentDescription = null, tint = gradient.startColor)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Studio Settings & Toggles", fontWeight = FontWeight.Bold, fontSize = 17.sp)
             }
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                // Visual Identity & Gradient Themes trigger
+                Surface(
+                    color = Color(0xFFF8FAFC),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, gradient.startColor.copy(alpha = 0.35f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Visual Identity & Palette", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                Text("Active: ${gradient.displayName}", fontSize = 11.sp, color = HubSlateSecondary)
+                            }
+                            Button(
+                                onClick = {
+                                    onDismiss()
+                                    onOpenAppearanceSheet()
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = gradient.startColor),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Icon(Icons.Default.Palette, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Theme", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
                 // Privacy toggle
                 Surface(
                     color = Color(0xFFF8FAFC),
@@ -669,7 +736,7 @@ private fun HubSettingsModal(
                         Switch(
                             checked = uiState.isPrivacyMasked,
                             onCheckedChange = { portfolioViewModel.togglePrivacyMask() },
-                            colors = SwitchDefaults.colors(checkedTrackColor = HubPrimaryIndigo)
+                            colors = SwitchDefaults.colors(checkedTrackColor = gradient.startColor)
                         )
                     }
                 }
@@ -715,7 +782,7 @@ private fun HubSettingsModal(
             }
         },
         confirmButton = {
-            Button(onClick = onDismiss, colors = ButtonDefaults.buttonColors(containerColor = HubPrimaryIndigo)) {
+            Button(onClick = onDismiss, colors = ButtonDefaults.buttonColors(containerColor = gradient.startColor)) {
                 Text("Close")
             }
         }

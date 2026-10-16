@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -13,6 +14,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.fin.mf.core.theme.VaultThemeManager
 import com.fin.mf.tools.terminal.ui.MarketTerminalScreen
 import com.fin.mf.ui.PortfolioViewModel
 import com.fin.mf.ui.screens.PortfolioTrackerWorkspace
@@ -41,7 +43,8 @@ object FinBabaDestinations {
 fun FinBabaNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    portfolioViewModel: PortfolioViewModel = viewModel()
+    portfolioViewModel: PortfolioViewModel = viewModel(),
+    themeManager: VaultThemeManager = VaultThemeManager.getInstance(LocalContext.current)
 ) {
     NavHost(
         navController = navController,
@@ -76,6 +79,7 @@ fun FinBabaNavHost(
         composable(route = FinBabaDestinations.VAULT_HUB_ROUTE) {
             VaultHubScreen(
                 portfolioViewModel = portfolioViewModel,
+                themeManager = themeManager,
                 onOpenPortfolioTracker = { initialTabIndex ->
                     navController.navigate(
                         FinBabaDestinations.portfolioToolRoute(initialTab = initialTabIndex)
@@ -104,6 +108,7 @@ fun FinBabaNavHost(
             val initialTab = backStackEntry.arguments?.getInt(FinBabaDestinations.ARG_INITIAL_TAB) ?: 0
             PortfolioTrackerWorkspace(
                 portfolioViewModel = portfolioViewModel,
+                themeManager = themeManager,
                 initialTabIndex = initialTab,
                 onNavigateBackToHub = {
                     if (!navController.popBackStack()) {
@@ -118,6 +123,7 @@ fun FinBabaNavHost(
         // Tool #2 Destination: Global Market Terminal & Broker Studio
         composable(route = FinBabaDestinations.MARKET_TERMINAL_ROUTE) {
             MarketTerminalScreen(
+                themeManager = themeManager,
                 onNavigateBackToHub = {
                     if (!navController.popBackStack()) {
                         navController.navigate(FinBabaDestinations.VAULT_HUB_ROUTE) {

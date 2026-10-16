@@ -34,11 +34,17 @@ import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Timeline
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalContext
+import com.fin.mf.core.theme.AppearanceSettingsSheet
+import com.fin.mf.core.theme.LocalVaultGradient
+import com.fin.mf.core.theme.VaultThemeManager
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -132,10 +138,13 @@ private val TerminalColorScheme = lightColorScheme(
 @Composable
 fun MarketTerminalScreen(
     onNavigateBackToHub: () -> Unit,
-    terminalViewModel: MarketTerminalViewModel = viewModel()
+    terminalViewModel: MarketTerminalViewModel = viewModel(),
+    themeManager: VaultThemeManager = VaultThemeManager.getInstance(LocalContext.current)
 ) {
+    val gradient = LocalVaultGradient.current
     val uiState by terminalViewModel.uiState.collectAsState()
     var isSearchExpanded by remember { mutableStateOf(false) }
+    var showAppearanceSheet by rememberSaveable { mutableStateOf(false) }
 
     MaterialTheme(colorScheme = TerminalColorScheme) {
         Scaffold(
@@ -151,7 +160,7 @@ fun MarketTerminalScreen(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Return to Vault Hub",
-                                tint = TerminalSlatePrimary
+                                tint = gradient.startColor
                             )
                         }
                     },
@@ -167,13 +176,13 @@ fun MarketTerminalScreen(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Surface(
                                     shape = RoundedCornerShape(6.dp),
-                                    color = TerminalAccentRoyal.copy(alpha = 0.12f)
+                                    color = gradient.startColor.copy(alpha = 0.12f)
                                 ) {
                                     Text(
                                         text = "TOOL #2",
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = TerminalAccentRoyal,
+                                        color = gradient.startColor,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                     )
                                 }
@@ -186,6 +195,14 @@ fun MarketTerminalScreen(
                         }
                     },
                     actions = {
+                        // Studio Appearance & Gradients
+                        IconButton(onClick = { showAppearanceSheet = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Palette,
+                                contentDescription = "Studio Appearance & Gradients",
+                                tint = gradient.startColor
+                            )
+                        }
                         val isWatchlisted = uiState.watchlist.any {
                             it.symbol.equals(uiState.selectedSymbol, ignoreCase = true)
                         }
@@ -209,13 +226,13 @@ fun MarketTerminalScreen(
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(18.dp),
                                     strokeWidth = 2.dp,
-                                    color = TerminalAccentRoyal
+                                    color = gradient.startColor
                                 )
                             } else {
                                 Icon(
                                     imageVector = Icons.Default.Refresh,
                                     contentDescription = "Refresh",
-                                    tint = TerminalAccentRoyal
+                                    tint = gradient.startColor
                                 )
                             }
                         }
@@ -275,7 +292,7 @@ fun MarketTerminalScreen(
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedContainerColor = TerminalSurface,
                                 unfocusedContainerColor = TerminalSurface,
-                                focusedBorderColor = TerminalAccentRoyal,
+                                focusedBorderColor = gradient.startColor,
                                 unfocusedBorderColor = TerminalSlateBorder
                             )
                         )
@@ -306,7 +323,7 @@ fun MarketTerminalScreen(
                                             CircularProgressIndicator(
                                                 modifier = Modifier.size(16.dp),
                                                 strokeWidth = 2.dp,
-                                                color = TerminalAccentRoyal
+                                                color = gradient.startColor
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Text(
@@ -386,7 +403,7 @@ fun MarketTerminalScreen(
                                 },
                                 shape = RoundedCornerShape(10.dp),
                                 colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = TerminalPrimaryIndigo,
+                                    selectedContainerColor = gradient.startColor,
                                     selectedLabelColor = Color.White,
                                     containerColor = TerminalSurface,
                                     labelColor = TerminalSlatePrimary
@@ -394,7 +411,7 @@ fun MarketTerminalScreen(
                                 border = FilterChipDefaults.filterChipBorder(
                                     enabled = true,
                                     selected = isSelected,
-                                    borderColor = if (isSelected) TerminalPrimaryIndigo else TerminalSlateBorder
+                                    borderColor = if (isSelected) gradient.startColor else TerminalSlateBorder
                                 )
                             )
                         }
@@ -562,10 +579,10 @@ fun MarketTerminalScreen(
                                 val isSelected = tf == uiState.selectedTimeframe
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = if (isSelected) TerminalPrimaryIndigo else TerminalSurface,
+                                    color = if (isSelected) gradient.startColor else TerminalSurface,
                                     border = androidx.compose.foundation.BorderStroke(
                                         1.dp,
-                                        if (isSelected) TerminalPrimaryIndigo else TerminalSlateBorder
+                                        if (isSelected) gradient.startColor else TerminalSlateBorder
                                     ),
                                     modifier = Modifier.clickable { terminalViewModel.selectTimeframe(tf) }
                                 ) {
@@ -800,10 +817,17 @@ fun MarketTerminalScreen(
                                 }
                             }
                         }
-                    }
                 }
             }
         }
+    }
+}
+
+    if (showAppearanceSheet) {
+        AppearanceSettingsSheet(
+            themeManager = themeManager,
+            onDismiss = { showAppearanceSheet = false }
+        )
     }
 }
 
@@ -979,6 +1003,7 @@ private fun DualPointerAnalyzerChart(
     onPointerAChanged: (TerminalChartPoint) -> Unit,
     onPointerBChanged: (TerminalChartPoint) -> Unit
 ) {
+    val gradient = LocalVaultGradient.current
     val ptA = pointerA ?: points.firstOrNull() ?: return
     val ptB = pointerB ?: points.lastOrNull() ?: return
 
@@ -1022,7 +1047,7 @@ private fun DualPointerAnalyzerChart(
                                 modifier = Modifier
                                     .size(10.dp)
                                     .clip(CircleShape)
-                                    .background(TerminalAccentRoyal)
+                                    .background(gradient.startColor)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
@@ -1130,7 +1155,7 @@ private fun DualPointerAnalyzerChart(
 
                 // Draw highlighted region between Point A and Point B
                 drawRect(
-                    color = TerminalAccentRoyal.copy(alpha = 0.08f),
+                    color = gradient.startColor.copy(alpha = 0.08f),
                     topLeft = Offset(xA, topPadding),
                     size = androidx.compose.ui.geometry.Size(xB - xA, plotHeight)
                 )
@@ -1152,7 +1177,7 @@ private fun DualPointerAnalyzerChart(
 
                 // Vertical Marker A
                 drawLine(
-                    color = TerminalAccentRoyal,
+                    color = gradient.startColor,
                     start = Offset(xA, topPadding),
                     end = Offset(xA, h - bottomPadding),
                     strokeWidth = 2.dp.toPx(),
@@ -1188,8 +1213,8 @@ private fun DualPointerAnalyzerChart(
             },
             valueRange = 0f..(points.size - 1).toFloat(),
             colors = SliderDefaults.colors(
-                thumbColor = TerminalAccentRoyal,
-                activeTrackColor = TerminalAccentRoyal,
+                thumbColor = gradient.startColor,
+                activeTrackColor = gradient.startColor,
                 inactiveTrackColor = TerminalSlateBorder
             )
         )
@@ -1205,6 +1230,7 @@ private fun BenchmarkOverlayChart(
     targetSymbol: String,
     benchmarkSymbol: String
 ) {
+    val gradient = LocalVaultGradient.current
     val lastPoint = comparisonPoints.lastOrNull() ?: return
     val alpha = lastPoint.alphaSpread
     val isOutperforming = alpha >= 0.0
@@ -1222,7 +1248,7 @@ private fun BenchmarkOverlayChart(
                         modifier = Modifier
                             .size(10.dp)
                             .clip(CircleShape)
-                            .background(TerminalAccentRoyal)
+                            .background(gradient.startColor)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
@@ -1332,10 +1358,10 @@ private fun BenchmarkOverlayChart(
                     style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
                 )
 
-                // Draw Target Path (Royal Blue)
+                // Draw Target Path (Brand Gradient Primary)
                 drawPath(
                     path = targetPath,
-                    color = TerminalAccentRoyal,
+                    color = gradient.startColor,
                     style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round)
                 )
             }
@@ -1352,7 +1378,7 @@ private fun BenchmarkOverlayChart(
                 text = "$targetSymbol: ${if (lastPoint.targetPct >= 0) "+" else ""}${roundTwo(lastPoint.targetPct)}%",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = TerminalAccentRoyal
+                color = gradient.startColor
             )
             Text(
                 text = "$benchmarkSymbol: ${if (lastPoint.benchmarkPct >= 0) "+" else ""}${roundTwo(lastPoint.benchmarkPct)}%",
@@ -1372,6 +1398,7 @@ private fun RangeMeter(
     high: Double,
     currency: String
 ) {
+    val gradient = LocalVaultGradient.current
     val fraction = if (high > low) {
         ((current - low) / (high - low)).toFloat().coerceIn(0f, 1f)
     } else 0.5f
@@ -1404,7 +1431,7 @@ private fun RangeMeter(
                     .fillMaxWidth(fraction)
                     .height(6.dp)
                     .clip(RoundedCornerShape(3.dp))
-                    .background(TerminalAccentRoyal)
+                    .background(gradient.startColor)
             )
         }
 

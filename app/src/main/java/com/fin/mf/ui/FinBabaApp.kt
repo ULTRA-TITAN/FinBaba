@@ -102,6 +102,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fin.mf.data.AggregatedStockExposure
+import com.fin.mf.core.theme.LocalVaultGradient
 import com.fin.mf.data.AllocationSlice
 import com.fin.mf.data.MfApiNavEntry
 import com.fin.mf.data.MutualFundScheme
@@ -1676,6 +1677,7 @@ private fun SipWealthArchitectScreen(
         currentMonthlyInstallment *= (1.0 + (annualStepUpPct / 100.0))
     }
 
+    val gradient = LocalVaultGradient.current
     val combinedProjectedWealth = existingCorpusFutureValue + sipFutureValue
     val totalPrincipal = currentPortfolioValue + sipTotalInvested
     val totalCompoundingGain = combinedProjectedWealth - totalPrincipal
@@ -1686,57 +1688,72 @@ private fun SipWealthArchitectScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            ElevatedWhiteCard {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Text(
-                        text = "Projected Institutional Corpus ($years Years)",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = FinSlateTextSecondary
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = formatInr(combinedProjectedWealth, isMasked),
-                        fontSize = 30.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = FinPrimaryIndigo
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    val principalWeight = if (combinedProjectedWealth > 0) {
-                        ((totalPrincipal / combinedProjectedWealth) * 100.0).coerceIn(5.0, 95.0)
-                    } else {
-                        50.0
-                    }
-
-                    AllocationProportionBar(
-                        slices = listOf(
-                            AllocationSlice("Principal", totalPrincipal, principalWeight),
-                            AllocationSlice("Compounding Gain", totalCompoundingGain, 100.0 - principalWeight)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                border = androidx.compose.foundation.BorderStroke(1.dp, gradient.startColor.copy(alpha = 0.35f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .background(gradient.brush)
+                        .padding(20.dp)
+                ) {
+                    Column {
+                        Text(
+                            text = "Projected Institutional Corpus ($years Years)",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White.copy(alpha = 0.85f)
                         )
-                    )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = formatInr(combinedProjectedWealth, isMasked),
+                            fontSize = 30.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                        val principalWeight = if (combinedProjectedWealth > 0) {
+                            ((totalPrincipal / combinedProjectedWealth) * 100.0).coerceIn(5.0, 95.0)
+                        } else {
+                            50.0
+                        }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        MetricPillar(
-                            label = "Existing Vault FV",
-                            value = formatInr(existingCorpusFutureValue, isMasked),
-                            valueColor = FinSlateTextPrimary
+                        AllocationProportionBar(
+                            slices = listOf(
+                                AllocationSlice("Principal", totalPrincipal, principalWeight),
+                                AllocationSlice("Compounding Gain", totalCompoundingGain, 100.0 - principalWeight)
+                            )
                         )
-                        MetricPillar(
-                            label = "Fresh SIP Principal",
-                            value = formatInr(sipTotalInvested, isMasked),
-                            valueColor = FinAccentRoyal
-                        )
-                        MetricPillar(
-                            label = "Compounding Gain",
-                            value = formatInr(totalCompoundingGain, isMasked),
-                            valueColor = FinEmeraldPositive
-                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            MetricPillar(
+                                label = "Existing Vault FV",
+                                value = formatInr(existingCorpusFutureValue, isMasked),
+                                valueColor = Color.White,
+                                labelColor = Color.White.copy(alpha = 0.8f)
+                            )
+                            MetricPillar(
+                                label = "Fresh SIP Principal",
+                                value = formatInr(sipTotalInvested, isMasked),
+                                valueColor = Color.White.copy(alpha = 0.9f),
+                                labelColor = Color.White.copy(alpha = 0.8f)
+                            )
+                            MetricPillar(
+                                label = "Compounding Gain",
+                                value = formatInr(totalCompoundingGain, isMasked),
+                                valueColor = Color(0xFF34D399),
+                                labelColor = Color.White.copy(alpha = 0.8f)
+                            )
+                        }
                     }
                 }
             }
@@ -1800,6 +1817,7 @@ private fun SliderParameterControl(
     valueRange: ClosedFloatingPointRange<Float>,
     onValueChange: (Float) -> Unit
 ) {
+    val gradient = LocalVaultGradient.current
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1815,7 +1833,7 @@ private fun SliderParameterControl(
                 text = valueDisplay,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = FinPrimaryIndigo
+                color = gradient.startColor
             )
         }
         Slider(
@@ -1823,8 +1841,8 @@ private fun SliderParameterControl(
             onValueChange = onValueChange,
             valueRange = valueRange,
             colors = SliderDefaults.colors(
-                thumbColor = FinPrimaryIndigo,
-                activeTrackColor = FinAccentRoyal
+                thumbColor = gradient.startColor,
+                activeTrackColor = gradient.startColor
             )
         )
     }
@@ -1979,13 +1997,14 @@ private fun ElevatedWhiteCard(
 private fun MetricPillar(
     label: String,
     value: String,
-    valueColor: Color
+    valueColor: Color,
+    labelColor: Color = FinSlateTextSecondary
 ) {
     Column {
         Text(
             text = label,
             fontSize = 11.sp,
-            color = FinSlateTextSecondary
+            color = labelColor
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(

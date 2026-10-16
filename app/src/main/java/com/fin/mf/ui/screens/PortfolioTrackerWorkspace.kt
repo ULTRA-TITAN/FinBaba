@@ -44,7 +44,11 @@ import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.OpenInFull
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PieChart
+import com.fin.mf.core.theme.AppearanceSettingsSheet
+import com.fin.mf.core.theme.LocalVaultGradient
+import com.fin.mf.core.theme.VaultThemeManager
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Search
@@ -165,9 +169,11 @@ private enum class WorkspaceTab(val index: Int, val label: String) {
 @Composable
 fun PortfolioTrackerWorkspace(
     portfolioViewModel: PortfolioViewModel,
+    themeManager: VaultThemeManager = VaultThemeManager.getInstance(LocalContext.current),
     initialTabIndex: Int = 0,
     onNavigateBackToHub: () -> Unit
 ) {
+    val gradient = LocalVaultGradient.current
     val uiState by portfolioViewModel.uiState.collectAsState()
 
     var activeTab by rememberSaveable(initialTabIndex) {
@@ -177,6 +183,7 @@ fun PortfolioTrackerWorkspace(
     var showAmfiAddDialog by rememberSaveable { mutableStateOf(false) }
     var showCsvDialog by rememberSaveable { mutableStateOf(false) }
     var showSettingsDialog by rememberSaveable { mutableStateOf(false) }
+    var showAppearanceSheet by rememberSaveable { mutableStateOf(false) }
     var schemeToDelete by remember { mutableStateOf<MutualFundScheme?>(null) }
 
     LaunchedEffect(activeTab) {
@@ -203,7 +210,7 @@ fun PortfolioTrackerWorkspace(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back to Studio Hub",
-                            tint = WsPrimaryIndigo
+                            tint = gradient.startColor
                         )
                     }
                 },
@@ -225,6 +232,14 @@ fun PortfolioTrackerWorkspace(
                     }
                 },
                 actions = {
+                    // Appearance Studio Palette Toggle
+                    IconButton(onClick = { showAppearanceSheet = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Palette,
+                            contentDescription = "Studio Appearance & Gradients",
+                            tint = gradient.startColor
+                        )
+                    }
                     // Privacy Mask Toggle
                     IconButton(onClick = { portfolioViewModel.togglePrivacyMask() }) {
                         Icon(
@@ -238,7 +253,7 @@ fun PortfolioTrackerWorkspace(
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Add Scheme",
-                            tint = WsPrimaryIndigo
+                            tint = gradient.startColor
                         )
                     }
                     // Parallel Live NAV Sync
@@ -250,13 +265,13 @@ fun PortfolioTrackerWorkspace(
                             CircularProgressIndicator(
                                 modifier = Modifier.size(20.dp),
                                 strokeWidth = 2.dp,
-                                color = WsAccentRoyal
+                                color = gradient.startColor
                             )
                         } else {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
                                 contentDescription = "Sync Live NAVs",
-                                tint = WsAccentRoyal
+                                tint = gradient.startColor
                             )
                         }
                     }
@@ -265,7 +280,7 @@ fun PortfolioTrackerWorkspace(
                         Icon(
                             imageVector = Icons.Default.Settings,
                             contentDescription = "Settings & Controls",
-                            tint = WsPrimaryIndigo
+                            tint = gradient.startColor
                         )
                     }
                 }
@@ -296,9 +311,9 @@ fun PortfolioTrackerWorkspace(
                             )
                         },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = WsPrimaryIndigo,
-                            selectedTextColor = WsPrimaryIndigo,
-                            indicatorColor = Color(0xFFDBEAFE),
+                            selectedIconColor = gradient.startColor,
+                            selectedTextColor = gradient.startColor,
+                            indicatorColor = gradient.startColor.copy(alpha = 0.15f),
                             unselectedIconColor = WsSlateTextSecondary,
                             unselectedTextColor = WsSlateTextSecondary
                         )
@@ -436,6 +451,10 @@ fun PortfolioTrackerWorkspace(
             onPromptResetSeed = {
                 showSettingsDialog = false
                 showResetConfirmDialog = true
+            },
+            onOpenAppearanceSheet = {
+                showSettingsDialog = false
+                showAppearanceSheet = true
             }
         )
     }
@@ -501,6 +520,14 @@ fun PortfolioTrackerWorkspace(
             onDismiss = { showCsvDialog = false }
         )
     }
+
+    // Appearance Studio Palette Bottom Sheet
+    if (showAppearanceSheet) {
+        AppearanceSettingsSheet(
+            themeManager = themeManager,
+            onDismiss = { showAppearanceSheet = false }
+        )
+    }
 }
 
 /**
@@ -514,6 +541,7 @@ private fun WorkspaceOverviewTab(
     onNavigateToXRay: () -> Unit,
     onDeleteScheme: (MutualFundScheme) -> Unit
 ) {
+    val gradient = LocalVaultGradient.current
     val analytics = uiState.analytics ?: return
     val isMasked = uiState.isPrivacyMasked
     val schemes = uiState.portfolioData?.schemes.orEmpty()
@@ -524,101 +552,116 @@ private fun WorkspaceOverviewTab(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            WsElevatedCard {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Security,
-                                contentDescription = null,
-                                tint = WsAccentRoyal,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = uiState.portfolioData?.portfolioName ?: "Institutional Vault",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = WsSlateTextSecondary
-                            )
-                        }
-                        Surface(
-                            color = if (analytics.totalGain >= 0) WsEmeraldSoft else WsCrimsonSoft,
-                            shape = RoundedCornerShape(20.dp)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                border = androidx.compose.foundation.BorderStroke(1.dp, gradient.startColor.copy(alpha = 0.35f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .background(gradient.brush)
+                        .padding(20.dp)
+                ) {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
-                                    imageVector = if (analytics.totalGain >= 0) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
+                                    imageVector = Icons.Default.Security,
                                     contentDescription = null,
-                                    tint = if (analytics.totalGain >= 0) WsEmeraldPositive else WsCrimsonNegative,
-                                    modifier = Modifier.size(14.dp)
+                                    tint = Color.White.copy(alpha = 0.9f),
+                                    modifier = Modifier.size(16.dp)
                                 )
-                                Spacer(modifier = Modifier.width(4.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = formatWsPercent(analytics.totalReturnPercent),
+                                    text = uiState.portfolioData?.portfolioName ?: "Institutional Vault",
                                     fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (analytics.totalGain >= 0) WsEmeraldPositive else WsCrimsonNegative
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.White.copy(alpha = 0.85f)
                                 )
                             }
+                            Surface(
+                                color = if (analytics.totalGain >= 0) WsEmeraldSoft else WsCrimsonSoft,
+                                shape = RoundedCornerShape(20.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = if (analytics.totalGain >= 0) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
+                                        contentDescription = null,
+                                        tint = if (analytics.totalGain >= 0) WsEmeraldPositive else WsCrimsonNegative,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = formatWsPercent(analytics.totalReturnPercent),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (analytics.totalGain >= 0) WsEmeraldPositive else WsCrimsonNegative
+                                    )
+                                }
+                            }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
 
-                    Text(
-                        text = formatWsInr(analytics.totalCurrentValue, isMasked),
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = WsSlateTextPrimary
-                    )
+                        Text(
+                            text = formatWsInr(analytics.totalCurrentValue, isMasked),
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
 
-                    val lastSyncFormatted = remember(uiState.portfolioData?.lastSyncedEpochMs) {
-                        val ms = uiState.portfolioData?.lastSyncedEpochMs ?: 0L
-                        if (ms > 0L) {
-                            SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.US).format(Date(ms))
-                        } else {
-                            "Bundled Seed"
+                        val lastSyncFormatted = remember(uiState.portfolioData?.lastSyncedEpochMs) {
+                            val ms = uiState.portfolioData?.lastSyncedEpochMs ?: 0L
+                            if (ms > 0L) {
+                                SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.US).format(Date(ms))
+                            } else {
+                                "Bundled Seed"
+                            }
                         }
-                    }
-                    Text(
-                        text = "Last AMFI Sync: $lastSyncFormatted",
-                        fontSize = 11.sp,
-                        color = WsSlateTextSecondary
-                    )
+                        Text(
+                            text = "Last AMFI Sync: $lastSyncFormatted",
+                            fontSize = 11.sp,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
 
-                    Spacer(modifier = Modifier.height(18.dp))
-                    HorizontalDivider(color = WsSlateBorder)
-                    Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(18.dp))
+                        HorizontalDivider(color = Color.White.copy(alpha = 0.20f))
+                        Spacer(modifier = Modifier.height(14.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        WsMetricPillar(
-                            label = "Invested Principal",
-                            value = formatWsInr(analytics.totalInvested, isMasked),
-                            valueColor = WsSlateTextPrimary
-                        )
-                        WsMetricPillar(
-                            label = "Net Capital Gain",
-                            value = formatWsInr(analytics.totalGain, isMasked, showPlus = true),
-                            valueColor = if (analytics.totalGain >= 0) WsEmeraldPositive else WsCrimsonNegative
-                        )
-                        WsMetricPillar(
-                            label = "Active Schemes",
-                            value = "${schemes.size} Schemes",
-                            valueColor = WsPrimaryIndigo
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            WsMetricPillar(
+                                label = "Invested Principal",
+                                value = formatWsInr(analytics.totalInvested, isMasked),
+                                valueColor = Color.White,
+                                labelColor = Color.White.copy(alpha = 0.8f)
+                            )
+                            WsMetricPillar(
+                                label = "Net Capital Gain",
+                                value = formatWsInr(analytics.totalGain, isMasked, showPlus = true),
+                                valueColor = if (analytics.totalGain >= 0) Color(0xFF34D399) else Color(0xFFF87171),
+                                labelColor = Color.White.copy(alpha = 0.8f)
+                            )
+                            WsMetricPillar(
+                                label = "Active Schemes",
+                                value = "${schemes.size} Schemes",
+                                valueColor = Color.White,
+                                labelColor = Color.White.copy(alpha = 0.8f)
+                            )
+                        }
                     }
                 }
             }
@@ -1860,13 +1903,14 @@ private fun WsElevatedCard(
 private fun WsMetricPillar(
     label: String,
     value: String,
-    valueColor: Color
+    valueColor: Color,
+    labelColor: Color = WsSlateTextSecondary
 ) {
     Column {
         Text(
             text = label,
             fontSize = 11.sp,
-            color = WsSlateTextSecondary
+            color = labelColor
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
@@ -2139,8 +2183,10 @@ private fun SettingsModalDialog(
     portfolioViewModel: PortfolioViewModel,
     onDismiss: () -> Unit,
     onOpenCsv: () -> Unit,
-    onPromptResetSeed: () -> Unit
+    onPromptResetSeed: () -> Unit,
+    onOpenAppearanceSheet: () -> Unit
 ) {
+    val gradient = LocalVaultGradient.current
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -2148,7 +2194,7 @@ private fun SettingsModalDialog(
                 Icon(
                     imageVector = Icons.Default.Settings,
                     contentDescription = null,
-                    tint = WsPrimaryIndigo,
+                    tint = gradient.startColor,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -2167,6 +2213,56 @@ private fun SettingsModalDialog(
                     .padding(vertical = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                // Visual Identity & Appearance Studio
+                Surface(
+                    color = Color(0xFFF8FAFC),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, WsSlateBorder),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(gradient.brush)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "Visual Identity & Palette",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = WsSlateTextPrimary
+                                )
+                                Text(
+                                    text = gradient.displayName,
+                                    fontSize = 11.sp,
+                                    color = gradient.startColor,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                        Button(
+                            onClick = onOpenAppearanceSheet,
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = gradient.startColor),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Default.Palette, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Theme", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
                 // Feature Toggle: Privacy Mode
                 Surface(
                     color = Color(0xFFF8FAFC),
@@ -2197,7 +2293,7 @@ private fun SettingsModalDialog(
                         Switch(
                             checked = uiState.isPrivacyMasked,
                             onCheckedChange = { portfolioViewModel.togglePrivacyMask() },
-                            colors = SwitchDefaults.colors(checkedTrackColor = WsPrimaryIndigo)
+                            colors = SwitchDefaults.colors(checkedTrackColor = gradient.startColor)
                         )
                     }
                 }
@@ -2251,7 +2347,7 @@ private fun SettingsModalDialog(
                     Text(
                         text = "${uiState.portfolioData?.schemes?.size ?: 0} Active Schemes Persisted to Internal Storage",
                         fontSize = 11.sp,
-                        color = WsAccentRoyal
+                        color = gradient.startColor
                     )
                 }
             }
@@ -2259,7 +2355,7 @@ private fun SettingsModalDialog(
         confirmButton = {
             Button(
                 onClick = onDismiss,
-                colors = ButtonDefaults.buttonColors(containerColor = WsPrimaryIndigo)
+                colors = ButtonDefaults.buttonColors(containerColor = gradient.startColor)
             ) {
                 Text("Done")
             }
