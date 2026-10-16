@@ -1,6 +1,7 @@
 package com.fin.mf.network
 
 import com.fin.mf.data.MfApiResponse
+import com.fin.mf.data.MfSearchDto
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
@@ -10,13 +11,23 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
+import retrofit2.http.Query
 import java.util.concurrent.TimeUnit
 
 /**
  * Retrofit REST interface for fetching real-time and historical Mutual Fund NAV data
- * from the public AMFI wrapper endpoint: https://api.mfapi.in/
+ * and performing universal AMFI scheme search from the public AMFI wrapper endpoint: https://api.mfapi.in/
  */
 interface MfApiService {
+
+    /**
+     * Searches for mutual fund schemes matching the given query string.
+     * Endpoint: `https://api.mfapi.in/mf/search?q={query}`
+     */
+    @GET("mf/search")
+    suspend fun searchSchemes(
+        @Query("q") query: String
+    ): Response<List<MfSearchDto>>
 
     /**
      * Fetches scheme metadata and full NAV history for a given AMFI scheme code.

@@ -78,6 +78,51 @@ data class MfApiNavEntry(
 )
 
 /**
+ * Live search item model returned from `https://api.mfapi.in/mf/search?q={query}`
+ */
+data class MfSearchDto(
+    @Json(name = "schemeCode") val schemeCode: Int,
+    @Json(name = "schemeName") val schemeName: String
+)
+
+/**
+ * Advanced chart timeframe options for single and multi-fund historical graphs.
+ */
+enum class ChartTimeframe(val label: String, val calendarDays: Int) {
+    SEVEN_DAYS("7D", 7),
+    FIFTEEN_DAYS("15D", 15),
+    ONE_MONTH("1M", 30),
+    THREE_MONTHS("3M", 90),
+    YTD("YTD", -1),
+    ONE_YEAR("1Y", 365),
+    THREE_YEARS("3Y", 1095),
+    FIVE_YEARS("5Y", 1825),
+    SEVEN_YEARS("7Y", 2555),
+    TEN_YEARS("10Y", 3650),
+    CUSTOM("Custom", 0)
+}
+
+/**
+ * Peer comparison model representing a mutual fund inside the Multi-Fund Comparison tab.
+ */
+data class FundComparisonItem(
+    val schemeCode: Int,
+    val schemeName: String,
+    val isPortfolioScheme: Boolean,
+    val latestNav: Double,
+    val lastNavDate: String,
+    val cagr1Y: Double?,
+    val cagr3Y: Double?,
+    val cagr5Y: Double?,
+    val expenseRatio: Double,
+    val riskLevel: String,
+    val category: String,
+    val benchmark: String,
+    val navHistory: List<MfApiNavEntry>,
+    val topHoldings: List<UnderlyingHolding>
+)
+
+/**
  * Computed Look-Through Stock/Debt Overlap model across the entire portfolio.
  */
 data class AggregatedStockExposure(

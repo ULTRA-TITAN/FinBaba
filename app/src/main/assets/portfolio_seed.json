@@ -18,14 +18,146 @@
       "fallbackNav": 84.62,
       "lastNavDate": "14-10-2026",
       "holdings": [
-        { "ticker": "HDFCBANK", "companyName": "HDFC Bank Ltd.", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 8.12 },
-        { "ticker": "BAJFINANCE", "companyName": "Bajaj Holdings & Investment Ltd.", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 6.85 },
-        { "ticker": "COALINDIA", "companyName": "Coal India Ltd.", "sector": "Energy & Mining", "marketCapBucket": "Large Cap", "weightPercent": 5.94 },
-        { "ticker": "ITC", "companyName": "ITC Ltd.", "sector": "FMCG", "marketCapBucket": "Large Cap", "weightPercent": 5.42 },
-        { "ticker": "ICICIBANK", "companyName": "ICICI Bank Ltd.", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 5.10 },
-        { "ticker": "MSFT", "companyName": "Microsoft Corporation", "sector": "Technology", "marketCapBucket": "Global Large Cap", "weightPercent": 4.25 },
-        { "ticker": "GOOGL", "companyName": "Alphabet Inc.", "sector": "Technology", "marketCapBucket": "Global Large Cap", "weightPercent": 3.88 },
-        { "ticker": "MARUTI", "companyName": "Maruti Suzuki India Ltd.", "sector": "Automobile", "marketCapBucket": "Large Cap", "weightPercent": 3.45 }
+        {
+          "ticker": "HDFCBANK",
+          "companyName": "HDFC Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 7.85
+        },
+        {
+          "ticker": "BAJFINANCE",
+          "companyName": "Bajaj Holdings & Investment Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 6.92
+        },
+        {
+          "ticker": "COALINDIA",
+          "companyName": "Coal India Ltd.",
+          "sector": "Energy & Mining",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.84
+        },
+        {
+          "ticker": "ITC",
+          "companyName": "ITC Ltd.",
+          "sector": "FMCG",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.4
+        },
+        {
+          "ticker": "ICICIBANK",
+          "companyName": "ICICI Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.12
+        },
+        {
+          "ticker": "MSFT",
+          "companyName": "Microsoft Corporation",
+          "sector": "Technology",
+          "marketCapBucket": "Global Large Cap",
+          "weightPercent": 4.3
+        },
+        {
+          "ticker": "GOOGL",
+          "companyName": "Alphabet Inc.",
+          "sector": "Technology",
+          "marketCapBucket": "Global Large Cap",
+          "weightPercent": 3.95
+        },
+        {
+          "ticker": "MARUTI",
+          "companyName": "Maruti Suzuki India Ltd.",
+          "sector": "Automobile",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.48
+        },
+        {
+          "ticker": "HCLTECH",
+          "companyName": "HCL Technologies Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.25
+        },
+        {
+          "ticker": "AXISBANK",
+          "companyName": "Axis Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.1
+        },
+        {
+          "ticker": "CDSL",
+          "companyName": "Central Depository Services (India) Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.95
+        },
+        {
+          "ticker": "POWERGRID",
+          "companyName": "Power Grid Corp of India Ltd.",
+          "sector": "Utilities & Power",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.8
+        },
+        {
+          "ticker": "NESTLEIND",
+          "companyName": "Nestle India Ltd.",
+          "sector": "FMCG",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.65
+        },
+        {
+          "ticker": "HEROMOTOCO",
+          "companyName": "Hero MotoCorp Ltd.",
+          "sector": "Automobile",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.5
+        },
+        {
+          "ticker": "CIPLA",
+          "companyName": "Cipla Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.4
+        },
+        {
+          "ticker": "TCS",
+          "companyName": "Tata Consultancy Services Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.3
+        },
+        {
+          "ticker": "KOTAKBANK",
+          "companyName": "Kotak Mahindra Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.2
+        },
+        {
+          "ticker": "AMZN",
+          "companyName": "Amazon.com Inc.",
+          "sector": "Consumer Retail",
+          "marketCapBucket": "Global Large Cap",
+          "weightPercent": 2.1
+        },
+        {
+          "ticker": "META",
+          "companyName": "Meta Platforms Inc.",
+          "sector": "Technology",
+          "marketCapBucket": "Global Large Cap",
+          "weightPercent": 2.05
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "TREPS Clearing Corp Overnight Repo",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 15.0
+        }
       ]
     },
     {
@@ -43,12 +175,167 @@
       "fallbackNav": 102.45,
       "lastNavDate": "14-10-2026",
       "holdings": [
-        { "ticker": "TCS", "companyName": "Tata Consultancy Services Ltd.", "sector": "Technology", "marketCapBucket": "Large Cap", "weightPercent": 7.65 },
-        { "ticker": "ICICIBANK", "companyName": "ICICI Bank Ltd.", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 7.20 },
-        { "ticker": "BAJFINANCE", "companyName": "Bajaj Finance Ltd.", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 6.45 },
-        { "ticker": "DMART", "companyName": "Avenue Supermarts Ltd.", "sector": "Consumer Retail", "marketCapBucket": "Large Cap", "weightPercent": 5.80 },
-        { "ticker": "INFY", "companyName": "Infosys Ltd.", "sector": "Technology", "marketCapBucket": "Large Cap", "weightPercent": 5.15 },
-        { "ticker": "TORNTPHARM", "companyName": "Torrent Pharmaceuticals Ltd.", "sector": "Healthcare", "marketCapBucket": "Large Cap", "weightPercent": 4.10 }
+        {
+          "ticker": "HDFCBANK",
+          "companyName": "HDFC Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 8.5
+        },
+        {
+          "ticker": "RELIANCE",
+          "companyName": "Reliance Industries Ltd.",
+          "sector": "Energy & Telecom",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 7.2
+        },
+        {
+          "ticker": "ICICIBANK",
+          "companyName": "ICICI Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 6.4
+        },
+        {
+          "ticker": "INFY",
+          "companyName": "Infosys Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.8
+        },
+        {
+          "ticker": "ITC",
+          "companyName": "ITC Ltd.",
+          "sector": "FMCG",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.2
+        },
+        {
+          "ticker": "TCS",
+          "companyName": "Tata Consultancy Services Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 4.6
+        },
+        {
+          "ticker": "LT",
+          "companyName": "Larsen & Toubro Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 4.2
+        },
+        {
+          "ticker": "BHARTIARTL",
+          "companyName": "Bharti Airtel Ltd.",
+          "sector": "Telecom",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.8
+        },
+        {
+          "ticker": "SBIN",
+          "companyName": "State Bank of India",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.5
+        },
+        {
+          "ticker": "AXISBANK",
+          "companyName": "Axis Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.2
+        },
+        {
+          "ticker": "KOTAKBANK",
+          "companyName": "Kotak Mahindra Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.9
+        },
+        {
+          "ticker": "HINDUNILVR",
+          "companyName": "Hindustan Unilever Ltd.",
+          "sector": "FMCG",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.7
+        },
+        {
+          "ticker": "BAJFINANCE",
+          "companyName": "Bajaj Finance Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.5
+        },
+        {
+          "ticker": "MARUTI",
+          "companyName": "Maruti Suzuki India Ltd.",
+          "sector": "Automobile",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.3
+        },
+        {
+          "ticker": "TITAN",
+          "companyName": "Titan Company Ltd.",
+          "sector": "Consumer Discretionary",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.1
+        },
+        {
+          "ticker": "SUNPHARMA",
+          "companyName": "Sun Pharmaceutical Industries Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.9
+        },
+        {
+          "ticker": "TATAMOTORS",
+          "companyName": "Tata Motors Ltd.",
+          "sector": "Automobile",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.8
+        },
+        {
+          "ticker": "NTPC",
+          "companyName": "NTPC Ltd.",
+          "sector": "Utilities & Power",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.7
+        },
+        {
+          "ticker": "ULTRACEMCO",
+          "companyName": "UltraTech Cement Ltd.",
+          "sector": "Materials & Construction",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.6
+        },
+        {
+          "ticker": "POWERGRID",
+          "companyName": "Power Grid Corporation of India Ltd.",
+          "sector": "Utilities & Power",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.5
+        },
+        {
+          "ticker": "ONGC",
+          "companyName": "Oil & Natural Gas Corporation Ltd.",
+          "sector": "Energy",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.4
+        },
+        {
+          "ticker": "COALINDIA",
+          "companyName": "Coal India Ltd.",
+          "sector": "Energy & Mining",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.3
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "TREPS Clearing Corp Repo & Cash",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 23.9
+        }
       ]
     },
     {
@@ -66,13 +353,167 @@
       "fallbackNav": 176.84,
       "lastNavDate": "14-10-2026",
       "holdings": [
-        { "ticker": "HDFCBANK", "companyName": "HDFC Bank Ltd.", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 11.45 },
-        { "ticker": "RELIANCE", "companyName": "Reliance Industries Ltd.", "sector": "Energy & Telecom", "marketCapBucket": "Large Cap", "weightPercent": 9.20 },
-        { "ticker": "ICICIBANK", "companyName": "ICICI Bank Ltd.", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 7.95 },
-        { "ticker": "INFY", "companyName": "Infosys Ltd.", "sector": "Technology", "marketCapBucket": "Large Cap", "weightPercent": 5.85 },
-        { "ticker": "ITC", "companyName": "ITC Ltd.", "sector": "FMCG", "marketCapBucket": "Large Cap", "weightPercent": 4.25 },
-        { "ticker": "LT", "companyName": "Larsen & Toubro Ltd.", "sector": "Capital Goods", "marketCapBucket": "Large Cap", "weightPercent": 4.10 },
-        { "ticker": "TCS", "companyName": "Tata Consultancy Services Ltd.", "sector": "Technology", "marketCapBucket": "Large Cap", "weightPercent": 3.95 }
+        {
+          "ticker": "HDFCBANK",
+          "companyName": "HDFC Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 8.5
+        },
+        {
+          "ticker": "RELIANCE",
+          "companyName": "Reliance Industries Ltd.",
+          "sector": "Energy & Telecom",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 7.2
+        },
+        {
+          "ticker": "ICICIBANK",
+          "companyName": "ICICI Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 6.4
+        },
+        {
+          "ticker": "INFY",
+          "companyName": "Infosys Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.8
+        },
+        {
+          "ticker": "ITC",
+          "companyName": "ITC Ltd.",
+          "sector": "FMCG",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.2
+        },
+        {
+          "ticker": "TCS",
+          "companyName": "Tata Consultancy Services Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 4.6
+        },
+        {
+          "ticker": "LT",
+          "companyName": "Larsen & Toubro Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 4.2
+        },
+        {
+          "ticker": "BHARTIARTL",
+          "companyName": "Bharti Airtel Ltd.",
+          "sector": "Telecom",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.8
+        },
+        {
+          "ticker": "SBIN",
+          "companyName": "State Bank of India",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.5
+        },
+        {
+          "ticker": "AXISBANK",
+          "companyName": "Axis Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.2
+        },
+        {
+          "ticker": "KOTAKBANK",
+          "companyName": "Kotak Mahindra Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.9
+        },
+        {
+          "ticker": "HINDUNILVR",
+          "companyName": "Hindustan Unilever Ltd.",
+          "sector": "FMCG",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.7
+        },
+        {
+          "ticker": "BAJFINANCE",
+          "companyName": "Bajaj Finance Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.5
+        },
+        {
+          "ticker": "MARUTI",
+          "companyName": "Maruti Suzuki India Ltd.",
+          "sector": "Automobile",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.3
+        },
+        {
+          "ticker": "TITAN",
+          "companyName": "Titan Company Ltd.",
+          "sector": "Consumer Discretionary",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.1
+        },
+        {
+          "ticker": "SUNPHARMA",
+          "companyName": "Sun Pharmaceutical Industries Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.9
+        },
+        {
+          "ticker": "TATAMOTORS",
+          "companyName": "Tata Motors Ltd.",
+          "sector": "Automobile",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.8
+        },
+        {
+          "ticker": "NTPC",
+          "companyName": "NTPC Ltd.",
+          "sector": "Utilities & Power",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.7
+        },
+        {
+          "ticker": "ULTRACEMCO",
+          "companyName": "UltraTech Cement Ltd.",
+          "sector": "Materials & Construction",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.6
+        },
+        {
+          "ticker": "POWERGRID",
+          "companyName": "Power Grid Corporation of India Ltd.",
+          "sector": "Utilities & Power",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.5
+        },
+        {
+          "ticker": "ONGC",
+          "companyName": "Oil & Natural Gas Corporation Ltd.",
+          "sector": "Energy",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.4
+        },
+        {
+          "ticker": "COALINDIA",
+          "companyName": "Coal India Ltd.",
+          "sector": "Energy & Mining",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.3
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "TREPS Clearing Corp Repo & Cash",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 23.9
+        }
       ]
     },
     {
@@ -87,15 +528,170 @@
       "benchmark": "NIFTY 100 TRI",
       "units": 118.4,
       "investedAmount": 110000.0,
-      "fallbackNav": 1182.30,
+      "fallbackNav": 1182.3,
       "lastNavDate": "14-10-2026",
       "holdings": [
-        { "ticker": "ICICIBANK", "companyName": "ICICI Bank Ltd.", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 9.45 },
-        { "ticker": "HDFCBANK", "companyName": "HDFC Bank Ltd.", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 8.90 },
-        { "ticker": "NTPC", "companyName": "NTPC Ltd.", "sector": "Utilities & Power", "marketCapBucket": "Large Cap", "weightPercent": 6.10 },
-        { "ticker": "LT", "companyName": "Larsen & Toubro Ltd.", "sector": "Capital Goods", "marketCapBucket": "Large Cap", "weightPercent": 5.65 },
-        { "ticker": "BHARTIARTL", "companyName": "Bharti Airtel Ltd.", "sector": "Telecom", "marketCapBucket": "Large Cap", "weightPercent": 5.12 },
-        { "ticker": "SBIN", "companyName": "State Bank of India", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 4.75 }
+        {
+          "ticker": "HDFCBANK",
+          "companyName": "HDFC Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 8.5
+        },
+        {
+          "ticker": "RELIANCE",
+          "companyName": "Reliance Industries Ltd.",
+          "sector": "Energy & Telecom",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 7.2
+        },
+        {
+          "ticker": "ICICIBANK",
+          "companyName": "ICICI Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 6.4
+        },
+        {
+          "ticker": "INFY",
+          "companyName": "Infosys Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.8
+        },
+        {
+          "ticker": "ITC",
+          "companyName": "ITC Ltd.",
+          "sector": "FMCG",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.2
+        },
+        {
+          "ticker": "TCS",
+          "companyName": "Tata Consultancy Services Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 4.6
+        },
+        {
+          "ticker": "LT",
+          "companyName": "Larsen & Toubro Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 4.2
+        },
+        {
+          "ticker": "BHARTIARTL",
+          "companyName": "Bharti Airtel Ltd.",
+          "sector": "Telecom",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.8
+        },
+        {
+          "ticker": "SBIN",
+          "companyName": "State Bank of India",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.5
+        },
+        {
+          "ticker": "AXISBANK",
+          "companyName": "Axis Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.2
+        },
+        {
+          "ticker": "KOTAKBANK",
+          "companyName": "Kotak Mahindra Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.9
+        },
+        {
+          "ticker": "HINDUNILVR",
+          "companyName": "Hindustan Unilever Ltd.",
+          "sector": "FMCG",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.7
+        },
+        {
+          "ticker": "BAJFINANCE",
+          "companyName": "Bajaj Finance Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.5
+        },
+        {
+          "ticker": "MARUTI",
+          "companyName": "Maruti Suzuki India Ltd.",
+          "sector": "Automobile",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.3
+        },
+        {
+          "ticker": "TITAN",
+          "companyName": "Titan Company Ltd.",
+          "sector": "Consumer Discretionary",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.1
+        },
+        {
+          "ticker": "SUNPHARMA",
+          "companyName": "Sun Pharmaceutical Industries Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.9
+        },
+        {
+          "ticker": "TATAMOTORS",
+          "companyName": "Tata Motors Ltd.",
+          "sector": "Automobile",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.8
+        },
+        {
+          "ticker": "NTPC",
+          "companyName": "NTPC Ltd.",
+          "sector": "Utilities & Power",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.7
+        },
+        {
+          "ticker": "ULTRACEMCO",
+          "companyName": "UltraTech Cement Ltd.",
+          "sector": "Materials & Construction",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.6
+        },
+        {
+          "ticker": "POWERGRID",
+          "companyName": "Power Grid Corporation of India Ltd.",
+          "sector": "Utilities & Power",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.5
+        },
+        {
+          "ticker": "ONGC",
+          "companyName": "Oil & Natural Gas Corporation Ltd.",
+          "sector": "Energy",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.4
+        },
+        {
+          "ticker": "COALINDIA",
+          "companyName": "Coal India Ltd.",
+          "sector": "Energy & Mining",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.3
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "TREPS Clearing Corp Repo & Cash",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 23.9
+        }
       ]
     },
     {
@@ -110,15 +706,170 @@
       "benchmark": "NIFTY Midcap 150 TRI",
       "units": 820.0,
       "investedAmount": 125000.0,
-      "fallbackNav": 196.40,
+      "fallbackNav": 196.4,
       "lastNavDate": "14-10-2026",
       "holdings": [
-        { "ticker": "INDHOTEL", "companyName": "The Indian Hotels Company Ltd.", "sector": "Hospitality", "marketCapBucket": "Mid Cap", "weightPercent": 4.85 },
-        { "ticker": "MAXHEALTH", "companyName": "Max Healthcare Institute Ltd.", "sector": "Healthcare", "marketCapBucket": "Mid Cap", "weightPercent": 4.30 },
-        { "ticker": "COFORGE", "companyName": "Coforge Ltd.", "sector": "Technology", "marketCapBucket": "Mid Cap", "weightPercent": 3.95 },
-        { "ticker": "PERSISTENT", "companyName": "Persistent Systems Ltd.", "sector": "Technology", "marketCapBucket": "Mid Cap", "weightPercent": 3.80 },
-        { "ticker": "FEDERALBNK", "companyName": "The Federal Bank Ltd.", "sector": "Financial Services", "marketCapBucket": "Mid Cap", "weightPercent": 3.65 },
-        { "ticker": "APOLLOTYRE", "companyName": "Apollo Tyres Ltd.", "sector": "Automobile", "marketCapBucket": "Mid Cap", "weightPercent": 3.20 }
+        {
+          "ticker": "POLYCAB",
+          "companyName": "Polycab India Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 8.5
+        },
+        {
+          "ticker": "TRENT",
+          "companyName": "Trent Ltd.",
+          "sector": "Consumer Retail",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 7.2
+        },
+        {
+          "ticker": "PERSISTENT",
+          "companyName": "Persistent Systems Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 6.4
+        },
+        {
+          "ticker": "COFORGE",
+          "companyName": "Coforge Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 5.8
+        },
+        {
+          "ticker": "SUPREMEIND",
+          "companyName": "Supreme Industries Ltd.",
+          "sector": "Materials & Plastics",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 5.2
+        },
+        {
+          "ticker": "CUMMINSIND",
+          "companyName": "Cummins India Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 4.6
+        },
+        {
+          "ticker": "FEDERALBNK",
+          "companyName": "The Federal Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 4.2
+        },
+        {
+          "ticker": "MAXHEALTH",
+          "companyName": "Max Healthcare Institute Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 3.8
+        },
+        {
+          "ticker": "ASTRAL",
+          "companyName": "Astral Ltd.",
+          "sector": "Materials & Building",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 3.5
+        },
+        {
+          "ticker": "ASHOKLEY",
+          "companyName": "Ashok Leyland Ltd.",
+          "sector": "Automobile",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 3.2
+        },
+        {
+          "ticker": "JUBLFOOD",
+          "companyName": "Jubilant FoodWorks Ltd.",
+          "sector": "Consumer Retail",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.9
+        },
+        {
+          "ticker": "BATAINDIA",
+          "companyName": "Bata India Ltd.",
+          "sector": "Consumer Retail",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.7
+        },
+        {
+          "ticker": "IDFCFIRSTB",
+          "companyName": "IDFC First Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.5
+        },
+        {
+          "ticker": "VOLTAS",
+          "companyName": "Voltas Ltd.",
+          "sector": "Consumer Durables",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.3
+        },
+        {
+          "ticker": "AUROPHARMA",
+          "companyName": "Aurobindo Pharma Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.1
+        },
+        {
+          "ticker": "PIIND",
+          "companyName": "PI Industries Ltd.",
+          "sector": "Chemicals & Agro",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.9
+        },
+        {
+          "ticker": "APLAPOLLO",
+          "companyName": "APL Apollo Tubes Ltd.",
+          "sector": "Materials & Metals",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.8
+        },
+        {
+          "ticker": "DALBHARAT",
+          "companyName": "Dalmia Bharat Ltd.",
+          "sector": "Materials & Cement",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.7
+        },
+        {
+          "ticker": "MPHASIS",
+          "companyName": "Mphasis Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.6
+        },
+        {
+          "ticker": "IPCALAB",
+          "companyName": "IPCA Laboratories Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.5
+        },
+        {
+          "ticker": "ESCORTS",
+          "companyName": "Escorts Kubota Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.4
+        },
+        {
+          "ticker": "OBEROIRLTY",
+          "companyName": "Oberoi Realty Ltd.",
+          "sector": "Real Estate",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.3
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "TREPS Clearing Corp Repo & Cash",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 23.9
+        }
       ]
     },
     {
@@ -133,14 +884,170 @@
       "benchmark": "NIFTY Smallcap 250 TRI",
       "units": 940.0,
       "investedAmount": 78000.0,
-      "fallbackNav": 114.20,
+      "fallbackNav": 114.2,
       "lastNavDate": "14-10-2026",
       "holdings": [
-        { "ticker": "BRIGADE", "companyName": "Brigade Enterprises Ltd.", "sector": "Real Estate", "marketCapBucket": "Small Cap", "weightPercent": 4.20 },
-        { "ticker": "CHOLAFIN", "companyName": "Cholamandalam Financial Holdings", "sector": "Financial Services", "marketCapBucket": "Mid Cap", "weightPercent": 3.85 },
-        { "ticker": "BLUEDART", "companyName": "Blue Dart Express Ltd.", "sector": "Logistics", "marketCapBucket": "Small Cap", "weightPercent": 3.40 },
-        { "ticker": "JBCHEPHARM", "companyName": "JB Chemicals & Pharmaceuticals Ltd.", "sector": "Healthcare", "marketCapBucket": "Small Cap", "weightPercent": 3.25 },
-        { "ticker": "KPITTECH", "companyName": "KPIT Technologies Ltd.", "sector": "Technology", "marketCapBucket": "Mid Cap", "weightPercent": 3.10 }
+        {
+          "ticker": "KNRCON",
+          "companyName": "KNR Constructions Ltd.",
+          "sector": "Infrastructure",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 8.5
+        },
+        {
+          "ticker": "SONATSOFTW",
+          "companyName": "Sonata Software Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 7.2
+        },
+        {
+          "ticker": "CARBORUNIV",
+          "companyName": "Carborundum Universal Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 6.4
+        },
+        {
+          "ticker": "RADICO",
+          "companyName": "Radico Khaitan Ltd.",
+          "sector": "FMCG & Beverages",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 5.8
+        },
+        {
+          "ticker": "BSOFT",
+          "companyName": "Birlasoft Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 5.2
+        },
+        {
+          "ticker": "ECLERX",
+          "companyName": "eClerx Services Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 4.6
+        },
+        {
+          "ticker": "DEEPAKNTR",
+          "companyName": "Deepak Nitrite Ltd.",
+          "sector": "Chemicals",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 4.2
+        },
+        {
+          "ticker": "JBCHEPHARM",
+          "companyName": "J.B. Chemicals & Pharmaceuticals Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 3.8
+        },
+        {
+          "ticker": "TIMKEN",
+          "companyName": "Timken India Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 3.5
+        },
+        {
+          "ticker": "BALAMINES",
+          "companyName": "Balaji Amines Ltd.",
+          "sector": "Chemicals",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 3.2
+        },
+        {
+          "ticker": "ROUTE",
+          "companyName": "Route Mobile Ltd.",
+          "sector": "Technology & Telecom",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.9
+        },
+        {
+          "ticker": "BLUESTARCO",
+          "companyName": "Blue Star Ltd.",
+          "sector": "Consumer Durables",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.7
+        },
+        {
+          "ticker": "CERA",
+          "companyName": "Cera Sanitaryware Ltd.",
+          "sector": "Materials & Building",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.5
+        },
+        {
+          "ticker": "CANFINHOME",
+          "companyName": "Can Fin Homes Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.3
+        },
+        {
+          "ticker": "CENTURYPLY",
+          "companyName": "Century Plyboards (India) Ltd.",
+          "sector": "Materials & Building",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.1
+        },
+        {
+          "ticker": "FINEORG",
+          "companyName": "Fine Organic Industries Ltd.",
+          "sector": "Chemicals",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.9
+        },
+        {
+          "ticker": "PRAJIND",
+          "companyName": "Praj Industries Ltd.",
+          "sector": "Engineering & Clean Energy",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.8
+        },
+        {
+          "ticker": "CHAMBLFERT",
+          "companyName": "Chambal Fertilisers & Chemicals Ltd.",
+          "sector": "Chemicals & Agro",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.7
+        },
+        {
+          "ticker": "HEG",
+          "companyName": "HEG Ltd.",
+          "sector": "Materials & Industrials",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.6
+        },
+        {
+          "ticker": "CREDITACC",
+          "companyName": "CreditAccess Grameen Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.5
+        },
+        {
+          "ticker": "MAHLOG",
+          "companyName": "Mahindra Logistics Ltd.",
+          "sector": "Logistics",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.4
+        },
+        {
+          "ticker": "NAVINFLUOR",
+          "companyName": "Navin Fluorine International Ltd.",
+          "sector": "Chemicals",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.3
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "TREPS Clearing Corp Repo & Cash",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 23.9
+        }
       ]
     },
     {
@@ -158,11 +1065,167 @@
       "fallbackNav": 274.85,
       "lastNavDate": "14-10-2026",
       "holdings": [
-        { "ticker": "RELIANCE", "companyName": "Reliance Industries Ltd.", "sector": "Energy & Telecom", "marketCapBucket": "Large Cap", "weightPercent": 8.90 },
-        { "ticker": "JIOFIN", "companyName": "Jio Financial Services Ltd.", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 6.15 },
-        { "ticker": "AEGISLOG", "companyName": "Aegis Logistics Ltd.", "sector": "Energy & Logistics", "marketCapBucket": "Small Cap", "weightPercent": 4.35 },
-        { "ticker": "BIKAJI", "companyName": "Bikaji Foods International Ltd.", "sector": "FMCG", "marketCapBucket": "Small Cap", "weightPercent": 3.70 },
-        { "ticker": "HFCL", "companyName": "HFCL Ltd.", "sector": "Telecom Equipment", "marketCapBucket": "Small Cap", "weightPercent": 3.45 }
+        {
+          "ticker": "KNRCON",
+          "companyName": "KNR Constructions Ltd.",
+          "sector": "Infrastructure",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 8.5
+        },
+        {
+          "ticker": "SONATSOFTW",
+          "companyName": "Sonata Software Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 7.2
+        },
+        {
+          "ticker": "CARBORUNIV",
+          "companyName": "Carborundum Universal Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 6.4
+        },
+        {
+          "ticker": "RADICO",
+          "companyName": "Radico Khaitan Ltd.",
+          "sector": "FMCG & Beverages",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 5.8
+        },
+        {
+          "ticker": "BSOFT",
+          "companyName": "Birlasoft Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 5.2
+        },
+        {
+          "ticker": "ECLERX",
+          "companyName": "eClerx Services Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 4.6
+        },
+        {
+          "ticker": "DEEPAKNTR",
+          "companyName": "Deepak Nitrite Ltd.",
+          "sector": "Chemicals",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 4.2
+        },
+        {
+          "ticker": "JBCHEPHARM",
+          "companyName": "J.B. Chemicals & Pharmaceuticals Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 3.8
+        },
+        {
+          "ticker": "TIMKEN",
+          "companyName": "Timken India Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 3.5
+        },
+        {
+          "ticker": "BALAMINES",
+          "companyName": "Balaji Amines Ltd.",
+          "sector": "Chemicals",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 3.2
+        },
+        {
+          "ticker": "ROUTE",
+          "companyName": "Route Mobile Ltd.",
+          "sector": "Technology & Telecom",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.9
+        },
+        {
+          "ticker": "BLUESTARCO",
+          "companyName": "Blue Star Ltd.",
+          "sector": "Consumer Durables",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.7
+        },
+        {
+          "ticker": "CERA",
+          "companyName": "Cera Sanitaryware Ltd.",
+          "sector": "Materials & Building",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.5
+        },
+        {
+          "ticker": "CANFINHOME",
+          "companyName": "Can Fin Homes Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.3
+        },
+        {
+          "ticker": "CENTURYPLY",
+          "companyName": "Century Plyboards (India) Ltd.",
+          "sector": "Materials & Building",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.1
+        },
+        {
+          "ticker": "FINEORG",
+          "companyName": "Fine Organic Industries Ltd.",
+          "sector": "Chemicals",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.9
+        },
+        {
+          "ticker": "PRAJIND",
+          "companyName": "Praj Industries Ltd.",
+          "sector": "Engineering & Clean Energy",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.8
+        },
+        {
+          "ticker": "CHAMBLFERT",
+          "companyName": "Chambal Fertilisers & Chemicals Ltd.",
+          "sector": "Chemicals & Agro",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.7
+        },
+        {
+          "ticker": "HEG",
+          "companyName": "HEG Ltd.",
+          "sector": "Materials & Industrials",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.6
+        },
+        {
+          "ticker": "CREDITACC",
+          "companyName": "CreditAccess Grameen Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.5
+        },
+        {
+          "ticker": "MAHLOG",
+          "companyName": "Mahindra Logistics Ltd.",
+          "sector": "Logistics",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.4
+        },
+        {
+          "ticker": "NAVINFLUOR",
+          "companyName": "Navin Fluorine International Ltd.",
+          "sector": "Chemicals",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.3
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "TREPS Clearing Corp Repo & Cash",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 23.9
+        }
       ]
     },
     {
@@ -177,14 +1240,170 @@
       "benchmark": "NIFTY LargeMidcap 250 TRI",
       "units": 680.0,
       "investedAmount": 92000.0,
-      "fallbackNav": 168.50,
+      "fallbackNav": 168.5,
       "lastNavDate": "14-10-2026",
       "holdings": [
-        { "ticker": "HDFCBANK", "companyName": "HDFC Bank Ltd.", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 6.95 },
-        { "ticker": "AXISBANK", "companyName": "Axis Bank Ltd.", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 4.85 },
-        { "ticker": "SBIN", "companyName": "State Bank of India", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 4.20 },
-        { "ticker": "LUPIN", "companyName": "Lupin Ltd.", "sector": "Healthcare", "marketCapBucket": "Mid Cap", "weightPercent": 3.60 },
-        { "ticker": "PRESTIGE", "companyName": "Prestige Estates Projects Ltd.", "sector": "Real Estate", "marketCapBucket": "Mid Cap", "weightPercent": 3.15 }
+        {
+          "ticker": "POLYCAB",
+          "companyName": "Polycab India Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 8.5
+        },
+        {
+          "ticker": "TRENT",
+          "companyName": "Trent Ltd.",
+          "sector": "Consumer Retail",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 7.2
+        },
+        {
+          "ticker": "PERSISTENT",
+          "companyName": "Persistent Systems Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 6.4
+        },
+        {
+          "ticker": "COFORGE",
+          "companyName": "Coforge Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 5.8
+        },
+        {
+          "ticker": "SUPREMEIND",
+          "companyName": "Supreme Industries Ltd.",
+          "sector": "Materials & Plastics",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 5.2
+        },
+        {
+          "ticker": "CUMMINSIND",
+          "companyName": "Cummins India Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 4.6
+        },
+        {
+          "ticker": "FEDERALBNK",
+          "companyName": "The Federal Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 4.2
+        },
+        {
+          "ticker": "MAXHEALTH",
+          "companyName": "Max Healthcare Institute Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 3.8
+        },
+        {
+          "ticker": "ASTRAL",
+          "companyName": "Astral Ltd.",
+          "sector": "Materials & Building",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 3.5
+        },
+        {
+          "ticker": "ASHOKLEY",
+          "companyName": "Ashok Leyland Ltd.",
+          "sector": "Automobile",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 3.2
+        },
+        {
+          "ticker": "JUBLFOOD",
+          "companyName": "Jubilant FoodWorks Ltd.",
+          "sector": "Consumer Retail",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.9
+        },
+        {
+          "ticker": "BATAINDIA",
+          "companyName": "Bata India Ltd.",
+          "sector": "Consumer Retail",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.7
+        },
+        {
+          "ticker": "IDFCFIRSTB",
+          "companyName": "IDFC First Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.5
+        },
+        {
+          "ticker": "VOLTAS",
+          "companyName": "Voltas Ltd.",
+          "sector": "Consumer Durables",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.3
+        },
+        {
+          "ticker": "AUROPHARMA",
+          "companyName": "Aurobindo Pharma Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.1
+        },
+        {
+          "ticker": "PIIND",
+          "companyName": "PI Industries Ltd.",
+          "sector": "Chemicals & Agro",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.9
+        },
+        {
+          "ticker": "APLAPOLLO",
+          "companyName": "APL Apollo Tubes Ltd.",
+          "sector": "Materials & Metals",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.8
+        },
+        {
+          "ticker": "DALBHARAT",
+          "companyName": "Dalmia Bharat Ltd.",
+          "sector": "Materials & Cement",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.7
+        },
+        {
+          "ticker": "MPHASIS",
+          "companyName": "Mphasis Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.6
+        },
+        {
+          "ticker": "IPCALAB",
+          "companyName": "IPCA Laboratories Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.5
+        },
+        {
+          "ticker": "ESCORTS",
+          "companyName": "Escorts Kubota Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.4
+        },
+        {
+          "ticker": "OBEROIRLTY",
+          "companyName": "Oberoi Realty Ltd.",
+          "sector": "Real Estate",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.3
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "TREPS Clearing Corp Repo & Cash",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 23.9
+        }
       ]
     },
     {
@@ -202,11 +1421,167 @@
       "fallbackNav": 192.15,
       "lastNavDate": "14-10-2026",
       "holdings": [
-        { "ticker": "BLUSTARCO", "companyName": "Blue Star Ltd.", "sector": "Consumer Durables", "marketCapBucket": "Small Cap", "weightPercent": 4.65 },
-        { "ticker": "FINPIPE", "companyName": "Finolex Industries Ltd.", "sector": "Industrial Products", "marketCapBucket": "Small Cap", "weightPercent": 3.90 },
-        { "ticker": "KALPATPOWR", "companyName": "Kalpataru Projects International Ltd.", "sector": "Capital Goods", "marketCapBucket": "Small Cap", "weightPercent": 3.75 },
-        { "ticker": "CHALET", "companyName": "Chalet Hotels Ltd.", "sector": "Hospitality", "marketCapBucket": "Small Cap", "weightPercent": 3.50 },
-        { "ticker": "LEMONTREE", "companyName": "Lemon Tree Hotels Ltd.", "sector": "Hospitality", "marketCapBucket": "Small Cap", "weightPercent": 3.25 }
+        {
+          "ticker": "KNRCON",
+          "companyName": "KNR Constructions Ltd.",
+          "sector": "Infrastructure",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 8.5
+        },
+        {
+          "ticker": "SONATSOFTW",
+          "companyName": "Sonata Software Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 7.2
+        },
+        {
+          "ticker": "CARBORUNIV",
+          "companyName": "Carborundum Universal Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 6.4
+        },
+        {
+          "ticker": "RADICO",
+          "companyName": "Radico Khaitan Ltd.",
+          "sector": "FMCG & Beverages",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 5.8
+        },
+        {
+          "ticker": "BSOFT",
+          "companyName": "Birlasoft Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 5.2
+        },
+        {
+          "ticker": "ECLERX",
+          "companyName": "eClerx Services Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 4.6
+        },
+        {
+          "ticker": "DEEPAKNTR",
+          "companyName": "Deepak Nitrite Ltd.",
+          "sector": "Chemicals",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 4.2
+        },
+        {
+          "ticker": "JBCHEPHARM",
+          "companyName": "J.B. Chemicals & Pharmaceuticals Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 3.8
+        },
+        {
+          "ticker": "TIMKEN",
+          "companyName": "Timken India Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 3.5
+        },
+        {
+          "ticker": "BALAMINES",
+          "companyName": "Balaji Amines Ltd.",
+          "sector": "Chemicals",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 3.2
+        },
+        {
+          "ticker": "ROUTE",
+          "companyName": "Route Mobile Ltd.",
+          "sector": "Technology & Telecom",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.9
+        },
+        {
+          "ticker": "BLUESTARCO",
+          "companyName": "Blue Star Ltd.",
+          "sector": "Consumer Durables",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.7
+        },
+        {
+          "ticker": "CERA",
+          "companyName": "Cera Sanitaryware Ltd.",
+          "sector": "Materials & Building",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.5
+        },
+        {
+          "ticker": "CANFINHOME",
+          "companyName": "Can Fin Homes Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.3
+        },
+        {
+          "ticker": "CENTURYPLY",
+          "companyName": "Century Plyboards (India) Ltd.",
+          "sector": "Materials & Building",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.1
+        },
+        {
+          "ticker": "FINEORG",
+          "companyName": "Fine Organic Industries Ltd.",
+          "sector": "Chemicals",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.9
+        },
+        {
+          "ticker": "PRAJIND",
+          "companyName": "Praj Industries Ltd.",
+          "sector": "Engineering & Clean Energy",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.8
+        },
+        {
+          "ticker": "CHAMBLFERT",
+          "companyName": "Chambal Fertilisers & Chemicals Ltd.",
+          "sector": "Chemicals & Agro",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.7
+        },
+        {
+          "ticker": "HEG",
+          "companyName": "HEG Ltd.",
+          "sector": "Materials & Industrials",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.6
+        },
+        {
+          "ticker": "CREDITACC",
+          "companyName": "CreditAccess Grameen Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.5
+        },
+        {
+          "ticker": "MAHLOG",
+          "companyName": "Mahindra Logistics Ltd.",
+          "sector": "Logistics",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.4
+        },
+        {
+          "ticker": "NAVINFLUOR",
+          "companyName": "Navin Fluorine International Ltd.",
+          "sector": "Chemicals",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.3
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "TREPS Clearing Corp Repo & Cash",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 23.9
+        }
       ]
     },
     {
@@ -221,14 +1596,170 @@
       "benchmark": "NIFTY 100 TRI",
       "units": 1240.0,
       "investedAmount": 105000.0,
-      "fallbackNav": 115.60,
+      "fallbackNav": 115.6,
       "lastNavDate": "14-10-2026",
       "holdings": [
-        { "ticker": "ICICIBANK", "companyName": "ICICI Bank Ltd.", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 9.10 },
-        { "ticker": "LT", "companyName": "Larsen & Toubro Ltd.", "sector": "Capital Goods", "marketCapBucket": "Large Cap", "weightPercent": 6.85 },
-        { "ticker": "RELIANCE", "companyName": "Reliance Industries Ltd.", "sector": "Energy & Telecom", "marketCapBucket": "Large Cap", "weightPercent": 6.40 },
-        { "ticker": "MARUTI", "companyName": "Maruti Suzuki India Ltd.", "sector": "Automobile", "marketCapBucket": "Large Cap", "weightPercent": 5.30 },
-        { "ticker": "SUNPHARMA", "companyName": "Sun Pharmaceutical Industries Ltd.", "sector": "Healthcare", "marketCapBucket": "Large Cap", "weightPercent": 4.45 }
+        {
+          "ticker": "HDFCBANK",
+          "companyName": "HDFC Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 8.5
+        },
+        {
+          "ticker": "RELIANCE",
+          "companyName": "Reliance Industries Ltd.",
+          "sector": "Energy & Telecom",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 7.2
+        },
+        {
+          "ticker": "ICICIBANK",
+          "companyName": "ICICI Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 6.4
+        },
+        {
+          "ticker": "INFY",
+          "companyName": "Infosys Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.8
+        },
+        {
+          "ticker": "ITC",
+          "companyName": "ITC Ltd.",
+          "sector": "FMCG",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.2
+        },
+        {
+          "ticker": "TCS",
+          "companyName": "Tata Consultancy Services Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 4.6
+        },
+        {
+          "ticker": "LT",
+          "companyName": "Larsen & Toubro Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 4.2
+        },
+        {
+          "ticker": "BHARTIARTL",
+          "companyName": "Bharti Airtel Ltd.",
+          "sector": "Telecom",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.8
+        },
+        {
+          "ticker": "SBIN",
+          "companyName": "State Bank of India",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.5
+        },
+        {
+          "ticker": "AXISBANK",
+          "companyName": "Axis Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.2
+        },
+        {
+          "ticker": "KOTAKBANK",
+          "companyName": "Kotak Mahindra Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.9
+        },
+        {
+          "ticker": "HINDUNILVR",
+          "companyName": "Hindustan Unilever Ltd.",
+          "sector": "FMCG",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.7
+        },
+        {
+          "ticker": "BAJFINANCE",
+          "companyName": "Bajaj Finance Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.5
+        },
+        {
+          "ticker": "MARUTI",
+          "companyName": "Maruti Suzuki India Ltd.",
+          "sector": "Automobile",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.3
+        },
+        {
+          "ticker": "TITAN",
+          "companyName": "Titan Company Ltd.",
+          "sector": "Consumer Discretionary",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.1
+        },
+        {
+          "ticker": "SUNPHARMA",
+          "companyName": "Sun Pharmaceutical Industries Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.9
+        },
+        {
+          "ticker": "TATAMOTORS",
+          "companyName": "Tata Motors Ltd.",
+          "sector": "Automobile",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.8
+        },
+        {
+          "ticker": "NTPC",
+          "companyName": "NTPC Ltd.",
+          "sector": "Utilities & Power",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.7
+        },
+        {
+          "ticker": "ULTRACEMCO",
+          "companyName": "UltraTech Cement Ltd.",
+          "sector": "Materials & Construction",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.6
+        },
+        {
+          "ticker": "POWERGRID",
+          "companyName": "Power Grid Corporation of India Ltd.",
+          "sector": "Utilities & Power",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.5
+        },
+        {
+          "ticker": "ONGC",
+          "companyName": "Oil & Natural Gas Corporation Ltd.",
+          "sector": "Energy",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.4
+        },
+        {
+          "ticker": "COALINDIA",
+          "companyName": "Coal India Ltd.",
+          "sector": "Energy & Mining",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.3
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "TREPS Clearing Corp Repo & Cash",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 23.9
+        }
       ]
     },
     {
@@ -243,14 +1774,170 @@
       "benchmark": "NIFTY Midcap 150 TRI",
       "units": 890.0,
       "investedAmount": 88000.0,
-      "fallbackNav": 138.90,
+      "fallbackNav": 138.9,
       "lastNavDate": "14-10-2026",
       "holdings": [
-        { "ticker": "SUPREMEIND", "companyName": "Supreme Industries Ltd.", "sector": "Industrial Products", "marketCapBucket": "Mid Cap", "weightPercent": 4.95 },
-        { "ticker": "SCHAEFFLER", "companyName": "Schaeffler India Ltd.", "sector": "Automobile Ancillaries", "marketCapBucket": "Mid Cap", "weightPercent": 4.20 },
-        { "ticker": "CUMMINSIND", "companyName": "Cummins India Ltd.", "sector": "Capital Goods", "marketCapBucket": "Mid Cap", "weightPercent": 4.05 },
-        { "ticker": "SOLARINDS", "companyName": "Solar Industries India Ltd.", "sector": "Chemicals & Defense", "marketCapBucket": "Mid Cap", "weightPercent": 3.85 },
-        { "ticker": "THERMAX", "companyName": "Thermax Ltd.", "sector": "Capital Goods", "marketCapBucket": "Mid Cap", "weightPercent": 3.40 }
+        {
+          "ticker": "POLYCAB",
+          "companyName": "Polycab India Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 8.5
+        },
+        {
+          "ticker": "TRENT",
+          "companyName": "Trent Ltd.",
+          "sector": "Consumer Retail",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 7.2
+        },
+        {
+          "ticker": "PERSISTENT",
+          "companyName": "Persistent Systems Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 6.4
+        },
+        {
+          "ticker": "COFORGE",
+          "companyName": "Coforge Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 5.8
+        },
+        {
+          "ticker": "SUPREMEIND",
+          "companyName": "Supreme Industries Ltd.",
+          "sector": "Materials & Plastics",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 5.2
+        },
+        {
+          "ticker": "CUMMINSIND",
+          "companyName": "Cummins India Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 4.6
+        },
+        {
+          "ticker": "FEDERALBNK",
+          "companyName": "The Federal Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 4.2
+        },
+        {
+          "ticker": "MAXHEALTH",
+          "companyName": "Max Healthcare Institute Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 3.8
+        },
+        {
+          "ticker": "ASTRAL",
+          "companyName": "Astral Ltd.",
+          "sector": "Materials & Building",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 3.5
+        },
+        {
+          "ticker": "ASHOKLEY",
+          "companyName": "Ashok Leyland Ltd.",
+          "sector": "Automobile",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 3.2
+        },
+        {
+          "ticker": "JUBLFOOD",
+          "companyName": "Jubilant FoodWorks Ltd.",
+          "sector": "Consumer Retail",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.9
+        },
+        {
+          "ticker": "BATAINDIA",
+          "companyName": "Bata India Ltd.",
+          "sector": "Consumer Retail",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.7
+        },
+        {
+          "ticker": "IDFCFIRSTB",
+          "companyName": "IDFC First Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.5
+        },
+        {
+          "ticker": "VOLTAS",
+          "companyName": "Voltas Ltd.",
+          "sector": "Consumer Durables",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.3
+        },
+        {
+          "ticker": "AUROPHARMA",
+          "companyName": "Aurobindo Pharma Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.1
+        },
+        {
+          "ticker": "PIIND",
+          "companyName": "PI Industries Ltd.",
+          "sector": "Chemicals & Agro",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.9
+        },
+        {
+          "ticker": "APLAPOLLO",
+          "companyName": "APL Apollo Tubes Ltd.",
+          "sector": "Materials & Metals",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.8
+        },
+        {
+          "ticker": "DALBHARAT",
+          "companyName": "Dalmia Bharat Ltd.",
+          "sector": "Materials & Cement",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.7
+        },
+        {
+          "ticker": "MPHASIS",
+          "companyName": "Mphasis Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.6
+        },
+        {
+          "ticker": "IPCALAB",
+          "companyName": "IPCA Laboratories Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.5
+        },
+        {
+          "ticker": "ESCORTS",
+          "companyName": "Escorts Kubota Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.4
+        },
+        {
+          "ticker": "OBEROIRLTY",
+          "companyName": "Oberoi Realty Ltd.",
+          "sector": "Real Estate",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.3
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "TREPS Clearing Corp Repo & Cash",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 23.9
+        }
       ]
     },
     {
@@ -268,11 +1955,167 @@
       "fallbackNav": 184.75,
       "lastNavDate": "14-10-2026",
       "holdings": [
-        { "ticker": "VOLTAMP", "companyName": "Voltamp Transformers Ltd.", "sector": "Capital Goods", "marketCapBucket": "Small Cap", "weightPercent": 3.10 },
-        { "ticker": "APARINDS", "companyName": "Apar Industries Ltd.", "sector": "Capital Goods", "marketCapBucket": "Small Cap", "weightPercent": 2.95 },
-        { "ticker": "KARURVYSYA", "companyName": "Karur Vysya Bank Ltd.", "sector": "Financial Services", "marketCapBucket": "Small Cap", "weightPercent": 2.75 },
-        { "ticker": "TEJASNET", "companyName": "Tejas Networks Ltd.", "sector": "Telecom Equipment", "marketCapBucket": "Small Cap", "weightPercent": 2.60 },
-        { "ticker": "MCX", "companyName": "Multi Commodity Exchange of India Ltd.", "sector": "Financial Services", "marketCapBucket": "Small Cap", "weightPercent": 2.45 }
+        {
+          "ticker": "KNRCON",
+          "companyName": "KNR Constructions Ltd.",
+          "sector": "Infrastructure",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 8.5
+        },
+        {
+          "ticker": "SONATSOFTW",
+          "companyName": "Sonata Software Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 7.2
+        },
+        {
+          "ticker": "CARBORUNIV",
+          "companyName": "Carborundum Universal Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 6.4
+        },
+        {
+          "ticker": "RADICO",
+          "companyName": "Radico Khaitan Ltd.",
+          "sector": "FMCG & Beverages",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 5.8
+        },
+        {
+          "ticker": "BSOFT",
+          "companyName": "Birlasoft Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 5.2
+        },
+        {
+          "ticker": "ECLERX",
+          "companyName": "eClerx Services Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 4.6
+        },
+        {
+          "ticker": "DEEPAKNTR",
+          "companyName": "Deepak Nitrite Ltd.",
+          "sector": "Chemicals",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 4.2
+        },
+        {
+          "ticker": "JBCHEPHARM",
+          "companyName": "J.B. Chemicals & Pharmaceuticals Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 3.8
+        },
+        {
+          "ticker": "TIMKEN",
+          "companyName": "Timken India Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 3.5
+        },
+        {
+          "ticker": "BALAMINES",
+          "companyName": "Balaji Amines Ltd.",
+          "sector": "Chemicals",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 3.2
+        },
+        {
+          "ticker": "ROUTE",
+          "companyName": "Route Mobile Ltd.",
+          "sector": "Technology & Telecom",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.9
+        },
+        {
+          "ticker": "BLUESTARCO",
+          "companyName": "Blue Star Ltd.",
+          "sector": "Consumer Durables",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.7
+        },
+        {
+          "ticker": "CERA",
+          "companyName": "Cera Sanitaryware Ltd.",
+          "sector": "Materials & Building",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.5
+        },
+        {
+          "ticker": "CANFINHOME",
+          "companyName": "Can Fin Homes Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.3
+        },
+        {
+          "ticker": "CENTURYPLY",
+          "companyName": "Century Plyboards (India) Ltd.",
+          "sector": "Materials & Building",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.1
+        },
+        {
+          "ticker": "FINEORG",
+          "companyName": "Fine Organic Industries Ltd.",
+          "sector": "Chemicals",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.9
+        },
+        {
+          "ticker": "PRAJIND",
+          "companyName": "Praj Industries Ltd.",
+          "sector": "Engineering & Clean Energy",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.8
+        },
+        {
+          "ticker": "CHAMBLFERT",
+          "companyName": "Chambal Fertilisers & Chemicals Ltd.",
+          "sector": "Chemicals & Agro",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.7
+        },
+        {
+          "ticker": "HEG",
+          "companyName": "HEG Ltd.",
+          "sector": "Materials & Industrials",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.6
+        },
+        {
+          "ticker": "CREDITACC",
+          "companyName": "CreditAccess Grameen Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.5
+        },
+        {
+          "ticker": "MAHLOG",
+          "companyName": "Mahindra Logistics Ltd.",
+          "sector": "Logistics",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.4
+        },
+        {
+          "ticker": "NAVINFLUOR",
+          "companyName": "Navin Fluorine International Ltd.",
+          "sector": "Chemicals",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.3
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "TREPS Clearing Corp Repo & Cash",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 23.9
+        }
       ]
     },
     {
@@ -287,14 +2130,170 @@
       "benchmark": "CRISIL Hybrid 35+65 Aggressive Index",
       "units": 950.0,
       "investedAmount": 85000.0,
-      "fallbackNav": 121.30,
+      "fallbackNav": 121.3,
       "lastNavDate": "14-10-2026",
       "holdings": [
-        { "ticker": "ICICIBANK", "companyName": "ICICI Bank Ltd.", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 7.45 },
-        { "ticker": "HDFCBANK", "companyName": "HDFC Bank Ltd.", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 6.80 },
-        { "ticker": "GOI_2033", "companyName": "7.18% GOI Sovereign Bond 2033", "sector": "Sovereign Debt", "marketCapBucket": "Debt Sovereign", "weightPercent": 11.20 },
-        { "ticker": "NABARD_28", "companyName": "NABARD AAA Corporate Bond 2028", "sector": "PSU Debt", "marketCapBucket": "Debt AAA", "weightPercent": 6.50 },
-        { "ticker": "LT", "companyName": "Larsen & Toubro Ltd.", "sector": "Capital Goods", "marketCapBucket": "Large Cap", "weightPercent": 4.90 }
+        {
+          "ticker": "HDFCBANK",
+          "companyName": "HDFC Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 8.5
+        },
+        {
+          "ticker": "RELIANCE",
+          "companyName": "Reliance Industries Ltd.",
+          "sector": "Energy & Telecom",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 7.2
+        },
+        {
+          "ticker": "ICICIBANK",
+          "companyName": "ICICI Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 6.4
+        },
+        {
+          "ticker": "INFY",
+          "companyName": "Infosys Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.8
+        },
+        {
+          "ticker": "ITC",
+          "companyName": "ITC Ltd.",
+          "sector": "FMCG",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.2
+        },
+        {
+          "ticker": "TCS",
+          "companyName": "Tata Consultancy Services Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 4.6
+        },
+        {
+          "ticker": "LT",
+          "companyName": "Larsen & Toubro Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 4.2
+        },
+        {
+          "ticker": "BHARTIARTL",
+          "companyName": "Bharti Airtel Ltd.",
+          "sector": "Telecom",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.8
+        },
+        {
+          "ticker": "SBIN",
+          "companyName": "State Bank of India",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.5
+        },
+        {
+          "ticker": "AXISBANK",
+          "companyName": "Axis Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.2
+        },
+        {
+          "ticker": "KOTAKBANK",
+          "companyName": "Kotak Mahindra Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.9
+        },
+        {
+          "ticker": "7.18GS2033",
+          "companyName": "7.18% Government of India Sovereign G-Sec 2033",
+          "sector": "Sovereign Debt",
+          "marketCapBucket": "Sovereign G-Sec",
+          "weightPercent": 2.7
+        },
+        {
+          "ticker": "7.26GS2032",
+          "companyName": "7.26% Government of India Sovereign G-Sec 2032",
+          "sector": "Sovereign Debt",
+          "marketCapBucket": "Sovereign G-Sec",
+          "weightPercent": 2.5
+        },
+        {
+          "ticker": "7.06GS2028",
+          "companyName": "7.06% Government of India Sovereign G-Sec 2028",
+          "sector": "Sovereign Debt",
+          "marketCapBucket": "Sovereign G-Sec",
+          "weightPercent": 2.3
+        },
+        {
+          "ticker": "NABARD2028",
+          "companyName": "NABARD AAA Corporate Debenture 2028",
+          "sector": "Financial Institutions",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 2.1
+        },
+        {
+          "ticker": "REC2027",
+          "companyName": "Rural Electrification Corp (REC) AAA Bond 2027",
+          "sector": "Financial Services",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.9
+        },
+        {
+          "ticker": "PFC2029",
+          "companyName": "Power Finance Corporation (PFC) AAA Bond 2029",
+          "sector": "Financial Services",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.8
+        },
+        {
+          "ticker": "HDFCBOND28",
+          "companyName": "HDFC Bank AAA Corporate Bond 2028",
+          "sector": "Banking & Finance",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.7
+        },
+        {
+          "ticker": "SIDBI2026",
+          "companyName": "Small Industries Development Bank AAA Bond 2026",
+          "sector": "Financial Institutions",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.6
+        },
+        {
+          "ticker": "NHAI2030",
+          "companyName": "National Highways Authority of India AAA Bond 2030",
+          "sector": "Infrastructure Debt",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.5
+        },
+        {
+          "ticker": "LTCORP2027",
+          "companyName": "Larsen & Toubro Ltd. AAA Commercial Bond",
+          "sector": "Capital Goods Debt",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.4
+        },
+        {
+          "ticker": "IOCBOND2026",
+          "companyName": "Indian Oil Corporation AAA Corporate Bond",
+          "sector": "Energy & Petroleum",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.3
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "TREPS Clearing Corp Repo & Cash",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 23.9
+        }
       ]
     },
     {
@@ -309,14 +2308,170 @@
       "benchmark": "CRISIL Hybrid 35+65 Aggressive Index",
       "units": 310.0,
       "investedAmount": 94000.0,
-      "fallbackNav": 398.40,
+      "fallbackNav": 398.4,
       "lastNavDate": "14-10-2026",
       "holdings": [
-        { "ticker": "NTPC", "companyName": "NTPC Ltd.", "sector": "Utilities & Power", "marketCapBucket": "Large Cap", "weightPercent": 7.80 },
-        { "ticker": "BHARTIARTL", "companyName": "Bharti Airtel Ltd.", "sector": "Telecom", "marketCapBucket": "Large Cap", "weightPercent": 6.90 },
-        { "ticker": "ICICIBANK", "companyName": "ICICI Bank Ltd.", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 6.40 },
-        { "ticker": "GOI_2034", "companyName": "7.10% GOI Sovereign G-Sec 2034", "sector": "Sovereign Debt", "marketCapBucket": "Debt Sovereign", "weightPercent": 12.40 },
-        { "ticker": "ONGC", "companyName": "Oil & Natural Gas Corporation Ltd.", "sector": "Energy & Mining", "marketCapBucket": "Large Cap", "weightPercent": 4.55 }
+        {
+          "ticker": "HDFCBANK",
+          "companyName": "HDFC Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 8.5
+        },
+        {
+          "ticker": "RELIANCE",
+          "companyName": "Reliance Industries Ltd.",
+          "sector": "Energy & Telecom",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 7.2
+        },
+        {
+          "ticker": "ICICIBANK",
+          "companyName": "ICICI Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 6.4
+        },
+        {
+          "ticker": "INFY",
+          "companyName": "Infosys Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.8
+        },
+        {
+          "ticker": "ITC",
+          "companyName": "ITC Ltd.",
+          "sector": "FMCG",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.2
+        },
+        {
+          "ticker": "TCS",
+          "companyName": "Tata Consultancy Services Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 4.6
+        },
+        {
+          "ticker": "LT",
+          "companyName": "Larsen & Toubro Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 4.2
+        },
+        {
+          "ticker": "BHARTIARTL",
+          "companyName": "Bharti Airtel Ltd.",
+          "sector": "Telecom",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.8
+        },
+        {
+          "ticker": "SBIN",
+          "companyName": "State Bank of India",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.5
+        },
+        {
+          "ticker": "AXISBANK",
+          "companyName": "Axis Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.2
+        },
+        {
+          "ticker": "KOTAKBANK",
+          "companyName": "Kotak Mahindra Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.9
+        },
+        {
+          "ticker": "7.18GS2033",
+          "companyName": "7.18% Government of India Sovereign G-Sec 2033",
+          "sector": "Sovereign Debt",
+          "marketCapBucket": "Sovereign G-Sec",
+          "weightPercent": 2.7
+        },
+        {
+          "ticker": "7.26GS2032",
+          "companyName": "7.26% Government of India Sovereign G-Sec 2032",
+          "sector": "Sovereign Debt",
+          "marketCapBucket": "Sovereign G-Sec",
+          "weightPercent": 2.5
+        },
+        {
+          "ticker": "7.06GS2028",
+          "companyName": "7.06% Government of India Sovereign G-Sec 2028",
+          "sector": "Sovereign Debt",
+          "marketCapBucket": "Sovereign G-Sec",
+          "weightPercent": 2.3
+        },
+        {
+          "ticker": "NABARD2028",
+          "companyName": "NABARD AAA Corporate Debenture 2028",
+          "sector": "Financial Institutions",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 2.1
+        },
+        {
+          "ticker": "REC2027",
+          "companyName": "Rural Electrification Corp (REC) AAA Bond 2027",
+          "sector": "Financial Services",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.9
+        },
+        {
+          "ticker": "PFC2029",
+          "companyName": "Power Finance Corporation (PFC) AAA Bond 2029",
+          "sector": "Financial Services",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.8
+        },
+        {
+          "ticker": "HDFCBOND28",
+          "companyName": "HDFC Bank AAA Corporate Bond 2028",
+          "sector": "Banking & Finance",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.7
+        },
+        {
+          "ticker": "SIDBI2026",
+          "companyName": "Small Industries Development Bank AAA Bond 2026",
+          "sector": "Financial Institutions",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.6
+        },
+        {
+          "ticker": "NHAI2030",
+          "companyName": "National Highways Authority of India AAA Bond 2030",
+          "sector": "Infrastructure Debt",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.5
+        },
+        {
+          "ticker": "LTCORP2027",
+          "companyName": "Larsen & Toubro Ltd. AAA Commercial Bond",
+          "sector": "Capital Goods Debt",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.4
+        },
+        {
+          "ticker": "IOCBOND2026",
+          "companyName": "Indian Oil Corporation AAA Corporate Bond",
+          "sector": "Energy & Petroleum",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.3
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "TREPS Clearing Corp Repo & Cash",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 23.9
+        }
       ]
     },
     {
@@ -331,14 +2486,170 @@
       "benchmark": "NIFTY Midcap 150 TRI",
       "units": 410.0,
       "investedAmount": 75000.0,
-      "fallbackNav": 245.60,
+      "fallbackNav": 245.6,
       "lastNavDate": "14-10-2026",
       "holdings": [
-        { "ticker": "TORNTPHARM", "companyName": "Torrent Pharmaceuticals Ltd.", "sector": "Healthcare", "marketCapBucket": "Large Cap", "weightPercent": 4.90 },
-        { "ticker": "CRISIL", "companyName": "CRISIL Ltd.", "sector": "Financial Services", "marketCapBucket": "Mid Cap", "weightPercent": 4.65 },
-        { "ticker": "SUNDRMFAST", "companyName": "Sundram Fasteners Ltd.", "sector": "Automobile Ancillaries", "marketCapBucket": "Mid Cap", "weightPercent": 4.30 },
-        { "ticker": "PAGEIND", "companyName": "Page Industries Ltd.", "sector": "Textiles & Apparel", "marketCapBucket": "Mid Cap", "weightPercent": 4.10 },
-        { "ticker": "TIINDIA", "companyName": "Tube Investments of India Ltd.", "sector": "Automobile Ancillaries", "marketCapBucket": "Mid Cap", "weightPercent": 3.85 }
+        {
+          "ticker": "POLYCAB",
+          "companyName": "Polycab India Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 8.5
+        },
+        {
+          "ticker": "TRENT",
+          "companyName": "Trent Ltd.",
+          "sector": "Consumer Retail",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 7.2
+        },
+        {
+          "ticker": "PERSISTENT",
+          "companyName": "Persistent Systems Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 6.4
+        },
+        {
+          "ticker": "COFORGE",
+          "companyName": "Coforge Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 5.8
+        },
+        {
+          "ticker": "SUPREMEIND",
+          "companyName": "Supreme Industries Ltd.",
+          "sector": "Materials & Plastics",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 5.2
+        },
+        {
+          "ticker": "CUMMINSIND",
+          "companyName": "Cummins India Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 4.6
+        },
+        {
+          "ticker": "FEDERALBNK",
+          "companyName": "The Federal Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 4.2
+        },
+        {
+          "ticker": "MAXHEALTH",
+          "companyName": "Max Healthcare Institute Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 3.8
+        },
+        {
+          "ticker": "ASTRAL",
+          "companyName": "Astral Ltd.",
+          "sector": "Materials & Building",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 3.5
+        },
+        {
+          "ticker": "ASHOKLEY",
+          "companyName": "Ashok Leyland Ltd.",
+          "sector": "Automobile",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 3.2
+        },
+        {
+          "ticker": "JUBLFOOD",
+          "companyName": "Jubilant FoodWorks Ltd.",
+          "sector": "Consumer Retail",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.9
+        },
+        {
+          "ticker": "BATAINDIA",
+          "companyName": "Bata India Ltd.",
+          "sector": "Consumer Retail",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.7
+        },
+        {
+          "ticker": "IDFCFIRSTB",
+          "companyName": "IDFC First Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.5
+        },
+        {
+          "ticker": "VOLTAS",
+          "companyName": "Voltas Ltd.",
+          "sector": "Consumer Durables",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.3
+        },
+        {
+          "ticker": "AUROPHARMA",
+          "companyName": "Aurobindo Pharma Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.1
+        },
+        {
+          "ticker": "PIIND",
+          "companyName": "PI Industries Ltd.",
+          "sector": "Chemicals & Agro",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.9
+        },
+        {
+          "ticker": "APLAPOLLO",
+          "companyName": "APL Apollo Tubes Ltd.",
+          "sector": "Materials & Metals",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.8
+        },
+        {
+          "ticker": "DALBHARAT",
+          "companyName": "Dalmia Bharat Ltd.",
+          "sector": "Materials & Cement",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.7
+        },
+        {
+          "ticker": "MPHASIS",
+          "companyName": "Mphasis Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.6
+        },
+        {
+          "ticker": "IPCALAB",
+          "companyName": "IPCA Laboratories Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.5
+        },
+        {
+          "ticker": "ESCORTS",
+          "companyName": "Escorts Kubota Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.4
+        },
+        {
+          "ticker": "OBEROIRLTY",
+          "companyName": "Oberoi Realty Ltd.",
+          "sector": "Real Estate",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 1.3
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "TREPS Clearing Corp Repo & Cash",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 23.9
+        }
       ]
     },
     {
@@ -348,18 +2659,161 @@
       "category": "Liquid Fund",
       "assetClass": "Debt",
       "riskLevel": "Low to Moderate",
-      "expenseRatio": 0.20,
+      "expenseRatio": 0.2,
       "exitLoad": "Graded up to 7 days",
       "benchmark": "CRISIL Liquid Debt A-I Index",
       "units": 32.5,
       "investedAmount": 145000.0,
-      "fallbackNav": 4965.20,
+      "fallbackNav": 4965.2,
       "lastNavDate": "14-10-2026",
       "holdings": [
-        { "ticker": "TBILL_91D", "companyName": "91 Days Reserve Bank of India T-Bill", "sector": "Sovereign Money Market", "marketCapBucket": "Debt Sovereign", "weightPercent": 24.50 },
-        { "ticker": "SIDBI_CP", "companyName": "SIDBI Commercial Paper A1+", "sector": "PSU Money Market", "marketCapBucket": "Debt A1+", "weightPercent": 11.20 },
-        { "ticker": "NABARD_CD", "companyName": "NABARD Certificate of Deposit", "sector": "PSU Money Market", "marketCapBucket": "Debt A1+", "weightPercent": 9.85 },
-        { "ticker": "RELIANCE_CP", "companyName": "Reliance Retail Ventures CP A1+", "sector": "Corporate Money Market", "marketCapBucket": "Debt A1+", "weightPercent": 7.40 }
+        {
+          "ticker": "7.18GS2033",
+          "companyName": "7.18% Government of India Sovereign G-Sec 2033",
+          "sector": "Sovereign Debt",
+          "marketCapBucket": "Sovereign G-Sec",
+          "weightPercent": 8.5
+        },
+        {
+          "ticker": "7.26GS2032",
+          "companyName": "7.26% Government of India Sovereign G-Sec 2032",
+          "sector": "Sovereign Debt",
+          "marketCapBucket": "Sovereign G-Sec",
+          "weightPercent": 7.2
+        },
+        {
+          "ticker": "7.06GS2028",
+          "companyName": "7.06% Government of India Sovereign G-Sec 2028",
+          "sector": "Sovereign Debt",
+          "marketCapBucket": "Sovereign G-Sec",
+          "weightPercent": 6.4
+        },
+        {
+          "ticker": "NABARD2028",
+          "companyName": "NABARD AAA Corporate Debenture 2028",
+          "sector": "Financial Institutions",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 5.8
+        },
+        {
+          "ticker": "REC2027",
+          "companyName": "Rural Electrification Corp (REC) AAA Bond 2027",
+          "sector": "Financial Services",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 5.2
+        },
+        {
+          "ticker": "PFC2029",
+          "companyName": "Power Finance Corporation (PFC) AAA Bond 2029",
+          "sector": "Financial Services",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 4.6
+        },
+        {
+          "ticker": "HDFCBOND28",
+          "companyName": "HDFC Bank AAA Corporate Bond 2028",
+          "sector": "Banking & Finance",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 4.2
+        },
+        {
+          "ticker": "SIDBI2026",
+          "companyName": "Small Industries Development Bank AAA Bond 2026",
+          "sector": "Financial Institutions",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 3.8
+        },
+        {
+          "ticker": "NHAI2030",
+          "companyName": "National Highways Authority of India AAA Bond 2030",
+          "sector": "Infrastructure Debt",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 3.5
+        },
+        {
+          "ticker": "LTCORP2027",
+          "companyName": "Larsen & Toubro Ltd. AAA Commercial Bond",
+          "sector": "Capital Goods Debt",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 3.2
+        },
+        {
+          "ticker": "IOCBOND2026",
+          "companyName": "Indian Oil Corporation AAA Corporate Bond",
+          "sector": "Energy & Petroleum",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 2.9
+        },
+        {
+          "ticker": "NTPCBOND27",
+          "companyName": "NTPC Ltd. AAA Debenture 2027",
+          "sector": "Power & Utilities",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 2.7
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "Clearing Corp of India TREPS / Overnight Repo",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 2.5
+        },
+        {
+          "ticker": "91DTB2026",
+          "companyName": "91-Day Government of India Treasury Bill",
+          "sector": "Money Market",
+          "marketCapBucket": "Sovereign T-Bill",
+          "weightPercent": 2.3
+        },
+        {
+          "ticker": "182DTB2026",
+          "companyName": "182-Day Government of India Treasury Bill",
+          "sector": "Money Market",
+          "marketCapBucket": "Sovereign T-Bill",
+          "weightPercent": 2.1
+        },
+        {
+          "ticker": "AXISCORP27",
+          "companyName": "Axis Bank AAA Tier-2 Debenture 2027",
+          "sector": "Banking & Finance",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.9
+        },
+        {
+          "ticker": "BAJAJCORP28",
+          "companyName": "Bajaj Finance Ltd. AAA Secured Bond 2028",
+          "sector": "NBFC Debt",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.8
+        },
+        {
+          "ticker": "LICHSG2027",
+          "companyName": "LIC Housing Finance AAA Secured Bond 2027",
+          "sector": "Housing Finance",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.7
+        },
+        {
+          "ticker": "MAHINDCORP",
+          "companyName": "Mahindra & Mahindra Financial Services AAA Bond",
+          "sector": "NBFC Debt",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.6
+        },
+        {
+          "ticker": "RELCORP2027",
+          "companyName": "Reliance Industries AAA Corporate Debenture",
+          "sector": "Energy Debt",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.5
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "TREPS Clearing Corp Repo & Cash",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 26.6
+        }
       ]
     },
     {
@@ -374,14 +2828,156 @@
       "benchmark": "BSE Teck TRI",
       "units": 420.0,
       "investedAmount": 66000.0,
-      "fallbackNav": 212.40,
+      "fallbackNav": 212.4,
       "lastNavDate": "14-10-2026",
       "holdings": [
-        { "ticker": "INFY", "companyName": "Infosys Ltd.", "sector": "Technology", "marketCapBucket": "Large Cap", "weightPercent": 24.10 },
-        { "ticker": "TCS", "companyName": "Tata Consultancy Services Ltd.", "sector": "Technology", "marketCapBucket": "Large Cap", "weightPercent": 15.80 },
-        { "ticker": "BHARTIARTL", "companyName": "Bharti Airtel Ltd.", "sector": "Telecom", "marketCapBucket": "Large Cap", "weightPercent": 10.45 },
-        { "ticker": "TECHM", "companyName": "Tech Mahindra Ltd.", "sector": "Technology", "marketCapBucket": "Large Cap", "weightPercent": 8.20 },
-        { "ticker": "HCLTECH", "companyName": "HCL Technologies Ltd.", "sector": "Technology", "marketCapBucket": "Large Cap", "weightPercent": 7.65 }
+        {
+          "ticker": "TCS",
+          "companyName": "Tata Consultancy Services Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 8.5
+        },
+        {
+          "ticker": "INFY",
+          "companyName": "Infosys Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 7.2
+        },
+        {
+          "ticker": "HCLTECH",
+          "companyName": "HCL Technologies Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 6.4
+        },
+        {
+          "ticker": "WIPRO",
+          "companyName": "Wipro Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.8
+        },
+        {
+          "ticker": "LTIM",
+          "companyName": "LTIMindtree Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.2
+        },
+        {
+          "ticker": "TECHM",
+          "companyName": "Tech Mahindra Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 4.6
+        },
+        {
+          "ticker": "PERSISTENT",
+          "companyName": "Persistent Systems Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 4.2
+        },
+        {
+          "ticker": "COFORGE",
+          "companyName": "Coforge Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 3.8
+        },
+        {
+          "ticker": "MPHASIS",
+          "companyName": "Mphasis Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 3.5
+        },
+        {
+          "ticker": "KPITTECH",
+          "companyName": "KPIT Technologies Ltd.",
+          "sector": "Automotive Tech",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 3.2
+        },
+        {
+          "ticker": "TATAELXSI",
+          "companyName": "Tata Elxsi Ltd.",
+          "sector": "Technology & Design",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.9
+        },
+        {
+          "ticker": "BSOFT",
+          "companyName": "Birlasoft Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.7
+        },
+        {
+          "ticker": "SONATSOFTW",
+          "companyName": "Sonata Software Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.5
+        },
+        {
+          "ticker": "CYIENT",
+          "companyName": "Cyient Ltd.",
+          "sector": "Engineering Tech",
+          "marketCapBucket": "Mid Cap",
+          "weightPercent": 2.3
+        },
+        {
+          "ticker": "ZENSARTECH",
+          "companyName": "Zensar Technologies Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 2.1
+        },
+        {
+          "ticker": "HAPPSTMNDS",
+          "companyName": "Happiest Minds Technologies Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.9
+        },
+        {
+          "ticker": "INTELLECT",
+          "companyName": "Intellect Design Arena Ltd.",
+          "sector": "Fintech & Software",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.8
+        },
+        {
+          "ticker": "ECLERX",
+          "companyName": "eClerx Services Ltd.",
+          "sector": "Technology & KPO",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.7
+        },
+        {
+          "ticker": "LATENTVIEW",
+          "companyName": "Latent View Analytics Ltd.",
+          "sector": "Data Analytics",
+          "marketCapBucket": "Small Cap",
+          "weightPercent": 1.6
+        },
+        {
+          "ticker": "ORACLEFIN",
+          "companyName": "Oracle Financial Services Software Ltd.",
+          "sector": "Fintech",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.5
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "TREPS Clearing Corp Repo & Cash",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 26.6
+        }
       ]
     },
     {
@@ -399,11 +2995,167 @@
       "fallbackNav": 86.35,
       "lastNavDate": "14-10-2026",
       "holdings": [
-        { "ticker": "ICICIBANK", "companyName": "ICICI Bank Ltd.", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 8.40 },
-        { "ticker": "HDFCBANK", "companyName": "HDFC Bank Ltd.", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 7.65 },
-        { "ticker": "BEL", "companyName": "Bharat Electronics Ltd.", "sector": "Capital Goods & Defense", "marketCapBucket": "Large Cap", "weightPercent": 5.45 },
-        { "ticker": "ULTRACEMCO", "companyName": "UltraTech Cement Ltd.", "sector": "Cement & Materials", "marketCapBucket": "Large Cap", "weightPercent": 4.90 },
-        { "ticker": "SRF", "companyName": "SRF Ltd.", "sector": "Chemicals", "marketCapBucket": "Mid Cap", "weightPercent": 4.15 }
+        {
+          "ticker": "HDFCBANK",
+          "companyName": "HDFC Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 8.5
+        },
+        {
+          "ticker": "RELIANCE",
+          "companyName": "Reliance Industries Ltd.",
+          "sector": "Energy & Telecom",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 7.2
+        },
+        {
+          "ticker": "ICICIBANK",
+          "companyName": "ICICI Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 6.4
+        },
+        {
+          "ticker": "INFY",
+          "companyName": "Infosys Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.8
+        },
+        {
+          "ticker": "ITC",
+          "companyName": "ITC Ltd.",
+          "sector": "FMCG",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.2
+        },
+        {
+          "ticker": "TCS",
+          "companyName": "Tata Consultancy Services Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 4.6
+        },
+        {
+          "ticker": "LT",
+          "companyName": "Larsen & Toubro Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 4.2
+        },
+        {
+          "ticker": "BHARTIARTL",
+          "companyName": "Bharti Airtel Ltd.",
+          "sector": "Telecom",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.8
+        },
+        {
+          "ticker": "SBIN",
+          "companyName": "State Bank of India",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.5
+        },
+        {
+          "ticker": "AXISBANK",
+          "companyName": "Axis Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.2
+        },
+        {
+          "ticker": "KOTAKBANK",
+          "companyName": "Kotak Mahindra Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.9
+        },
+        {
+          "ticker": "HINDUNILVR",
+          "companyName": "Hindustan Unilever Ltd.",
+          "sector": "FMCG",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.7
+        },
+        {
+          "ticker": "BAJFINANCE",
+          "companyName": "Bajaj Finance Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.5
+        },
+        {
+          "ticker": "MARUTI",
+          "companyName": "Maruti Suzuki India Ltd.",
+          "sector": "Automobile",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.3
+        },
+        {
+          "ticker": "TITAN",
+          "companyName": "Titan Company Ltd.",
+          "sector": "Consumer Discretionary",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.1
+        },
+        {
+          "ticker": "SUNPHARMA",
+          "companyName": "Sun Pharmaceutical Industries Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.9
+        },
+        {
+          "ticker": "TATAMOTORS",
+          "companyName": "Tata Motors Ltd.",
+          "sector": "Automobile",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.8
+        },
+        {
+          "ticker": "NTPC",
+          "companyName": "NTPC Ltd.",
+          "sector": "Utilities & Power",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.7
+        },
+        {
+          "ticker": "ULTRACEMCO",
+          "companyName": "UltraTech Cement Ltd.",
+          "sector": "Materials & Construction",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.6
+        },
+        {
+          "ticker": "POWERGRID",
+          "companyName": "Power Grid Corporation of India Ltd.",
+          "sector": "Utilities & Power",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.5
+        },
+        {
+          "ticker": "ONGC",
+          "companyName": "Oil & Natural Gas Corporation Ltd.",
+          "sector": "Energy",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.4
+        },
+        {
+          "ticker": "COALINDIA",
+          "companyName": "Coal India Ltd.",
+          "sector": "Energy & Mining",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.3
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "TREPS Clearing Corp Repo & Cash",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 23.9
+        }
       ]
     },
     {
@@ -418,14 +3170,170 @@
       "benchmark": "BSE 500 TRI",
       "units": 260.0,
       "investedAmount": 72000.0,
-      "fallbackNav": 389.50,
+      "fallbackNav": 389.5,
       "lastNavDate": "14-10-2026",
       "holdings": [
-        { "ticker": "HDFCBANK", "companyName": "HDFC Bank Ltd.", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 6.20 },
-        { "ticker": "GAIL", "companyName": "GAIL (India) Ltd.", "sector": "Energy & Utilities", "marketCapBucket": "Large Cap", "weightPercent": 4.45 },
-        { "ticker": "ONGC", "companyName": "Oil & Natural Gas Corporation Ltd.", "sector": "Energy & Mining", "marketCapBucket": "Large Cap", "weightPercent": 4.10 },
-        { "ticker": "SBIN", "companyName": "State Bank of India", "sector": "Financial Services", "marketCapBucket": "Large Cap", "weightPercent": 3.85 },
-        { "ticker": "POWERGRID", "companyName": "Power Grid Corporation of India Ltd.", "sector": "Utilities & Power", "marketCapBucket": "Large Cap", "weightPercent": 3.50 }
+        {
+          "ticker": "HDFCBANK",
+          "companyName": "HDFC Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 8.5
+        },
+        {
+          "ticker": "RELIANCE",
+          "companyName": "Reliance Industries Ltd.",
+          "sector": "Energy & Telecom",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 7.2
+        },
+        {
+          "ticker": "ICICIBANK",
+          "companyName": "ICICI Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 6.4
+        },
+        {
+          "ticker": "INFY",
+          "companyName": "Infosys Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.8
+        },
+        {
+          "ticker": "ITC",
+          "companyName": "ITC Ltd.",
+          "sector": "FMCG",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 5.2
+        },
+        {
+          "ticker": "TCS",
+          "companyName": "Tata Consultancy Services Ltd.",
+          "sector": "Technology",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 4.6
+        },
+        {
+          "ticker": "LT",
+          "companyName": "Larsen & Toubro Ltd.",
+          "sector": "Capital Goods",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 4.2
+        },
+        {
+          "ticker": "BHARTIARTL",
+          "companyName": "Bharti Airtel Ltd.",
+          "sector": "Telecom",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.8
+        },
+        {
+          "ticker": "SBIN",
+          "companyName": "State Bank of India",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.5
+        },
+        {
+          "ticker": "AXISBANK",
+          "companyName": "Axis Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 3.2
+        },
+        {
+          "ticker": "KOTAKBANK",
+          "companyName": "Kotak Mahindra Bank Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.9
+        },
+        {
+          "ticker": "HINDUNILVR",
+          "companyName": "Hindustan Unilever Ltd.",
+          "sector": "FMCG",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.7
+        },
+        {
+          "ticker": "BAJFINANCE",
+          "companyName": "Bajaj Finance Ltd.",
+          "sector": "Financial Services",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.5
+        },
+        {
+          "ticker": "MARUTI",
+          "companyName": "Maruti Suzuki India Ltd.",
+          "sector": "Automobile",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.3
+        },
+        {
+          "ticker": "TITAN",
+          "companyName": "Titan Company Ltd.",
+          "sector": "Consumer Discretionary",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 2.1
+        },
+        {
+          "ticker": "SUNPHARMA",
+          "companyName": "Sun Pharmaceutical Industries Ltd.",
+          "sector": "Healthcare",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.9
+        },
+        {
+          "ticker": "TATAMOTORS",
+          "companyName": "Tata Motors Ltd.",
+          "sector": "Automobile",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.8
+        },
+        {
+          "ticker": "NTPC",
+          "companyName": "NTPC Ltd.",
+          "sector": "Utilities & Power",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.7
+        },
+        {
+          "ticker": "ULTRACEMCO",
+          "companyName": "UltraTech Cement Ltd.",
+          "sector": "Materials & Construction",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.6
+        },
+        {
+          "ticker": "POWERGRID",
+          "companyName": "Power Grid Corporation of India Ltd.",
+          "sector": "Utilities & Power",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.5
+        },
+        {
+          "ticker": "ONGC",
+          "companyName": "Oil & Natural Gas Corporation Ltd.",
+          "sector": "Energy",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.4
+        },
+        {
+          "ticker": "COALINDIA",
+          "companyName": "Coal India Ltd.",
+          "sector": "Energy & Mining",
+          "marketCapBucket": "Large Cap",
+          "weightPercent": 1.3
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "TREPS Clearing Corp Repo & Cash",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 23.9
+        }
       ]
     },
     {
@@ -443,10 +3351,153 @@
       "fallbackNav": 106.85,
       "lastNavDate": "14-10-2026",
       "holdings": [
-        { "ticker": "GOI_2037", "companyName": "7.26% Government of India Bond 2037", "sector": "Sovereign Debt", "marketCapBucket": "Debt Sovereign", "weightPercent": 16.40 },
-        { "ticker": "REC_AAA", "companyName": "REC Ltd. 7.75% AAA Bond 2029", "sector": "PSU Debt", "marketCapBucket": "Debt AAA", "weightPercent": 8.90 },
-        { "ticker": "PFC_AAA", "companyName": "Power Finance Corp 7.68% AAA Bond", "sector": "PSU Debt", "marketCapBucket": "Debt AAA", "weightPercent": 8.20 },
-        { "ticker": "LICHF_AAA", "companyName": "LIC Housing Finance AAA NCD", "sector": "Financial Services Debt", "marketCapBucket": "Debt AAA", "weightPercent": 7.15 }
+        {
+          "ticker": "7.18GS2033",
+          "companyName": "7.18% Government of India Sovereign G-Sec 2033",
+          "sector": "Sovereign Debt",
+          "marketCapBucket": "Sovereign G-Sec",
+          "weightPercent": 8.5
+        },
+        {
+          "ticker": "7.26GS2032",
+          "companyName": "7.26% Government of India Sovereign G-Sec 2032",
+          "sector": "Sovereign Debt",
+          "marketCapBucket": "Sovereign G-Sec",
+          "weightPercent": 7.2
+        },
+        {
+          "ticker": "7.06GS2028",
+          "companyName": "7.06% Government of India Sovereign G-Sec 2028",
+          "sector": "Sovereign Debt",
+          "marketCapBucket": "Sovereign G-Sec",
+          "weightPercent": 6.4
+        },
+        {
+          "ticker": "NABARD2028",
+          "companyName": "NABARD AAA Corporate Debenture 2028",
+          "sector": "Financial Institutions",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 5.8
+        },
+        {
+          "ticker": "REC2027",
+          "companyName": "Rural Electrification Corp (REC) AAA Bond 2027",
+          "sector": "Financial Services",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 5.2
+        },
+        {
+          "ticker": "PFC2029",
+          "companyName": "Power Finance Corporation (PFC) AAA Bond 2029",
+          "sector": "Financial Services",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 4.6
+        },
+        {
+          "ticker": "HDFCBOND28",
+          "companyName": "HDFC Bank AAA Corporate Bond 2028",
+          "sector": "Banking & Finance",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 4.2
+        },
+        {
+          "ticker": "SIDBI2026",
+          "companyName": "Small Industries Development Bank AAA Bond 2026",
+          "sector": "Financial Institutions",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 3.8
+        },
+        {
+          "ticker": "NHAI2030",
+          "companyName": "National Highways Authority of India AAA Bond 2030",
+          "sector": "Infrastructure Debt",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 3.5
+        },
+        {
+          "ticker": "LTCORP2027",
+          "companyName": "Larsen & Toubro Ltd. AAA Commercial Bond",
+          "sector": "Capital Goods Debt",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 3.2
+        },
+        {
+          "ticker": "IOCBOND2026",
+          "companyName": "Indian Oil Corporation AAA Corporate Bond",
+          "sector": "Energy & Petroleum",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 2.9
+        },
+        {
+          "ticker": "NTPCBOND27",
+          "companyName": "NTPC Ltd. AAA Debenture 2027",
+          "sector": "Power & Utilities",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 2.7
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "Clearing Corp of India TREPS / Overnight Repo",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 2.5
+        },
+        {
+          "ticker": "91DTB2026",
+          "companyName": "91-Day Government of India Treasury Bill",
+          "sector": "Money Market",
+          "marketCapBucket": "Sovereign T-Bill",
+          "weightPercent": 2.3
+        },
+        {
+          "ticker": "182DTB2026",
+          "companyName": "182-Day Government of India Treasury Bill",
+          "sector": "Money Market",
+          "marketCapBucket": "Sovereign T-Bill",
+          "weightPercent": 2.1
+        },
+        {
+          "ticker": "AXISCORP27",
+          "companyName": "Axis Bank AAA Tier-2 Debenture 2027",
+          "sector": "Banking & Finance",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.9
+        },
+        {
+          "ticker": "BAJAJCORP28",
+          "companyName": "Bajaj Finance Ltd. AAA Secured Bond 2028",
+          "sector": "NBFC Debt",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.8
+        },
+        {
+          "ticker": "LICHSG2027",
+          "companyName": "LIC Housing Finance AAA Secured Bond 2027",
+          "sector": "Housing Finance",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.7
+        },
+        {
+          "ticker": "MAHINDCORP",
+          "companyName": "Mahindra & Mahindra Financial Services AAA Bond",
+          "sector": "NBFC Debt",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.6
+        },
+        {
+          "ticker": "RELCORP2027",
+          "companyName": "Reliance Industries AAA Corporate Debenture",
+          "sector": "Energy Debt",
+          "marketCapBucket": "AAA Debt",
+          "weightPercent": 1.5
+        },
+        {
+          "ticker": "TREPS_CASH",
+          "companyName": "TREPS Clearing Corp Repo & Cash",
+          "sector": "Cash & Cash Equivalents",
+          "marketCapBucket": "Cash Equivalent",
+          "weightPercent": 26.6
+        }
       ]
     }
   ]
