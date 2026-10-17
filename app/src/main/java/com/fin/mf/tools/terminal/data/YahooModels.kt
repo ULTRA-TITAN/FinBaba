@@ -113,7 +113,8 @@ enum class TerminalTimeframe(
 data class TerminalChartPoint(
     val epochMs: Long,
     val price: Double,
-    val dateFormatted: String
+    val dateFormatted: String,
+    val volume: Long = 0L
 )
 
 /**

@@ -3,7 +3,26 @@ package com.fin.mf.data
 import com.squareup.moshi.Json
 
 /**
- * Root JSON structure matching `portfolio_seed.json` and `portfolio_active.json`.
+ * Central registry manifest tracking all locally saved portfolios (`portfolios_manifest.json`).
+ */
+data class PortfolioManifest(
+    @Json(name = "activePortfolioId") val activePortfolioId: String,
+    @Json(name = "portfolios") val portfolios: List<PortfolioMeta>
+)
+
+/**
+ * Metadata descriptor for an individual portfolio file (`portfolio_{id}.json`).
+ */
+data class PortfolioMeta(
+    @Json(name = "id") val id: String,
+    @Json(name = "name") val name: String,
+    @Json(name = "createdAtEpochMs") val createdAtEpochMs: Long,
+    @Json(name = "schemeCount") val schemeCount: Int,
+    @Json(name = "totalValue") val totalValue: Double
+)
+
+/**
+ * Root JSON structure matching `portfolio_seed.json` and `portfolio_{id}.json`.
  */
 data class PortfolioData(
     @Json(name = "portfolioName") val portfolioName: String,

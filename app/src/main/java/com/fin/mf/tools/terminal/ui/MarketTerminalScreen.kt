@@ -5,6 +5,8 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,8 +31,10 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -59,6 +63,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -68,6 +73,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fin.mf.core.theme.AppearanceSettingsSheet
 import com.fin.mf.core.theme.LocalVaultGradient
+import com.fin.mf.core.theme.SemanticFinanceColors
 import com.fin.mf.core.theme.VaultThemeManager
 import com.fin.mf.tools.terminal.charts.BenchmarkOverlayChart
 import com.fin.mf.tools.terminal.charts.DualPointerAnalyzerChart
@@ -135,11 +141,11 @@ fun MarketTerminalScreen(
                         }
                     },
                     actions = {
-                        // Studio Appearance & Gradients
+                        // Studio Settings & Appearance
                         IconButton(onClick = { showAppearanceSheet = true }) {
                             Icon(
-                                imageVector = Icons.Default.Palette,
-                                contentDescription = "Studio Appearance & Gradients",
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Terminal Settings",
                                 tint = gradient.startColor
                             )
                         }
@@ -323,37 +329,134 @@ fun MarketTerminalScreen(
                     }
                 }
 
-                // 2. Watchlist & Benchmark Quick-Picker Chips
+                // 2. Watchlist & Benchmark Quick-Picker (2-Column Grid)
                 item {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(horizontal = 2.dp)
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(uiState.watchlist, key = { it.symbol }) { stock ->
-                            val isSelected = stock.symbol.equals(uiState.selectedSymbol, ignoreCase = true)
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { terminalViewModel.selectSymbol(stock.symbol) },
-                                label = {
-                                    Text(
-                                        text = stock.name.take(16),
-                                        fontSize = 12.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                    )
-                                },
-                                shape = RoundedCornerShape(10.dp),
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = gradient.startColor,
-                                    selectedLabelColor = Color.White,
-                                    containerColor = TerminalSurface,
-                                    labelColor = TerminalSlatePrimary
-                                ),
-                                border = FilterChipDefaults.filterChipBorder(
-                                    enabled = true,
-                                    selected = isSelected,
-                                    borderColor = if (isSelected) gradient.startColor else TerminalSlateBorder
-                                )
-                            )
+                        Text(
+                            text = "WATCHLIST & ASSET PICKER",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TerminalSlateSecondary,
+                            letterSpacing = 0.5.sp
+                        )
+
+                        uiState.watchlist.chunked(2).forEach { rowStocks ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                rowStocks.forEach { stock ->
+                                    val isSelected = stock.symbol.equals(uiState.selectedSymbol, ignoreCase = true)
+                                    val exchangeBadge = when {
+                                        stock.symbol.startsWith("^") -> "INDEX"
+                                        stock.symbol.endsWith(".NS") -> "NSE"
+                                        stock.symbol.endsWith(".BO") -> "BSE"
+                                        else -> "US"
+                                    }
+                                    val activeQuote = uiState.activeQuote
+                                    val currentPrice = if (isSelected && activeQuote != null) {
+                                        activeQuote.regularMarketPrice
+                                    } else stock.lastPrice
+
+                                    val currentPct = if (isSelected && activeQuote != null) {
+                                        activeQuote.dayChangePercent
+                                    } else stock.dayChangePercent
+
+                                    val currencyCode = if (isSelected && activeQuote != null) {
+                                        activeQuote.currency
+                                    } else (stock.currency ?: "INR")
+
+                                    Surface(
+                                        onClick = { terminalViewModel.selectSymbol(stock.symbol) },
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = if (isSelected) gradient.startColor.copy(alpha = 0.08f) else Color.White,
+                                        border = BorderStroke(
+                                            width = if (isSelected) 1.5.dp else 1.dp,
+                                            color = if (isSelected) gradient.startColor else TerminalSlateBorder
+                                        ),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(58.dp)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                                            verticalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                val cleanTicker = stock.symbol.removeSuffix(".NS").removeSuffix(".BO")
+                                                Text(
+                                                    text = cleanTicker,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = if (isSelected) gradient.startColor else TerminalSlatePrimary,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    modifier = Modifier.weight(1f, fill = false)
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Box(
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(4.dp))
+                                                        .background(
+                                                            if (isSelected) gradient.startColor.copy(alpha = 0.15f)
+                                                            else Color(0xFFF1F5F9)
+                                                        )
+                                                        .padding(horizontal = 4.dp, vertical = 1.dp)
+                                                ) {
+                                                    Text(
+                                                        text = exchangeBadge,
+                                                        fontSize = 9.sp,
+                                                        fontWeight = FontWeight.ExtraBold,
+                                                        color = if (isSelected) gradient.startColor else TerminalSlateSecondary
+                                                    )
+                                                }
+                                            }
+
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                val priceText = if (currentPrice != null) {
+                                                    val prefix = if (currencyCode.equals("USD", ignoreCase = true)) "$" else "₹"
+                                                    "$prefix${String.format(java.util.Locale.US, "%,.2f", currentPrice)}"
+                                                } else "--"
+
+                                                Text(
+                                                    text = priceText,
+                                                    fontSize = 11.5.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = TerminalSlatePrimary
+                                                )
+
+                                                if (currentPct != null) {
+                                                    val isPositive = currentPct >= 0.0
+                                                    val pctColor = if (isPositive) SemanticFinanceColors.ProfitGreen else SemanticFinanceColors.LossRed
+                                                    val sign = if (isPositive) "+" else ""
+                                                    Text(
+                                                        text = "$sign${String.format(java.util.Locale.US, "%.2f", currentPct)}%",
+                                                        fontSize = 10.5.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = pctColor
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                if (rowStocks.size == 1) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
+                            }
                         }
                     }
                 }
@@ -408,14 +511,14 @@ fun MarketTerminalScreen(
                                 onClick = { terminalViewModel.toggleDualPointerMode() },
                                 label = {
                                     Text(
-                                        text = "2-Point Analyzer",
+                                        text = "Measure / Ruler",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 },
                                 leadingIcon = {
                                     Icon(
-                                        imageVector = Icons.Default.Timeline,
+                                        imageVector = Icons.Default.Straighten,
                                         contentDescription = null,
                                         modifier = Modifier.size(14.dp)
                                     )
@@ -539,13 +642,15 @@ fun MarketTerminalScreen(
                                         pointerB = uiState.pointerB,
                                         currency = uiState.activeQuote?.currency ?: "INR",
                                         onPointerAChanged = { terminalViewModel.setPointerA(it) },
-                                        onPointerBChanged = { terminalViewModel.setPointerB(it) }
+                                        onPointerBChanged = { terminalViewModel.setPointerB(it) },
+                                        onExitRulerMode = { terminalViewModel.toggleDualPointerMode() }
                                     )
                                 } else {
                                     StandardInteractiveChart(
                                         points = points,
                                         scrubbedPoint = uiState.scrubbedPoint,
                                         isPositive = (uiState.activeQuote?.periodReturnPercent ?: 0.0) >= 0.0,
+                                        currency = uiState.activeQuote?.currency ?: "INR",
                                         onScrub = { terminalViewModel.setScrubbedPoint(it) }
                                     )
                                 }

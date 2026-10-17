@@ -42,49 +42,218 @@ class PortfolioRepository(
         NetworkClient.moshi.adapter(PortfolioData::class.java).indent("  ")
     }
 
-    private val activeFile: File
-        get() = File(appContext.filesDir, ACTIVE_PORTFOLIO_FILENAME)
+    private val manifestAdapter: JsonAdapter<PortfolioManifest> by lazy {
+        NetworkClient.moshi.adapter(PortfolioManifest::class.java).indent("  ")
+    }
+
+    private val manifestFile: File
+        get() = File(appContext.filesDir, MANIFEST_FILENAME)
+
+    private fun portfolioFile(id: String): File {
+        val sanitized = id.replace("[^a-zA-Z0-9_-]".toRegex(), "_")
+        return File(appContext.filesDir, "portfolio_$sanitized.json")
+    }
 
     /**
-     * Loads the active portfolio from internal storage (`portfolio_active.json`).
+     * Retrieves the current portfolios manifest tracking all saved portfolios.
+     */
+    suspend fun getManifest(): PortfolioManifest = withContext(Dispatchers.IO) {
+        fileMutex.withLock {
+            readManifestLocked()
+        }
+    }
+
+    /**
+     * Loads the active portfolio according to `portfolios_manifest.json`.
      * If existing portfolio schemes have sparse holdings (< 15 constituents), it auto-hydrates
      * them with full look-through constituents from [HoldingsEngine] and persists to disk.
      */
     suspend fun loadPortfolio(): PortfolioData = withContext(Dispatchers.IO) {
         fileMutex.withLock {
-            if (activeFile.exists() && activeFile.length() > 0L) {
-                runCatching {
-                    val jsonString = activeFile.readText(Charsets.UTF_8)
-                    portfolioAdapter.fromJson(jsonString)
-                }.getOrNull()?.let { existingPortfolio ->
-                    val needsEnrichment = existingPortfolio.schemes.any { it.holdings.size < 15 }
-                    if (needsEnrichment) {
-                        val seed = runCatching { readSeedFromAssetsLocked() }.getOrNull()
-                        val seedMap = seed?.schemes?.associateBy { it.schemeCode }.orEmpty()
+            val manifest = readManifestLocked()
+            val activePortfolio = readActiveOrSeedLocked()
 
-                        val enrichedSchemes = existingPortfolio.schemes.map { s ->
-                            if (s.holdings.size < 15) {
-                                val seedScheme = seedMap[s.schemeCode]
-                                val enrichedHoldings = if (seedScheme != null && seedScheme.holdings.size >= 15) {
-                                    seedScheme.holdings
-                                } else {
-                                    HoldingsEngine.generateHoldings(s.schemeCode, s.schemeName, s.category, s.assetClass)
-                                }
-                                s.copy(holdings = enrichedHoldings)
-                            } else s
+            val needsEnrichment = activePortfolio.schemes.any { it.holdings.size < 15 }
+            if (needsEnrichment) {
+                val seed = runCatching { readSeedFromAssetsLocked() }.getOrNull()
+                val seedMap = seed?.schemes?.associateBy { it.schemeCode }.orEmpty()
+
+                val enrichedSchemes = activePortfolio.schemes.map { s ->
+                    if (s.holdings.size < 15) {
+                        val seedScheme = seedMap[s.schemeCode]
+                        val enrichedHoldings = if (seedScheme != null && seedScheme.holdings.size >= 15) {
+                            seedScheme.holdings
+                        } else {
+                            HoldingsEngine.generateHoldings(s.schemeCode, s.schemeName, s.category, s.assetClass)
                         }
-                        val hydratedPortfolio = existingPortfolio.copy(schemes = enrichedSchemes)
-                        writePortfolioToDiskLocked(hydratedPortfolio)
-                        return@withLock hydratedPortfolio
-                    }
-                    return@withLock existingPortfolio
+                        s.copy(holdings = enrichedHoldings)
+                    } else s
+                }
+                val hydratedPortfolio = activePortfolio.copy(schemes = enrichedSchemes)
+                writePortfolioToDiskLocked(hydratedPortfolio, manifest.activePortfolioId)
+                return@withLock hydratedPortfolio
+            }
+            activePortfolio
+        }
+    }
+
+    /**
+     * Switches the active portfolio to [portfolioId] and returns its loaded [PortfolioData].
+     */
+    suspend fun switchPortfolio(portfolioId: String): PortfolioData = withContext(Dispatchers.IO) {
+        fileMutex.withLock {
+            val manifest = readManifestLocked()
+            val targetMeta = manifest.portfolios.firstOrNull { it.id == portfolioId }
+                ?: throw IllegalArgumentException("Portfolio with id '$portfolioId' does not exist")
+
+            val updatedManifest = manifest.copy(activePortfolioId = targetMeta.id)
+            writeTextAtomically(manifestFile, manifestAdapter.toJson(updatedManifest))
+
+            readActiveOrSeedLocked()
+        }
+    }
+
+    /**
+     * Creates a new portfolio (either empty or seeded with default schemes) and makes it active.
+     */
+    suspend fun createNewPortfolio(name: String, seedWithDefault: Boolean): PortfolioData = withContext(Dispatchers.IO) {
+        fileMutex.withLock {
+            val manifest = readManifestLocked()
+            val newId = "p_${System.currentTimeMillis()}"
+            val newPortfolioName = name.ifBlank { "New Portfolio" }
+
+            val initialPortfolio = if (seedWithDefault) {
+                readSeedFromAssetsLocked().copy(
+                    portfolioName = newPortfolioName,
+                    lastSyncedEpochMs = System.currentTimeMillis()
+                )
+            } else {
+                PortfolioData(
+                    portfolioName = newPortfolioName,
+                    ownerName = "Vault Owner",
+                    lastSyncedEpochMs = System.currentTimeMillis(),
+                    schemes = emptyList()
+                )
+            }
+
+            // Save new portfolio file atomically
+            writePortfolioToDiskLocked(initialPortfolio, newId)
+
+            // Register in manifest as active
+            val newMeta = PortfolioMeta(
+                id = newId,
+                name = newPortfolioName,
+                createdAtEpochMs = System.currentTimeMillis(),
+                schemeCount = initialPortfolio.schemes.size,
+                totalValue = initialPortfolio.schemes.sumOf { it.currentValue }
+            )
+            val updatedManifest = manifest.copy(
+                activePortfolioId = newId,
+                portfolios = manifest.portfolios + newMeta
+            )
+            writeTextAtomically(manifestFile, manifestAdapter.toJson(updatedManifest))
+
+            initialPortfolio
+        }
+    }
+
+    /**
+     * Renames an existing portfolio in the manifest and on disk.
+     */
+    suspend fun renamePortfolio(portfolioId: String, newName: String): PortfolioManifest = withContext(Dispatchers.IO) {
+        fileMutex.withLock {
+            val manifest = readManifestLocked()
+            val cleanName = newName.ifBlank { "Portfolio" }
+
+            val file = portfolioFile(portfolioId)
+            if (file.exists()) {
+                runCatching {
+                    val p = readPortfolioFromFileLocked(file, portfolioId)
+                    writePortfolioToDiskLocked(p.copy(portfolioName = cleanName), portfolioId)
                 }
             }
 
-            // Fallback / First-launch: read from assets/portfolio_seed.json and persist to internal storage
-            val seedPortfolio = readSeedFromAssetsLocked()
-            writePortfolioToDiskLocked(seedPortfolio)
-            seedPortfolio
+            val updatedPortfolios = manifest.portfolios.map { meta ->
+                if (meta.id == portfolioId) meta.copy(name = cleanName) else meta
+            }
+            val updatedManifest = manifest.copy(portfolios = updatedPortfolios)
+            writeTextAtomically(manifestFile, manifestAdapter.toJson(updatedManifest))
+            updatedManifest
+        }
+    }
+
+    /**
+     * Deletes a portfolio from disk and manifest. Fails if it is the only remaining portfolio.
+     */
+    suspend fun deletePortfolio(portfolioId: String): PortfolioManifest = withContext(Dispatchers.IO) {
+        fileMutex.withLock {
+            val manifest = readManifestLocked()
+            if (manifest.portfolios.size <= 1) {
+                throw IllegalStateException("Cannot delete the only remaining portfolio.")
+            }
+
+            // Delete portfolio file and any backup
+            val file = portfolioFile(portfolioId)
+            if (file.exists()) {
+                file.delete()
+            }
+            val bak = File(file.parentFile, "${file.name}.bak")
+            if (bak.exists()) {
+                bak.delete()
+            }
+
+            val remainingPortfolios = manifest.portfolios.filter { it.id != portfolioId }
+            val nextActiveId = if (manifest.activePortfolioId == portfolioId) {
+                remainingPortfolios.first().id
+            } else {
+                manifest.activePortfolioId
+            }
+
+            val updatedManifest = manifest.copy(
+                activePortfolioId = nextActiveId,
+                portfolios = remainingPortfolios
+            )
+            writeTextAtomically(manifestFile, manifestAdapter.toJson(updatedManifest))
+            updatedManifest
+        }
+    }
+
+    /**
+     * Duplicates an existing portfolio and marks the copy as active.
+     */
+    suspend fun duplicatePortfolio(portfolioId: String, newName: String): PortfolioData = withContext(Dispatchers.IO) {
+        fileMutex.withLock {
+            val manifest = readManifestLocked()
+            val srcFile = portfolioFile(portfolioId)
+            val sourcePortfolio = if (srcFile.exists()) {
+                readPortfolioFromFileLocked(srcFile, portfolioId)
+            } else {
+                readActiveOrSeedLocked()
+            }
+
+            val newId = "p_${System.currentTimeMillis()}"
+            val duplicateName = newName.ifBlank { "${sourcePortfolio.portfolioName} (Copy)" }
+            val duplicatedData = sourcePortfolio.copy(
+                portfolioName = duplicateName,
+                lastSyncedEpochMs = System.currentTimeMillis()
+            )
+
+            writePortfolioToDiskLocked(duplicatedData, newId)
+
+            val newMeta = PortfolioMeta(
+                id = newId,
+                name = duplicateName,
+                createdAtEpochMs = System.currentTimeMillis(),
+                schemeCount = duplicatedData.schemes.size,
+                totalValue = duplicatedData.schemes.sumOf { it.currentValue }
+            )
+            val updatedManifest = manifest.copy(
+                activePortfolioId = newId,
+                portfolios = manifest.portfolios + newMeta
+            )
+            writeTextAtomically(manifestFile, manifestAdapter.toJson(updatedManifest))
+
+            duplicatedData
         }
     }
 
@@ -100,7 +269,7 @@ class PortfolioRepository(
     }
 
     /**
-     * Creates a new empty or custom portfolio and overwrites `portfolio_active.json`.
+     * Creates a new empty or custom portfolio and overwrites the active portfolio.
      */
     suspend fun createCustomPortfolio(name: String, owner: String): PortfolioData = withContext(Dispatchers.IO) {
         fileMutex.withLock {
@@ -637,16 +806,94 @@ class PortfolioRepository(
             Pair(parsedNav, topEntry.date)
         }
 
-    private fun readActiveOrSeedLocked(): PortfolioData {
-        if (activeFile.exists() && activeFile.length() > 0L) {
+    private fun readManifestLocked(): PortfolioManifest {
+        if (manifestFile.exists() && manifestFile.length() > 0L) {
             runCatching {
-                val json = activeFile.readText(Charsets.UTF_8)
-                portfolioAdapter.fromJson(json)
+                val json = manifestFile.readText(Charsets.UTF_8)
+                manifestAdapter.fromJson(json)
             }.getOrNull()?.let { return it }
         }
+
+        // Initialize / Migrate manifest
+        val defaultFile = portfolioFile(DEFAULT_PORTFOLIO_ID)
+        val legacyFile = File(appContext.filesDir, LEGACY_ACTIVE_PORTFOLIO_FILENAME)
+
+        val initialData: PortfolioData = if (defaultFile.exists() && defaultFile.length() > 0L) {
+            runCatching {
+                readPortfolioFromFileLocked(defaultFile, DEFAULT_PORTFOLIO_ID)
+            }.getOrNull() ?: readSeedFromAssetsLocked()
+        } else if (legacyFile.exists() && legacyFile.length() > 0L) {
+            val legacyData = runCatching {
+                val json = legacyFile.readText(Charsets.UTF_8)
+                portfolioAdapter.fromJson(json)
+            }.getOrNull() ?: readSeedFromAssetsLocked()
+            writeTextAtomically(defaultFile, portfolioAdapter.toJson(legacyData))
+            runCatching { legacyFile.delete() }
+            legacyData
+        } else {
+            val seed = readSeedFromAssetsLocked()
+            writeTextAtomically(defaultFile, portfolioAdapter.toJson(seed))
+            seed
+        }
+
+        val initialManifest = PortfolioManifest(
+            activePortfolioId = DEFAULT_PORTFOLIO_ID,
+            portfolios = listOf(
+                PortfolioMeta(
+                    id = DEFAULT_PORTFOLIO_ID,
+                    name = initialData.portfolioName.ifBlank { "Institutional Core" },
+                    createdAtEpochMs = System.currentTimeMillis(),
+                    schemeCount = initialData.schemes.size,
+                    totalValue = initialData.schemes.sumOf { it.currentValue }
+                )
+            )
+        )
+        writeTextAtomically(manifestFile, manifestAdapter.toJson(initialManifest))
+        return initialManifest
+    }
+
+    private fun readActiveOrSeedLocked(): PortfolioData {
+        val manifest = readManifestLocked()
+        val targetFile = portfolioFile(manifest.activePortfolioId)
+        if (targetFile.exists() && targetFile.length() > 0L) {
+            try {
+                return readPortfolioFromFileLocked(targetFile, manifest.activePortfolioId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        // Fallback to default portfolio
+        val defaultFile = portfolioFile(DEFAULT_PORTFOLIO_ID)
+        if (defaultFile.exists() && defaultFile.length() > 0L) {
+            try {
+                return readPortfolioFromFileLocked(defaultFile, DEFAULT_PORTFOLIO_ID)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        // Seed fallback
         val seed = readSeedFromAssetsLocked()
-        writePortfolioToDiskLocked(seed)
+        writePortfolioToDiskLocked(seed, DEFAULT_PORTFOLIO_ID)
         return seed
+    }
+
+    private fun readPortfolioFromFileLocked(file: File, portfolioId: String): PortfolioData {
+        if (!file.exists() || file.length() == 0L) {
+            throw IOException("File $file not found or empty")
+        }
+        try {
+            val json = file.readText(Charsets.UTF_8)
+            val parsed = portfolioAdapter.fromJson(json)
+            if (parsed != null) return parsed
+            throw IOException("Null parsed from JSON in $file")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            val bak = File(file.parentFile, "${file.name}.bak")
+            runCatching { file.renameTo(bak) }
+            throw e
+        }
     }
 
     private fun readSeedFromAssetsLocked(): PortfolioData {
@@ -657,22 +904,45 @@ class PortfolioRepository(
             ?: throw IOException("Failed to deserialize $SEED_PORTFOLIO_FILENAME")
     }
 
-    private fun writePortfolioToDiskLocked(portfolio: PortfolioData) {
-        val tempFile = File(appContext.filesDir, "$ACTIVE_PORTFOLIO_FILENAME.tmp")
-        val jsonOutput = portfolioAdapter.toJson(portfolio)
-        tempFile.writeText(jsonOutput, Charsets.UTF_8)
-        if (activeFile.exists()) {
-            activeFile.delete()
+    private fun writePortfolioToDiskLocked(portfolio: PortfolioData, portfolioId: String? = null) {
+        val manifest = readManifestLocked()
+        val targetId = portfolioId ?: manifest.activePortfolioId
+        val targetFile = portfolioFile(targetId)
+
+        // Write portfolio atomically
+        writeTextAtomically(targetFile, portfolioAdapter.toJson(portfolio))
+
+        // Update manifest
+        val updatedPortfolios = manifest.portfolios.map { meta ->
+            if (meta.id == targetId) {
+                meta.copy(
+                    name = portfolio.portfolioName.ifBlank { meta.name },
+                    schemeCount = portfolio.schemes.size,
+                    totalValue = portfolio.schemes.sumOf { it.currentValue }
+                )
+            } else meta
         }
-        val renamed = tempFile.renameTo(activeFile)
+        val updatedManifest = manifest.copy(portfolios = updatedPortfolios)
+        writeTextAtomically(manifestFile, manifestAdapter.toJson(updatedManifest))
+    }
+
+    private fun writeTextAtomically(targetFile: File, content: String) {
+        val tempFile = File(targetFile.parentFile, "${targetFile.name}.tmp")
+        tempFile.writeText(content, Charsets.UTF_8)
+        if (targetFile.exists()) {
+            targetFile.delete()
+        }
+        val renamed = tempFile.renameTo(targetFile)
         if (!renamed) {
-            activeFile.writeText(jsonOutput, Charsets.UTF_8)
+            targetFile.writeText(content, Charsets.UTF_8)
             tempFile.delete()
         }
     }
 
     companion object {
         private const val SEED_PORTFOLIO_FILENAME = "portfolio_seed.json"
-        private const val ACTIVE_PORTFOLIO_FILENAME = "portfolio_active.json"
+        private const val LEGACY_ACTIVE_PORTFOLIO_FILENAME = "portfolio_active.json"
+        private const val MANIFEST_FILENAME = "portfolios_manifest.json"
+        const val DEFAULT_PORTFOLIO_ID = "default"
     }
 }

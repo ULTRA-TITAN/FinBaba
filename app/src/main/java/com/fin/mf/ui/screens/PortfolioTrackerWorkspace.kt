@@ -2,6 +2,7 @@ package com.fin.mf.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,14 +14,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.AutoGraph
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import com.fin.mf.data.PortfolioMeta
+import com.fin.mf.ui.workspace.dialogs.PortfolioSwitcherBottomSheet
+import com.fin.mf.ui.workspace.dialogs.CreatePortfolioDialog
+import com.fin.mf.ui.workspace.dialogs.RenamePortfolioDialog
+import com.fin.mf.ui.workspace.dialogs.DeletePortfolioDialog
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PieChart
@@ -124,6 +132,10 @@ fun PortfolioTrackerWorkspace(
     var showSettingsDialog by rememberSaveable { mutableStateOf(false) }
     var showAppearanceSheet by rememberSaveable { mutableStateOf(false) }
     var schemeToDelete by remember { mutableStateOf<MutualFundScheme?>(null) }
+    var showPortfolioSwitcherSheet by rememberSaveable { mutableStateOf(false) }
+    var showCreatePortfolioDialog by rememberSaveable { mutableStateOf(false) }
+    var portfolioToRename by remember { mutableStateOf<PortfolioMeta?>(null) }
+    var portfolioToDelete by remember { mutableStateOf<PortfolioMeta?>(null) }
 
     LaunchedEffect(activeTab) {
         if (activeTab == WorkspaceTab.MF_HUNTER &&
@@ -155,30 +167,58 @@ fun PortfolioTrackerWorkspace(
                 },
                 title = {
                     Column {
-                        Text(
-                            text = "MF Portfolio & Look-Through",
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = WsSlateTextPrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = "${uiState.portfolioData?.schemes?.size ?: 0} Active Schemes • Live AMFI",
-                            fontSize = 11.sp,
-                            color = WsSlateTextSecondary
-                        )
+                        val isXRay = activeTab == WorkspaceTab.XRAY
+                        val schemeCount = uiState.portfolioData?.schemes?.size ?: 0
+                        val holdingsCount = uiState.analytics?.topHoldings?.size ?: 0
+
+                        if (isXRay) {
+                            Text(
+                                text = "Portfolio X-Ray",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = WsSlateTextPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = "DEEP DIAGNOSTICS • $schemeCount FUNDS • $holdingsCount STOCKS",
+                                fontSize = 11.sp,
+                                color = WsSlateTextSecondary
+                            )
+                        } else {
+                            val activeName = uiState.portfolioData?.portfolioName ?: "Portfolio"
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { showPortfolioSwitcherSheet = true }
+                                    .padding(vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = activeName,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = WsSlateTextPrimary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "Switch Portfolio",
+                                    tint = gradient.startColor,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Text(
+                                text = "$schemeCount Active Schemes • Tap to Switch",
+                                fontSize = 11.sp,
+                                color = WsSlateTextSecondary
+                            )
+                        }
                     }
                 },
                 actions = {
-                    // Appearance Studio Palette Toggle
-                    IconButton(onClick = { showAppearanceSheet = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Palette,
-                            contentDescription = "Studio Appearance & Gradients",
-                            tint = gradient.startColor
-                        )
-                    }
                     // Privacy Mask Toggle
                     IconButton(onClick = { portfolioViewModel.togglePrivacyMask() }) {
                         Icon(
@@ -358,7 +398,8 @@ fun PortfolioTrackerWorkspace(
                             onSchemeClick = { schemeCode ->
                                 portfolioViewModel.selectSchemeForDeepDive(schemeCode)
                                 activeTab = WorkspaceTab.MF_HUNTER
-                            }
+                            },
+                            portfolioData = uiState.portfolioData
                         )
                     }
                     WorkspaceTab.MF_HUNTER -> {
@@ -465,6 +506,79 @@ fun PortfolioTrackerWorkspace(
         AppearanceSettingsSheet(
             themeManager = themeManager,
             onDismiss = { showAppearanceSheet = false }
+        )
+    }
+
+    // Portfolio Switcher Bottom Sheet
+    if (showPortfolioSwitcherSheet) {
+        val manifest = uiState.portfolioManifest ?: com.fin.mf.data.PortfolioManifest(
+            activePortfolioId = "default",
+            portfolios = listOf(
+                PortfolioMeta(
+                    id = "default",
+                    name = uiState.portfolioData?.portfolioName ?: "Institutional Portfolio",
+                    createdAtEpochMs = System.currentTimeMillis(),
+                    schemeCount = uiState.portfolioData?.schemes?.size ?: 0,
+                    totalValue = uiState.analytics?.totalCurrentValue ?: 0.0
+                )
+            )
+        )
+        PortfolioSwitcherBottomSheet(
+            manifest = manifest,
+            isMasked = uiState.isPrivacyMasked,
+            onSelectPortfolio = { id ->
+                portfolioViewModel.switchPortfolio(id)
+                showPortfolioSwitcherSheet = false
+            },
+            onRequestCreate = {
+                showPortfolioSwitcherSheet = false
+                showCreatePortfolioDialog = true
+            },
+            onRequestRename = { meta ->
+                portfolioToRename = meta
+            },
+            onRequestDuplicate = { meta ->
+                portfolioViewModel.duplicatePortfolio(meta.id, "${meta.name} (Copy)")
+            },
+            onRequestDelete = { meta ->
+                portfolioToDelete = meta
+            },
+            onDismiss = { showPortfolioSwitcherSheet = false }
+        )
+    }
+
+    // Create Portfolio Dialog
+    if (showCreatePortfolioDialog) {
+        CreatePortfolioDialog(
+            onDismiss = { showCreatePortfolioDialog = false },
+            onConfirm = { name, seedWithDefault ->
+                portfolioViewModel.createNewPortfolio(name, seedWithDefault)
+                showCreatePortfolioDialog = false
+            }
+        )
+    }
+
+    // Rename Portfolio Dialog
+    portfolioToRename?.let { meta ->
+        RenamePortfolioDialog(
+            currentName = meta.name,
+            onDismiss = { portfolioToRename = null },
+            onConfirm = { newName ->
+                portfolioViewModel.renamePortfolio(meta.id, newName)
+                portfolioToRename = null
+            }
+        )
+    }
+
+    // Delete Portfolio Dialog
+    portfolioToDelete?.let { meta ->
+        DeletePortfolioDialog(
+            portfolioName = meta.name,
+            onDismiss = { portfolioToDelete = null },
+            onConfirm = {
+                portfolioViewModel.deletePortfolio(meta.id)
+                portfolioToDelete = null
+            }
         )
     }
 }

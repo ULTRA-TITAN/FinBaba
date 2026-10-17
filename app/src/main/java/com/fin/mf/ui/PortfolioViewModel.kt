@@ -61,7 +61,8 @@ data class PortfolioUiState(
     val comparisonTimeframe: ChartTimeframe = ChartTimeframe.ONE_YEAR,
     val customComparisonStartEpochMs: Long? = null,
     val customComparisonEndEpochMs: Long? = null,
-    val inspectedExternalScheme: MutualFundScheme? = null
+    val inspectedExternalScheme: MutualFundScheme? = null,
+    val portfolioManifest: com.fin.mf.data.PortfolioManifest? = null
 ) {
     /**
      * Dynamically filtered and sorted schemes based on the user's search query and asset class filter.
@@ -139,20 +140,28 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
      * Loads `portfolio_active.json` (or seeds it from `assets/portfolio_seed.json` on first boot),
      * computes look-through analytics immediately, and triggers a background live NAV sync.
      */
+    /**
+     * Loads the active portfolio and manifest, computes look-through analytics immediately,
+     * and triggers a background live NAV sync.
+     */
     fun loadInitialPortfolio() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             runCatching {
                 val portfolio = repository.loadPortfolio()
-                val analytics = repository.computeAnalytics(portfolio)
-                Pair(portfolio, analytics)
-            }.onSuccess { (portfolio, analytics) ->
+                val manifest = repository.getManifest()
+                val analytics = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    repository.computeAnalytics(portfolio)
+                }
+                Triple(portfolio, manifest, analytics)
+            }.onSuccess { (portfolio, manifest, analytics) ->
                 val firstSchemeCode = portfolio.schemes.firstOrNull()?.schemeCode
                 val initialComparison = portfolio.schemes.take(2).map { it.schemeCode }
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         portfolioData = portfolio,
+                        portfolioManifest = manifest,
                         analytics = analytics,
                         selectedSchemeCode = it.selectedSchemeCode ?: firstSchemeCode,
                         comparisonSchemeCodes = if (it.comparisonSchemeCodes.isEmpty()) initialComparison else it.comparisonSchemeCodes
@@ -165,6 +174,159 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
             }.onFailure { error ->
                 _uiState.update { it.copy(isLoading = false) }
                 postStatusBanner("Failed to load portfolio: ${error.localizedMessage}")
+            }
+        }
+    }
+
+    /**
+     * Switches the active portfolio to [portfolioId], recalculates all analytics on Dispatchers.Default,
+     * and updates the UI state.
+     */
+    fun switchPortfolio(portfolioId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            runCatching {
+                val newPortfolio = repository.switchPortfolio(portfolioId)
+                val newManifest = repository.getManifest()
+                val newAnalytics = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    repository.computeAnalytics(newPortfolio)
+                }
+                Triple(newPortfolio, newManifest, newAnalytics)
+            }.onSuccess { (portfolio, manifest, analytics) ->
+                val firstSchemeCode = portfolio.schemes.firstOrNull()?.schemeCode
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        portfolioData = portfolio,
+                        portfolioManifest = manifest,
+                        analytics = analytics,
+                        selectedSchemeCode = firstSchemeCode
+                    )
+                }
+                postStatusBanner("Switched to '${portfolio.portfolioName}'")
+            }.onFailure { error ->
+                _uiState.update { it.copy(isLoading = false) }
+                postStatusBanner("Error switching portfolio: ${error.localizedMessage}")
+            }
+        }
+    }
+
+    /**
+     * Creates a new portfolio (empty or seeded with default schemes) and sets it active.
+     */
+    fun createNewPortfolio(name: String, seedWithDefault: Boolean) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            runCatching {
+                val newPortfolio = repository.createNewPortfolio(name, seedWithDefault)
+                val newManifest = repository.getManifest()
+                val newAnalytics = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    repository.computeAnalytics(newPortfolio)
+                }
+                Triple(newPortfolio, newManifest, newAnalytics)
+            }.onSuccess { (portfolio, manifest, analytics) ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        portfolioData = portfolio,
+                        portfolioManifest = manifest,
+                        analytics = analytics,
+                        selectedSchemeCode = portfolio.schemes.firstOrNull()?.schemeCode
+                    )
+                }
+                postStatusBanner("Created portfolio '${portfolio.portfolioName}'")
+            }.onFailure { error ->
+                _uiState.update { it.copy(isLoading = false) }
+                postStatusBanner("Failed to create portfolio: ${error.localizedMessage}")
+            }
+        }
+    }
+
+    /**
+     * Renames an existing portfolio in manifest and storage.
+     */
+    fun renamePortfolio(portfolioId: String, newName: String) {
+        viewModelScope.launch {
+            runCatching {
+                val updatedManifest = repository.renamePortfolio(portfolioId, newName)
+                val activeData = if (_uiState.value.portfolioManifest?.activePortfolioId == portfolioId) {
+                    _uiState.value.portfolioData?.copy(portfolioName = newName.ifBlank { "Portfolio" })
+                } else {
+                    _uiState.value.portfolioData
+                }
+                Pair(updatedManifest, activeData)
+            }.onSuccess { (manifest, activeData) ->
+                _uiState.update {
+                    it.copy(
+                        portfolioManifest = manifest,
+                        portfolioData = activeData
+                    )
+                }
+                postStatusBanner("Renamed portfolio to '$newName'")
+            }.onFailure { error ->
+                postStatusBanner("Failed to rename portfolio: ${error.localizedMessage}")
+            }
+        }
+    }
+
+    /**
+     * Deletes a portfolio from storage and manifest.
+     */
+    fun deletePortfolio(portfolioId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            runCatching {
+                val updatedManifest = repository.deletePortfolio(portfolioId)
+                val activePortfolio = repository.loadPortfolio()
+                val analytics = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    repository.computeAnalytics(activePortfolio)
+                }
+                Triple(updatedManifest, activePortfolio, analytics)
+            }.onSuccess { (manifest, activePortfolio, analytics) ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        portfolioManifest = manifest,
+                        portfolioData = activePortfolio,
+                        analytics = analytics,
+                        selectedSchemeCode = activePortfolio.schemes.firstOrNull()?.schemeCode
+                    )
+                }
+                postStatusBanner("Portfolio deleted")
+            }.onFailure { error ->
+                _uiState.update { it.copy(isLoading = false) }
+                postStatusBanner("Cannot delete portfolio: ${error.localizedMessage}")
+            }
+        }
+    }
+
+    /**
+     * Duplicates an existing portfolio.
+     */
+    fun duplicatePortfolio(portfolioId: String, newName: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            runCatching {
+                val duplicatedPortfolio = repository.duplicatePortfolio(portfolioId, newName)
+                val manifest = repository.getManifest()
+                val analytics = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    repository.computeAnalytics(duplicatedPortfolio)
+                }
+                Triple(duplicatedPortfolio, manifest, analytics)
+            }.onSuccess { (portfolio, manifest, analytics) ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        portfolioData = portfolio,
+                        portfolioManifest = manifest,
+                        analytics = analytics,
+                        selectedSchemeCode = portfolio.schemes.firstOrNull()?.schemeCode
+                    )
+                }
+                postStatusBanner("Duplicated portfolio '${portfolio.portfolioName}'")
+            }.onFailure { error ->
+                _uiState.update { it.copy(isLoading = false) }
+                postStatusBanner("Failed to duplicate portfolio: ${error.localizedMessage}")
             }
         }
     }
@@ -436,13 +598,36 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
 
     /**
      * Selects a specific scheme for deep-dive inspection and fetches its live historical NAV chart series.
+     * If an external searched scheme is selected, optionally creates an immediate optimistic scheme so UI updates with 0ms lag.
      */
-    fun selectSchemeForDeepDive(schemeCode: Int) {
+    fun selectSchemeForDeepDive(schemeCode: Int, initialName: String? = null) {
         val existingInPortfolio = _uiState.value.portfolioData?.schemes?.find { it.schemeCode == schemeCode }
+        val fallbackScheme = existingInPortfolio ?: initialName?.let { name ->
+            val (inferredCategory, inferredAssetClass) = com.fin.mf.data.engine.HoldingsEngine.inferCategoryAndAssetClass(name)
+            val amc = com.fin.mf.data.engine.HoldingsEngine.inferAmcName(name)
+            val holdings = com.fin.mf.data.engine.HoldingsEngine.generateHoldings(schemeCode, name, inferredCategory, inferredAssetClass)
+            MutualFundScheme(
+                schemeCode = schemeCode,
+                schemeName = name,
+                amc = amc,
+                category = inferredCategory,
+                assetClass = inferredAssetClass,
+                riskLevel = com.fin.mf.data.engine.HoldingsEngine.inferRiskLevel(inferredCategory, inferredAssetClass),
+                expenseRatio = com.fin.mf.data.engine.HoldingsEngine.inferExpenseRatio(inferredCategory, name.contains("direct", ignoreCase = true)),
+                exitLoad = "1.0% within 365 days",
+                benchmark = com.fin.mf.data.engine.HoldingsEngine.inferBenchmark(inferredCategory),
+                units = 0.0,
+                investedAmount = 0.0,
+                fallbackNav = 0.0,
+                lastNavDate = "",
+                holdings = holdings
+            )
+        }
+
         _uiState.update {
             it.copy(
                 selectedSchemeCode = schemeCode,
-                inspectedExternalScheme = existingInPortfolio,
+                inspectedExternalScheme = fallbackScheme,
                 isHistoryLoading = true,
                 selectedSchemeHistory = emptyList(),
                 historyErrorMessage = null

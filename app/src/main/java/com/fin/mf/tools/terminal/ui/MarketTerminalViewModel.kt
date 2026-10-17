@@ -19,7 +19,10 @@ import kotlinx.coroutines.launch
 data class WatchlistStock(
     val symbol: String,
     val name: String,
-    val isIndex: Boolean = false
+    val isIndex: Boolean = false,
+    val lastPrice: Double? = null,
+    val dayChangePercent: Double? = null,
+    val currency: String? = null
 )
 
 data class TerminalUiState(
@@ -36,13 +39,13 @@ data class TerminalUiState(
     val isSearching: Boolean = false,
     val searchResults: List<YahooSearchQuoteItem> = emptyList(),
     val watchlist: List<WatchlistStock> = listOf(
-        WatchlistStock("^NSEI", "NIFTY 50", isIndex = true),
-        WatchlistStock("^BSESN", "S&P BSE SENSEX", isIndex = true),
-        WatchlistStock("RELIANCE.NS", "Reliance Industries Ltd"),
-        WatchlistStock("HDFCBANK.NS", "HDFC Bank Ltd"),
-        WatchlistStock("TCS.NS", "Tata Consultancy Services"),
-        WatchlistStock("GOLDBEES.NS", "Nippon India ETF Gold BeES"),
-        WatchlistStock("AAPL", "Apple Inc.")
+        WatchlistStock("^NSEI", "NIFTY 50", isIndex = true, lastPrice = 24850.30, dayChangePercent = 0.45, currency = "INR"),
+        WatchlistStock("^BSESN", "S&P BSE SENSEX", isIndex = true, lastPrice = 81380.15, dayChangePercent = 0.38, currency = "INR"),
+        WatchlistStock("RELIANCE.NS", "Reliance Industries", lastPrice = 2945.80, dayChangePercent = 1.12, currency = "INR"),
+        WatchlistStock("HDFCBANK.NS", "HDFC Bank", lastPrice = 1680.40, dayChangePercent = -0.24, currency = "INR"),
+        WatchlistStock("TCS.NS", "Tata Consultancy Services", lastPrice = 4120.00, dayChangePercent = 0.85, currency = "INR"),
+        WatchlistStock("GOLDBEES.NS", "Nippon Gold ETF", lastPrice = 68.25, dayChangePercent = 0.15, currency = "INR"),
+        WatchlistStock("AAPL", "Apple Inc.", lastPrice = 228.50, dayChangePercent = -0.62, currency = "USD")
     ),
     val scrubbedPoint: TerminalChartPoint? = null,
     val isDualPointerMode: Boolean = false,
@@ -210,8 +213,19 @@ class MarketTerminalViewModel(
                         quote.chartPoints.getOrNull((quote.chartPoints.size * 0.85).toInt()) ?: quote.chartPoints.lastOrNull()
                     } else null
 
+                    val updatedWatchlist = it.watchlist.map { stock ->
+                        if (stock.symbol.equals(quote.symbol, ignoreCase = true)) {
+                            stock.copy(
+                                lastPrice = quote.regularMarketPrice,
+                                dayChangePercent = quote.dayChangePercent,
+                                currency = quote.currency
+                            )
+                        } else stock
+                    }
+
                     it.copy(
                         activeQuote = quote,
+                        watchlist = updatedWatchlist,
                         isLoadingChart = false,
                         chartErrorMessage = null,
                         pointerA = defaultPtA,

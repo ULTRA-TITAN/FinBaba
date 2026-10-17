@@ -215,7 +215,7 @@ fun WorkspaceMfHunterTab(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .clickable {
-                                                    portfolioViewModel.selectSchemeForDeepDive(result.schemeCode)
+                                                    portfolioViewModel.selectSchemeForDeepDive(result.schemeCode, result.schemeName)
                                                     mfHunterSearchQuery = ""
                                                     portfolioViewModel.clearAmfiSearch()
                                                 }

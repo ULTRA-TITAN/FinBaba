@@ -101,6 +101,7 @@ class MarketTerminalRepository(
             val timestamps = result.timestamp ?: emptyList()
             val quoteData = result.indicators?.quote?.firstOrNull()
             val closePrices = quoteData?.close ?: emptyList()
+            val volumeList = quoteData?.volume ?: emptyList()
 
             val chartPoints = mutableListOf<TerminalChartPoint>()
             val count = minOf(timestamps.size, closePrices.size)
@@ -111,11 +112,13 @@ class MarketTerminalRepository(
                 if (price != null && !price.isNaN() && price > 0.0) {
                     val epochMs = epochSec * 1000L
                     val dateFormatted = formatPointDate(epochMs, timeframe)
+                    val vol = if (i < volumeList.size) volumeList[i] ?: 0L else 0L
                     chartPoints.add(
                         TerminalChartPoint(
                             epochMs = epochMs,
                             price = price,
-                            dateFormatted = dateFormatted
+                            dateFormatted = dateFormatted,
+                            volume = vol
                         )
                     )
                 }
