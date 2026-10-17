@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import com.fin.mf.core.theme.AppearanceSettingsSheet
 import com.fin.mf.core.theme.LocalVaultGradient
 import com.fin.mf.core.theme.VaultThemeManager
+import com.fin.mf.ui.components.MarketStatusTickerPill
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -41,6 +42,7 @@ import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PieChart
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Settings
@@ -78,6 +80,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import com.fin.mf.ui.components.bounceClick
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -133,6 +136,7 @@ fun VaultHubScreen(
     portfolioViewModel: PortfolioViewModel,
     onOpenPortfolioTracker: (initialTabIndex: Int) -> Unit,
     onOpenMarketTerminal: () -> Unit = {},
+    onOpenNewsTerminal: () -> Unit = {},
     themeManager: VaultThemeManager = VaultThemeManager.getInstance(LocalContext.current)
 ) {
     val gradient = LocalVaultGradient.current
@@ -217,6 +221,13 @@ fun VaultHubScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
+                // Live Market Status & NSE/BSE Holiday Ticker Overlay (Controlled via Settings toggle)
+                if (uiState.isMarketStatusTickerEnabled) {
+                    item {
+                        MarketStatusTickerPill()
+                    }
+                }
+
                 // 1. Studio Mascot & Executive Portfolio Summary Banner
                 item {
                     Card(
@@ -348,7 +359,7 @@ fun VaultHubScreen(
                                             if (ms > 0L) {
                                                 SimpleDateFormat("dd MMM, hh:mm a", Locale.US).format(Date(ms))
                                             } else {
-                                                "Seed Ready"
+                                                "Not Synced"
                                             }
                                         }
                                         Text(
@@ -367,14 +378,21 @@ fun VaultHubScreen(
                 // Section Title
                 item {
                     Column {
+                        // =========================================================================
+                        // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
+                        // =========================================================================
+                        val toolVaultTitle = "FinStudio Tools"
+                        val toolVaultSubtitle = "Explore ->"
+                        // =========================================================================
+
                         Text(
-                            text = "Financial Studio Tool Vault",
+                            text = toolVaultTitle,
                             fontSize = 17.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = HubSlatePrimary
                         )
                         Text(
-                            text = "Select an institutional analytics module below",
+                            text = toolVaultSubtitle,
                             fontSize = 12.sp,
                             color = HubSlateSecondary
                         )
@@ -388,8 +406,8 @@ fun VaultHubScreen(
                         statusLabel = "ACTIVE",
                         isActive = true,
                         icon = Icons.Default.PieChart,
-                        title = "Look-Through Tracker",
-                        insightTag = "700+ Stock Look-Through & SEBI Drift",
+                        title = "MF Portfolio",
+                        insightTag = "Detailed Mutual Fund Portfolio analysis",
                         onClick = { onOpenPortfolioTracker(0) }
                     )
                 }
@@ -401,8 +419,8 @@ fun VaultHubScreen(
                         statusLabel = "ACTIVE",
                         isActive = true,
                         icon = Icons.AutoMirrored.Filled.ShowChart,
-                        title = "Global Market Terminal",
-                        insightTag = "Live NSE/BSE Quotes & Nifty 50 Comparison",
+                        title = "Global Markets",
+                        insightTag = "Explore markets and stocks around the world",
                         onClick = onOpenMarketTerminal
                     )
                 }
@@ -420,6 +438,19 @@ fun VaultHubScreen(
                         onClick = {
                             Toast.makeText(context, "Tool #3 SIP Wealth Architect preview coming in the next build!", Toast.LENGTH_SHORT).show()
                         }
+                    )
+                }
+
+                // 5. TOOL #4 CARD: Market Intelligence Wire (ACTIVE)
+                item {
+                    StudioToolCard(
+                        toolNumber = "TOOL #4",
+                        statusLabel = "ACTIVE",
+                        isActive = true,
+                        icon = Icons.Default.Public,
+                        title = "News Letter",
+                        insightTag = "Explore market news through FinHub",
+                        onClick = onOpenNewsTerminal
                     )
                 }
             }
@@ -502,6 +533,7 @@ private fun StudioToolCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .bounceClick()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = HubSurfaceWhite),
@@ -710,6 +742,32 @@ private fun HubSettingsModal(
                     }
                 }
 
+                // Market Status & Trading Holiday Ticker Pill Toggle
+                Surface(
+                    color = Color(0xFFF8FAFC),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, HubSlateBorder),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Market Status & Holiday Ticker", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Text("Live NSE/BSE trading status pill overlay", fontSize = 11.sp, color = HubSlateSecondary)
+                        }
+                        Switch(
+                            checked = uiState.isMarketStatusTickerEnabled,
+                            onCheckedChange = { portfolioViewModel.setMarketStatusTickerEnabled(it) },
+                            colors = SwitchDefaults.colors(checkedTrackColor = gradient.startColor)
+                        )
+                    }
+                }
+
                 // Data actions
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Vault Operations", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = HubSlateSecondary)
@@ -738,14 +796,14 @@ private fun HubSettingsModal(
                     ) {
                         Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Restore 20-Scheme Seed", fontSize = 12.sp)
+                        Text("Clear Active Vault", fontSize = 12.sp)
                     }
                 }
 
                 HorizontalDivider(color = HubSlateBorder)
 
                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text("FinBaba Studio v2.1.0 Institutional Edition", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("FinBaba Studio v2.1.0 Vault Edition", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     Text("Engine: Jetpack Compose Material 3 & Kotlin Coroutines", fontSize = 11.sp, color = HubSlateSecondary)
                 }
             }
@@ -760,18 +818,18 @@ private fun HubSettingsModal(
     if (showResetDialog) {
         AlertDialog(
             onDismissRequest = { showResetDialog = false },
-            title = { Text("Restore Factory 20-Scheme Seed?", fontWeight = FontWeight.Bold) },
-            text = { Text("This will restore the factory 20-scheme seed from assets and trigger a fresh AMFI NAV sync.") },
+            title = { Text("Clear Active Vault?", fontWeight = FontWeight.Bold) },
+            text = { Text("This will remove all schemes from your active vault, returning it to an authentic empty state.") },
             confirmButton = {
                 Button(
                     onClick = {
                         showResetDialog = false
-                        portfolioViewModel.resetPortfolioToSeed()
+                        portfolioViewModel.clearActivePortfolio()
                         onDismiss()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = HubCrimsonNegative)
                 ) {
-                    Text("Restore Seed")
+                    Text("Clear Vault")
                 }
             },
             dismissButton = {

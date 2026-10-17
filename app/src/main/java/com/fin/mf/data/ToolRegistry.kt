@@ -4,12 +4,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.PieChart
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.ui.graphics.vector.ImageVector
 
 enum class ToolId {
     PORTFOLIO_LOOKTHROUGH,
     GLOBAL_MARKET_TERMINAL,
-    SIP_CAGR_SIMULATOR
+    SIP_CAGR_SIMULATOR,
+    TOOL_NEWS_TERMINAL
 }
 
 data class ToolMetadata(
@@ -75,6 +77,23 @@ object ToolRegistry {
                 "Dynamic Step-Up SIP Calculator",
                 "Multi-Decade Compounding Projections",
                 "Portfolio Integration Assumption Engine"
+            )
+        ),
+        ToolMetadata(
+            id = ToolId.TOOL_NEWS_TERMINAL,
+            toolNumber = "TOOL #4",
+            statusLabel = "TOOL #4 ACTIVE",
+            isAvailable = true,
+            icon = Icons.Default.Public,
+            title = "Market Intelligence & Sentiment Wire",
+            description = "Real-time global macro news, look-through portfolio news monitoring, and stock sentiment radar powered by Finnhub.",
+            metricsHighlight = "Finnhub Global Wire • Look-Through Sentiment Radar",
+            primaryButtonText = "Launch Intelligence Wire",
+            keyFeatures = listOf(
+                "Global Macro & Breaking Market Wires",
+                "Portfolio Look-Through Company News Tracking",
+                "Institutional Bullish/Bearish Sentiment Radar",
+                "Chrome Custom Tabs Sandboxed Reader & Bookmarking"
             )
         )
     )

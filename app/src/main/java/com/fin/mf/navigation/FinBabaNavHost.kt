@@ -15,6 +15,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.fin.mf.core.theme.VaultThemeManager
+import com.fin.mf.tools.news.ui.NewsTerminalScreen
 import com.fin.mf.tools.terminal.ui.MarketTerminalScreen
 import com.fin.mf.ui.PortfolioViewModel
 import com.fin.mf.ui.screens.PortfolioTrackerWorkspace
@@ -27,6 +28,7 @@ object FinBabaDestinations {
     const val VAULT_HUB_ROUTE = "vault_hub"
     const val PORTFOLIO_TOOL_BASE_ROUTE = "tool_portfolio_tracker"
     const val MARKET_TERMINAL_ROUTE = "market_terminal"
+    const val NEWS_TERMINAL_ROUTE = "news_terminal"
     const val ARG_INITIAL_TAB = "initialTab"
     const val PORTFOLIO_TOOL_ROUTE_WITH_ARG =
         "$PORTFOLIO_TOOL_BASE_ROUTE?$ARG_INITIAL_TAB={$ARG_INITIAL_TAB}"
@@ -91,11 +93,16 @@ fun FinBabaNavHost(
                     navController.navigate(FinBabaDestinations.MARKET_TERMINAL_ROUTE) {
                         launchSingleTop = true
                     }
+                },
+                onOpenNewsTerminal = {
+                    navController.navigate(FinBabaDestinations.NEWS_TERMINAL_ROUTE) {
+                        launchSingleTop = true
+                    }
                 }
             )
         }
 
-        // Tool #1 Destination: 20-Scheme Mutual Fund Portfolio & Look-Through Tracker Workspace
+        // Tool #1 Destination: Mutual Fund Portfolio & Look-Through Tracker Workspace
         composable(
             route = FinBabaDestinations.PORTFOLIO_TOOL_ROUTE_WITH_ARG,
             arguments = listOf(
@@ -123,6 +130,20 @@ fun FinBabaNavHost(
         // Tool #2 Destination: Global Market Terminal & Broker Studio
         composable(route = FinBabaDestinations.MARKET_TERMINAL_ROUTE) {
             MarketTerminalScreen(
+                themeManager = themeManager,
+                onNavigateBackToHub = {
+                    if (!navController.popBackStack()) {
+                        navController.navigate(FinBabaDestinations.VAULT_HUB_ROUTE) {
+                            popUpTo(FinBabaDestinations.VAULT_HUB_ROUTE) { inclusive = true }
+                        }
+                    }
+                }
+            )
+        }
+
+        // Tool #4 Destination: Institutional Market Intelligence Wire & Sentiment Radar
+        composable(route = FinBabaDestinations.NEWS_TERMINAL_ROUTE) {
+            NewsTerminalScreen(
                 themeManager = themeManager,
                 onNavigateBackToHub = {
                     if (!navController.popBackStack()) {

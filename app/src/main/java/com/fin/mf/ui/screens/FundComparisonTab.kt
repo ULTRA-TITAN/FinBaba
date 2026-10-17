@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import com.fin.mf.ui.components.bounceClick
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -622,13 +623,14 @@ private fun AmfiSearchModal(
                             modifier = Modifier.weight(1f),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            items(filteredResults) { res ->
+                            items(items = filteredResults, key = { it.schemeCode }) { res ->
                                 Surface(
                                     shape = RoundedCornerShape(10.dp),
                                     color = Color(0xFFF8FAFC),
                                     border = androidx.compose.foundation.BorderStroke(1.dp, CmpSlateBorder),
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .bounceClick()
                                         .clickable { onSelectScheme(res.schemeCode) }
                                 ) {
                                     Column(modifier = Modifier.padding(12.dp)) {

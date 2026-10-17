@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.fin.mf.data.ChartTimeframe
 import com.fin.mf.data.FundComparisonItem
+import com.fin.mf.data.MarketCapMandate
 import com.fin.mf.data.MfApiNavEntry
 import com.fin.mf.data.MfSearchDto
 import com.fin.mf.data.MutualFundScheme
@@ -62,7 +63,9 @@ data class PortfolioUiState(
     val customComparisonStartEpochMs: Long? = null,
     val customComparisonEndEpochMs: Long? = null,
     val inspectedExternalScheme: MutualFundScheme? = null,
-    val portfolioManifest: com.fin.mf.data.PortfolioManifest? = null
+    val portfolioManifest: com.fin.mf.data.PortfolioManifest? = null,
+    val isFloatingFabEnabled: Boolean = false,
+    val isMarketStatusTickerEnabled: Boolean = true
 ) {
     /**
      * Dynamically filtered and sorted schemes based on the user's search query and asset class filter.
@@ -115,6 +118,12 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
     private var bannerDismissJob: Job? = null
 
     init {
+        _uiState.update {
+            it.copy(
+                isFloatingFabEnabled = repository.isFloatingFabEnabled(),
+                isMarketStatusTickerEnabled = repository.isMarketStatusTickerEnabled()
+            )
+        }
         loadInitialPortfolio()
     }
 
@@ -136,10 +145,6 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    /**
-     * Loads `portfolio_active.json` (or seeds it from `assets/portfolio_seed.json` on first boot),
-     * computes look-through analytics immediately, and triggers a background live NAV sync.
-     */
     /**
      * Loads the active portfolio and manifest, computes look-through analytics immediately,
      * and triggers a background live NAV sync.
@@ -212,9 +217,9 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     /**
-     * Creates a new portfolio (empty or seeded with default schemes) and sets it active.
+     * Creates a new portfolio (empty) and sets it active.
      */
-    fun createNewPortfolio(name: String, seedWithDefault: Boolean) {
+    fun createNewPortfolio(name: String, seedWithDefault: Boolean = false) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             runCatching {
@@ -569,29 +574,55 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     /**
-     * Resets `portfolio_active.json` back to the factory 20-scheme `portfolio_seed.json` state.
+     * Clears all mutual fund schemes from the active portfolio, resetting it to clean empty state.
      */
-    fun resetPortfolioToSeed() {
+    fun clearActivePortfolio() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             runCatching {
-                val seedPortfolio = repository.resetToSeedPortfolio()
-                val seedAnalytics = repository.computeAnalytics(seedPortfolio)
-                Pair(seedPortfolio, seedAnalytics)
-            }.onSuccess { (seedPortfolio, seedAnalytics) ->
+                val clearedPortfolio = repository.clearActivePortfolio()
+                val clearedAnalytics = repository.computeAnalytics(clearedPortfolio)
+                val manifest = repository.getManifest()
+                Triple(clearedPortfolio, manifest, clearedAnalytics)
+            }.onSuccess { (portfolio, manifest, analytics) ->
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        portfolioData = seedPortfolio,
-                        analytics = seedAnalytics,
-                        selectedSchemeCode = seedPortfolio.schemes.firstOrNull()?.schemeCode
+                        portfolioData = portfolio,
+                        portfolioManifest = manifest,
+                        analytics = analytics,
+                        selectedSchemeCode = null
                     )
                 }
-                postStatusBanner("Restored portfolio to factory 20-scheme seed.")
-                syncAllLiveNavs()
+                postStatusBanner("Cleared all schemes from active vault.")
             }.onFailure { error ->
                 _uiState.update { it.copy(isLoading = false) }
-                postStatusBanner("Reset failed: ${error.localizedMessage}")
+                postStatusBanner("Clear failed: ${error.localizedMessage}")
+            }
+        }
+    }
+
+    /**
+     * Updates the SEBI Market Cap target mandate configuration and recomputes analytics immediately.
+     */
+    fun updateMarketCapMandate(mandate: MarketCapMandate) {
+        viewModelScope.launch {
+            runCatching {
+                val updatedPortfolio = repository.updateMarketCapMandate(mandate)
+                val updatedAnalytics = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    repository.computeAnalytics(updatedPortfolio)
+                }
+                Pair(updatedPortfolio, updatedAnalytics)
+            }.onSuccess { (portfolio, analytics) ->
+                _uiState.update {
+                    it.copy(
+                        portfolioData = portfolio,
+                        analytics = analytics
+                    )
+                }
+                postStatusBanner("Market Cap Mandate updated.")
+            }.onFailure { error ->
+                postStatusBanner("Failed to update mandate: ${error.localizedMessage}")
             }
         }
     }
@@ -764,6 +795,26 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun togglePrivacyMask() {
         _uiState.update { it.copy(isPrivacyMasked = !it.isPrivacyMasked) }
+    }
+
+    fun setFloatingFabEnabled(enabled: Boolean) {
+        repository.setFloatingFabEnabled(enabled)
+        _uiState.update { it.copy(isFloatingFabEnabled = enabled) }
+    }
+
+    fun toggleFloatingFab() {
+        val next = !_uiState.value.isFloatingFabEnabled
+        setFloatingFabEnabled(next)
+    }
+
+    fun setMarketStatusTickerEnabled(enabled: Boolean) {
+        repository.setMarketStatusTickerEnabled(enabled)
+        _uiState.update { it.copy(isMarketStatusTickerEnabled = enabled) }
+    }
+
+    fun toggleMarketStatusTicker() {
+        val next = !_uiState.value.isMarketStatusTickerEnabled
+        setMarketStatusTickerEnabled(next)
     }
 
     fun dismissStatusBanner() {

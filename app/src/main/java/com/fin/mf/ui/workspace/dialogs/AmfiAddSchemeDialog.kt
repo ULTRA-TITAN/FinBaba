@@ -1,6 +1,7 @@
 package com.fin.mf.ui.workspace.dialogs
 
 import androidx.compose.foundation.clickable
+import com.fin.mf.ui.components.bounceClick
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -157,13 +158,14 @@ fun AmfiAddSchemeModal(
                                 modifier = Modifier.weight(1f),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                items(filteredResults) { res ->
+                                items(items = filteredResults, key = { it.schemeCode }) { res ->
                                     Surface(
                                         shape = RoundedCornerShape(10.dp),
                                         color = Color(0xFFF8FAFC),
                                         border = androidx.compose.foundation.BorderStroke(1.dp, WsSlateBorder),
                                         modifier = Modifier
                                             .fillMaxWidth()
+                                            .bounceClick()
                                             .clickable {
                                                 selectedSchemeCode = res.schemeCode
                                                 selectedSchemeName = res.schemeName

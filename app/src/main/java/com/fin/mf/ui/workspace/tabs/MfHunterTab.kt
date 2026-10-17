@@ -53,6 +53,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fin.mf.core.theme.LocalVaultGradient
 import com.fin.mf.core.theme.SemanticFinanceColors
+import com.fin.mf.data.UnderlyingHolding
+import com.fin.mf.data.engine.HoldingsEngine
 import com.fin.mf.ui.PortfolioViewModel
 import com.fin.mf.ui.components.NavChartComponent
 import com.fin.mf.ui.workspace.components.WsAccentRoyal
@@ -74,7 +76,7 @@ import java.util.Locale
  * Features:
  * 1. Spacious AMFI Scheme Search with smart indexing and category filter chips.
  * 2. Dedicated NavChartComponent (zoomable charts, 2-point delta analyzer, fullscreen mode).
- * 3. Individual MF Holdings with Top 10 / Top 15 / All filter toggle and Full Constituents Modal.
+ * 3. Uncapped Multi-Asset Holdings with Analytical Summary Bar and Full Audit Modal.
  */
 @Composable
 fun WorkspaceMfHunterTab(
@@ -88,8 +90,7 @@ fun WorkspaceMfHunterTab(
 
     var showEditModal by remember { mutableStateOf(false) }
     var showFullHoldingsModal by remember { mutableStateOf(false) }
-    var holdingsCountFilter by rememberSaveable { mutableStateOf("Top 15") }
-    var holdingsTypeFilter by rememberSaveable { mutableStateOf("All Types") }
+    var selectedHoldingCategory by rememberSaveable { mutableStateOf("All") }
     var mfHunterSearchQuery by remember { mutableStateOf("") }
     var mfHunterFilter by rememberSaveable { mutableStateOf("All") }
 
@@ -438,10 +439,28 @@ fun WorkspaceMfHunterTab(
             )
         }
 
-        // Look-Through Constituents Section: Top 10 / Top 15 / All + View Full
+        // Look-Through Constituents Section: Uncapped Multi-Asset Holdings & Analytical Summary
         item {
             WsElevatedCard {
                 Column(modifier = Modifier.padding(18.dp)) {
+                    val allHoldings = scheme.holdings
+                    val totalHoldingsCount = allHoldings.size
+                    val sortedHoldings = remember(allHoldings) { allHoldings.sortedByDescending { it.weightPercent } }
+
+                    val top5Weight = remember(sortedHoldings) { sortedHoldings.take(5).sumOf { it.weightPercent } }
+                    val top10Weight = remember(sortedHoldings) { sortedHoldings.take(10).sumOf { it.weightPercent } }
+
+                    val equityHoldings = remember(allHoldings) { allHoldings.filter { HoldingsEngine.isEquityHolding(it) } }
+                    val debtHoldings = remember(allHoldings) { allHoldings.filter { HoldingsEngine.isDebtHolding(it) } }
+                    val cashHoldings = remember(allHoldings) { allHoldings.filter { HoldingsEngine.isCashHolding(it) } }
+
+                    val equityWeight = remember(equityHoldings) { equityHoldings.sumOf { it.weightPercent } }
+                    val debtWeight = remember(debtHoldings) { debtHoldings.sumOf { it.weightPercent } }
+                    val cashWeight = remember(cashHoldings, equityWeight, debtWeight) {
+                        val rawCash = cashHoldings.sumOf { it.weightPercent }
+                        if (rawCash > 0.0) rawCash else (100.0 - equityWeight - debtWeight).coerceAtLeast(0.0)
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -449,13 +468,13 @@ fun WorkspaceMfHunterTab(
                     ) {
                         Column {
                             Text(
-                                text = "Look-Through Constituents (${scheme.holdings.size})",
+                                text = "Look-Through Constituents ($totalHoldingsCount)",
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = WsSlateTextPrimary
                             )
                             Text(
-                                text = "Underlying equities and debt instruments",
+                                text = "100% uncapped holdings • Full institutional breakdown",
                                 fontSize = 11.sp,
                                 color = WsSlateTextSecondary
                             )
@@ -468,40 +487,99 @@ fun WorkspaceMfHunterTab(
                         ) {
                             Icon(Icons.Default.OpenInFull, contentDescription = null, modifier = Modifier.size(13.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("View Full", fontSize = 11.sp)
+                            Text("Full Audit", fontSize = 11.sp)
                         }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Holdings Filter Chips: Top 10, Top 15, All
+                    // Fund Analytical Summary Bar
+                    Surface(
+                        color = Color(0xFFF8FAFC),
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, WsSlateBorder),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(horizontalAlignment = Alignment.Start) {
+                                Text(
+                                    text = "TOTAL HOLDINGS",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = WsSlateTextSecondary
+                                )
+                                Text(
+                                    text = "$totalHoldingsCount Instruments",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = WsSlateTextPrimary
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "CONCENTRATION",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = WsSlateTextSecondary
+                                )
+                                Text(
+                                    text = "Top 5: ${String.format(Locale.US, "%.1f", top5Weight)}% • Top 10: ${String.format(Locale.US, "%.1f", top10Weight)}%",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = gradient.startColor
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = "ASSET SPLIT",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = WsSlateTextSecondary
+                                )
+                                Text(
+                                    text = "${String.format(Locale.US, "%.1f", equityWeight)}% Eq • ${String.format(Locale.US, "%.1f", debtWeight + cashWeight)}% D/C",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = WsAccentRoyal
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Multi-Asset Categorization Tabs
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        listOf("Top 10", "Top 15", "All").forEach { countOpt ->
-                            val isSel = holdingsCountFilter == countOpt
+                        listOf(
+                            "All" to "All Holdings ($totalHoldingsCount)",
+                            "Equity" to "Equity (${equityHoldings.size})",
+                            "Debt" to "Debt & Money Market (${debtHoldings.size})",
+                            "Cash" to "Cash & Net Assets (${cashHoldings.size})"
+                        ).forEach { (catKey, catLabel) ->
+                            val isSel = selectedHoldingCategory == catKey
                             FilterChip(
                                 selected = isSel,
-                                onClick = { holdingsCountFilter = countOpt },
-                                label = { Text(countOpt, fontSize = 11.sp) },
+                                onClick = { selectedHoldingCategory = catKey },
+                                label = {
+                                    Text(
+                                        text = catLabel,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium
+                                    )
+                                },
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = gradient.startColor,
-                                    selectedLabelColor = Color.White
-                                )
-                            )
-                        }
-
-                        listOf("All Types", "Equity", "Debt & Cash").forEach { typeOpt ->
-                            val isSel = holdingsTypeFilter == typeOpt
-                            FilterChip(
-                                selected = isSel,
-                                onClick = { holdingsTypeFilter = typeOpt },
-                                label = { Text(typeOpt, fontSize = 11.sp) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = WsAccentRoyal,
                                     selectedLabelColor = Color.White
                                 )
                             )
@@ -510,19 +588,12 @@ fun WorkspaceMfHunterTab(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Filtered Holdings Display
-                    val filteredHoldings = remember(scheme.holdings, holdingsCountFilter, holdingsTypeFilter) {
-                        var list = scheme.holdings
-                        if (holdingsTypeFilter == "Equity") {
-                            list = list.filterNot { it.sector.contains("Debt", ignoreCase = true) || it.marketCapBucket.contains("Debt", ignoreCase = true) }
-                        } else if (holdingsTypeFilter == "Debt & Cash") {
-                            list = list.filter { it.sector.contains("Debt", ignoreCase = true) || it.marketCapBucket.contains("Debt", ignoreCase = true) }
-                        }
-                        val sorted = list.sortedByDescending { it.weightPercent }
-                        when (holdingsCountFilter) {
-                            "Top 10" -> sorted.take(10)
-                            "Top 15" -> sorted.take(15)
-                            else -> sorted
+                    val filteredHoldings = remember(selectedHoldingCategory, allHoldings, equityHoldings, debtHoldings, cashHoldings) {
+                        when (selectedHoldingCategory) {
+                            "Equity" -> equityHoldings.sortedByDescending { it.weightPercent }
+                            "Debt" -> debtHoldings.sortedByDescending { it.weightPercent }
+                            "Cash" -> cashHoldings.sortedByDescending { it.weightPercent }
+                            else -> sortedHoldings
                         }
                     }
 
@@ -531,23 +602,65 @@ fun WorkspaceMfHunterTab(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 6.dp),
+                                .padding(vertical = 8.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "${holding.companyName} (${holding.ticker})",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = WsSlateTextPrimary
-                                )
-                                Text(
-                                    text = "${holding.sector} • ${holding.marketCapBucket}",
-                                    fontSize = 11.sp,
-                                    color = WsSlateTextSecondary
-                                )
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    color = Color(0xFFF1F5F9),
+                                    shape = RoundedCornerShape(6.dp)
+                                ) {
+                                    Text(
+                                        text = "#${index + 1}",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = WsSlateTextSecondary,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = holding.companyName,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = WsSlateTextPrimary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.weight(1f, fill = false)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "(${holding.ticker})",
+                                            fontSize = 10.sp,
+                                            color = WsSlateTextSecondary
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        HoldingAssetClassBadge(holding)
+                                        HoldingTierBadge(holding)
+                                        Text(
+                                            text = "• ${holding.sector}",
+                                            fontSize = 10.sp,
+                                            color = WsSlateTextSecondary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
                             }
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(
                                     text = String.format(Locale.US, "%.2f%%", holding.weightPercent),
@@ -596,6 +709,65 @@ fun WorkspaceMfHunterTab(
             schemeValue = scheme.currentValue,
             isMasked = uiState.isPrivacyMasked,
             onDismiss = { showFullHoldingsModal = false }
+        )
+    }
+}
+
+@Composable
+internal fun HoldingAssetClassBadge(holding: UnderlyingHolding) {
+    val (label, bg, fg) = when {
+        HoldingsEngine.isCashHolding(holding) -> Triple("Cash", Color(0xFFF1F5F9), Color(0xFF475569))
+        HoldingsEngine.isDebtHolding(holding) -> Triple("Debt", Color(0xFFECFDF5), Color(0xFF047857))
+        else -> Triple("Equity", Color(0xFFEEF2FF), Color(0xFF4338CA))
+    }
+    Surface(
+        color = bg,
+        shape = RoundedCornerShape(4.dp)
+    ) {
+        Text(
+            text = label,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Bold,
+            color = fg,
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+        )
+    }
+}
+
+@Composable
+internal fun HoldingTierBadge(holding: UnderlyingHolding) {
+    val (label, bg, fg) = when {
+        HoldingsEngine.isCashHolding(holding) -> Triple("Liquid/TREPS", Color(0xFFF8FAFC), Color(0xFF64748B))
+        HoldingsEngine.isDebtHolding(holding) -> {
+            val tier = when {
+                holding.companyName.contains("Sovereign", ignoreCase = true) || holding.sector.contains("Sovereign", ignoreCase = true) -> "Sovereign G-Sec"
+                holding.ticker.contains("AAA", ignoreCase = true) || holding.companyName.contains("AAA", ignoreCase = true) -> "AAA Rated"
+                holding.ticker.contains("CP", ignoreCase = true) || holding.ticker.contains("CD", ignoreCase = true) -> "A1+ CP"
+                holding.companyName.contains("Treasury", ignoreCase = true) -> "T-Bill"
+                else -> "Debt Note"
+            }
+            Triple(tier, Color(0xFFEFF6FF), Color(0xFF1D4ED8))
+        }
+        else -> {
+            when (holding.marketCapBucket) {
+                "Large Cap" -> Triple("Large Cap", Color(0xFFEFF6FF), Color(0xFF2563EB))
+                "Mid Cap" -> Triple("Mid Cap", Color(0xFFF0FDF4), Color(0xFF15803D))
+                "Small Cap" -> Triple("Small Cap", Color(0xFFFFFBEB), Color(0xFFB45309))
+                "Micro Cap" -> Triple("Micro Cap", Color(0xFFFAF5FF), Color(0xFF7E22CE))
+                else -> Triple(holding.marketCapBucket.ifBlank { "Equity" }, Color(0xFFF1F5F9), Color(0xFF475569))
+            }
+        }
+    }
+    Surface(
+        color = bg,
+        shape = RoundedCornerShape(4.dp)
+    ) {
+        Text(
+            text = label,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = fg,
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
         )
     }
 }

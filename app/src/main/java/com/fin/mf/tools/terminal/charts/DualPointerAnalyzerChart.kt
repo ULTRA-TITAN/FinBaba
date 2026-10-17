@@ -257,6 +257,9 @@ fun DualPointerAnalyzerChart(
         Spacer(modifier = Modifier.height(12.dp))
 
         // Dual Pointer Canvas with Tap-to-Move
+        val basePath = remember { Path() }
+        val markerDashEffect = remember { PathEffect.dashPathEffect(floatArrayOf(10f, 8f)) }
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -299,16 +302,16 @@ fun DualPointerAnalyzerChart(
                 )
 
                 // Base Line
-                val path = Path()
+                basePath.reset()
                 points.forEachIndexed { i, pt ->
                     val x = (i.toFloat() / (points.size - 1)) * w
                     val normalizedY = ((pt.price - minPrice) / priceRange).toFloat()
                     val y = h - bottomPadding - (normalizedY * plotHeight)
-                    if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                    if (i == 0) basePath.moveTo(x, y) else basePath.lineTo(x, y)
                 }
 
                 drawPath(
-                    path = path,
+                    path = basePath,
                     color = TerminalSlateSecondary.copy(alpha = 0.45f),
                     style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
                 )
@@ -321,7 +324,7 @@ fun DualPointerAnalyzerChart(
                     start = Offset(xA, topPadding),
                     end = Offset(xA, h - bottomPadding),
                     strokeWidth = 2.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f))
+                    pathEffect = markerDashEffect
                 )
                 drawCircle(color = gradient.startColor, radius = 5.dp.toPx(), center = Offset(xA, yPtA))
                 drawCircle(color = Color.White, radius = 2.5.dp.toPx(), center = Offset(xA, yPtA))
@@ -334,7 +337,7 @@ fun DualPointerAnalyzerChart(
                     start = Offset(xB, topPadding),
                     end = Offset(xB, h - bottomPadding),
                     strokeWidth = 2.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f))
+                    pathEffect = markerDashEffect
                 )
                 drawCircle(color = TerminalPurplePointer, radius = 5.dp.toPx(), center = Offset(xB, yPtB))
                 drawCircle(color = Color.White, radius = 2.5.dp.toPx(), center = Offset(xB, yPtB))

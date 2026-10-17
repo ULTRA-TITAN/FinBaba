@@ -20,19 +20,26 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Balance
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import com.fin.mf.ui.components.bounceClick
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import com.fin.mf.core.theme.LocalVaultGradient
 import com.fin.mf.data.MutualFundScheme
 import com.fin.mf.ui.PortfolioUiState
+import com.fin.mf.ui.workspace.components.OnboardingTutorialCard
 import com.fin.mf.ui.workspace.components.WsSchemeSummaryCard
 import com.fin.mf.ui.workspace.components.WsSlateBorder
 import com.fin.mf.ui.workspace.components.WsSlateTextPrimary
@@ -59,16 +67,34 @@ internal data class CategoryFilterItem(
 /**
  * Tab #2: Portfolio Schemes List with Asset Class Filters and Search (Renamed from Schemes).
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkspacePortfolioTab(
     uiState: PortfolioUiState,
     onSearchQueryChange: (String) -> Unit,
     onFilterChange: (String) -> Unit,
     onSchemeSelected: (Int) -> Unit,
-    onDeleteScheme: (MutualFundScheme) -> Unit
+    onDeleteScheme: (MutualFundScheme) -> Unit,
+    onAddSchemeClick: () -> Unit = {},
+    onRefresh: () -> Unit = {}
 ) {
     val gradient = LocalVaultGradient.current
     val allSchemes = uiState.portfolioData?.schemes.orEmpty()
+
+    if (allSchemes.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            OnboardingTutorialCard(
+                onAddSchemeClick = onAddSchemeClick
+            )
+        }
+        return
+    }
+
     val categoryCounts = remember(allSchemes) {
         mapOf(
             "All" to allSchemes.size,
@@ -99,13 +125,19 @@ fun WorkspacePortfolioTab(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                // =========================================================================
+                // DISPLAY TEXT CONFIGURATION: Search placeholder
+                // =========================================================================
+                val searchPlaceholder = "Search fund name, AMC, code, or stock..."
+                // =========================================================================
+
                 OutlinedTextField(
                     value = uiState.searchQuery,
                     onValueChange = onSearchQueryChange,
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = {
                         Text(
-                            text = "Search fund name, AMC, code, or stock...",
+                            text = searchPlaceholder,
                             fontSize = 13.sp
                         )
                     },
@@ -210,27 +242,78 @@ fun WorkspacePortfolioTab(
             }
         }
 
-        LazyColumn(
+        val pullRefreshState = rememberPullToRefreshState()
+
+        PullToRefreshBox(
+            isRefreshing = uiState.isSyncingNavs,
+            onRefresh = onRefresh,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                Text(
-                    text = "Showing ${schemes.size} of ${uiState.portfolioData?.schemes?.size ?: 0} Active Schemes",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = WsSlateTextSecondary
+            state = pullRefreshState,
+            indicator = {
+                PullToRefreshDefaults.Indicator(
+                    state = pullRefreshState,
+                    isRefreshing = uiState.isSyncingNavs,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    color = gradient.startColor
                 )
             }
+        ) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                item {
+                    // =========================================================================
+                    // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
+                    // =========================================================================
+                    val totalCount = uiState.portfolioData?.schemes?.size ?: 0
+                    val headerText = "Showing ${schemes.size} of $totalCount Active Schemes"
+                    val addSchemeText = "+ Add Scheme"
+                    // =========================================================================
 
-            items(items = schemes, key = { it.schemeCode }) { scheme ->
-                WsSchemeSummaryCard(
-                    scheme = scheme,
-                    isMasked = uiState.isPrivacyMasked,
-                    onClick = { onSchemeSelected(scheme.schemeCode) },
-                    onDelete = { onDeleteScheme(scheme) }
-                )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = headerText,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = WsSlateTextSecondary
+                        )
+                        OutlinedButton(
+                            onClick = onAddSchemeClick,
+                            modifier = Modifier.bounceClick(),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = gradient.startColor
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = addSchemeText,
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = gradient.startColor
+                            )
+                        }
+                    }
+                }
+
+                items(items = schemes, key = { it.schemeCode }) { scheme ->
+                    WsSchemeSummaryCard(
+                        scheme = scheme,
+                        isMasked = uiState.isPrivacyMasked,
+                        onClick = { onSchemeSelected(scheme.schemeCode) },
+                        onDelete = { onDeleteScheme(scheme) }
+                    )
+                }
             }
         }
     }

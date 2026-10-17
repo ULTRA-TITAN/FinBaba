@@ -89,6 +89,9 @@ data class YahooSearchQuoteItem(
 ) {
     val displayName: String
         get() = shortname ?: longname ?: symbol
+
+    val shortName: String? get() = shortname
+    val longName: String? get() = longname
 }
 
 /**
@@ -97,14 +100,20 @@ data class YahooSearchQuoteItem(
 enum class TerminalTimeframe(
     val label: String,
     val rangeParam: String,
-    val intervalParam: String
+    val intervalParam: String,
+    val isIntraday: Boolean = false,
+    val daysApprox: Int = 1
 ) {
-    ONE_DAY("1D", "1d", "5m"),
-    FIVE_DAYS("5D", "5d", "15m"),
-    ONE_MONTH("1M", "1mo", "1d"),
-    SIX_MONTHS("6M", "6mo", "1d"),
-    ONE_YEAR("1Y", "1y", "1d"),
-    FIVE_YEARS("5Y", "5y", "1wk")
+    ONE_DAY("1D", "1d", "5m", true, 1),
+    FIVE_DAYS("5D", "5d", "15m", true, 5),
+    ONE_MONTH("1M", "1mo", "1d", false, 30),
+    SIX_MONTHS("6M", "6mo", "1d", false, 180),
+    ONE_YEAR("1Y", "1y", "1d", false, 365),
+    FIVE_YEARS("5Y", "5y", "1wk", false, 1825),
+    MAX("MAX", "max", "1mo", false, 3650);
+
+    val rangeQuery: String get() = rangeParam
+    val intervalQuery: String get() = intervalParam
 }
 
 /**
@@ -118,35 +127,63 @@ data class TerminalChartPoint(
 )
 
 /**
+ * OHLCV candle/bar data point for technical Cartesian charts.
+ */
+data class ChartDataPoint(
+    val timestampEpochSec: Long,
+    val open: Float,
+    val high: Float,
+    val low: Float,
+    val close: Float,
+    val volume: Long
+) {
+    val epochMs: Long get() = timestampEpochSec * 1000L
+    val timestampMillis: Long get() = timestampEpochSec * 1000L
+    val price: Float get() = close
+}
+
+/**
  * Complete UI Domain Model representing a financial instrument's live quote and time-series history.
  */
 data class TerminalAssetQuote(
     val symbol: String,
-    val shortName: String,
-    val longName: String,
-    val currency: String,
-    val exchange: String,
-    val regularMarketPrice: Double,
-    val previousClose: Double,
-    val open: Double,
-    val dayHigh: Double,
-    val dayLow: Double,
-    val fiftyTwoWeekHigh: Double,
-    val fiftyTwoWeekLow: Double,
-    val volume: Long,
-    val chartPoints: List<TerminalChartPoint>
+    val shortName: String = "",
+    val longName: String = "",
+    val currency: String = "INR",
+    val exchange: String = "NSE",
+    val regularMarketPrice: Double = 0.0,
+    val previousClose: Double = 0.0,
+    val open: Double = 0.0,
+    val dayHigh: Double = 0.0,
+    val dayLow: Double = 0.0,
+    val fiftyTwoWeekHigh: Double = 0.0,
+    val fiftyTwoWeekLow: Double = 0.0,
+    val volume: Long = 0L,
+    val chartPoints: List<TerminalChartPoint> = emptyList(),
+    val points: List<ChartDataPoint> = emptyList(),
+    val companyName: String = longName.ifBlank { shortName.ifBlank { symbol } },
+    val ltp: Double = regularMarketPrice,
+    val dayChangePct: Double = if (previousClose > 0.0) ((regularMarketPrice - previousClose) / previousClose) * 100.0 else 0.0
 ) {
     val dayChange: Double
         get() = regularMarketPrice - previousClose
 
     val dayChangePercent: Double
-        get() = if (previousClose > 0.0) (dayChange / previousClose) * 100.0 else 0.0
+        get() = dayChangePct
 
     val periodReturnPercent: Double
         get() {
-            val first = chartPoints.firstOrNull()?.price ?: return 0.0
-            val last = chartPoints.lastOrNull()?.price ?: return 0.0
-            return if (first > 0.0) ((last - first) / first) * 100.0 else 0.0
+            if (chartPoints.isNotEmpty()) {
+                val first = chartPoints.firstOrNull()?.price ?: return 0.0
+                val last = chartPoints.lastOrNull()?.price ?: return 0.0
+                return if (first > 0.0) ((last - first) / first) * 100.0 else 0.0
+            }
+            if (points.isNotEmpty()) {
+                val first = points.firstOrNull()?.close?.toDouble() ?: return 0.0
+                val last = points.lastOrNull()?.close?.toDouble() ?: return 0.0
+                return if (first > 0.0) ((last - first) / first) * 100.0 else 0.0
+            }
+            return 0.0
         }
 }
 

@@ -48,7 +48,22 @@ object HoldingsEngine {
         SecurityTemplate("TITAN", "Titan Company Ltd.", "Consumer Discretionary", "Large Cap"),
         SecurityTemplate("ADANIPORTS", "Adani Ports & SEZ Ltd.", "Capital Goods & Infra", "Large Cap"),
         SecurityTemplate("COALINDIA", "Coal India Ltd.", "Metals & Mining", "Large Cap"),
-        SecurityTemplate("HAL", "Hindustan Aeronautics Ltd.", "Aerospace & Defence", "Large Cap")
+        SecurityTemplate("HAL", "Hindustan Aeronautics Ltd.", "Aerospace & Defence", "Large Cap"),
+        SecurityTemplate("ASIANPAINT", "Asian Paints Ltd.", "Consumer Discretionary", "Large Cap"),
+        SecurityTemplate("BAJAJFINSV", "Bajaj Finserv Ltd.", "Financial Services", "Large Cap"),
+        SecurityTemplate("TRENT", "Trent Ltd.", "Consumer Discretionary", "Large Cap"),
+        SecurityTemplate("ZOMATO", "Zomato Ltd.", "Consumer Services", "Large Cap"),
+        SecurityTemplate("GRASIM", "Grasim Industries Ltd.", "Materials & Cement", "Large Cap"),
+        SecurityTemplate("WIPRO", "Wipro Ltd.", "Information Technology", "Large Cap"),
+        SecurityTemplate("TATASTEEL", "Tata Steel Ltd.", "Metals & Mining", "Large Cap"),
+        SecurityTemplate("JSWSTEEL", "JSW Steel Ltd.", "Metals & Mining", "Large Cap"),
+        SecurityTemplate("SIEMENS", "Siemens India Ltd.", "Capital Goods & Infra", "Large Cap"),
+        SecurityTemplate("ABB", "ABB India Ltd.", "Capital Goods & Infra", "Large Cap"),
+        SecurityTemplate("VBL", "Varun Beverages Ltd.", "FMCG", "Large Cap"),
+        SecurityTemplate("BEL", "Bharat Electronics Ltd.", "Aerospace & Defence", "Large Cap"),
+        SecurityTemplate("CHOLAFIN", "Cholamandalam Investment & Finance", "Financial Services", "Large Cap"),
+        SecurityTemplate("INDUSINDBK", "IndusInd Bank Ltd.", "Financial Services", "Large Cap"),
+        SecurityTemplate("DLF", "DLF Ltd.", "Realty & Infrastructure", "Large Cap")
     )
 
     private val midCapUniverse = listOf(
@@ -71,7 +86,20 @@ object HoldingsEngine {
         SecurityTemplate("ASTRAL", "Astral Ltd.", "Materials & Cement", "Mid Cap"),
         SecurityTemplate("SUZLON", "Suzlon Energy Ltd.", "Power & Utilities", "Mid Cap"),
         SecurityTemplate("BSE", "BSE Ltd.", "Financial Services", "Mid Cap"),
-        SecurityTemplate("MCX", "Multi Commodity Exchange of India Ltd.", "Financial Services", "Mid Cap")
+        SecurityTemplate("MCX", "Multi Commodity Exchange of India Ltd.", "Financial Services", "Mid Cap"),
+        SecurityTemplate("TVSMOTOR", "TVS Motor Company Ltd.", "Automobile", "Mid Cap"),
+        SecurityTemplate("TATACOMM", "Tata Communications Ltd.", "Telecommunications", "Mid Cap"),
+        SecurityTemplate("LTIM", "LTIMindtree Ltd.", "Information Technology", "Mid Cap"),
+        SecurityTemplate("TORNTPHARM", "Torrent Pharmaceuticals Ltd.", "Healthcare & Pharma", "Mid Cap"),
+        SecurityTemplate("ALKEM", "Alkem Laboratories Ltd.", "Healthcare & Pharma", "Mid Cap"),
+        SecurityTemplate("GODREJPROP", "Godrej Properties Ltd.", "Realty & Infrastructure", "Mid Cap"),
+        SecurityTemplate("BDL", "Bharat Dynamics Ltd.", "Aerospace & Defence", "Mid Cap"),
+        SecurityTemplate("TATAELXSI", "Tata Elxsi Ltd.", "Information Technology", "Mid Cap"),
+        SecurityTemplate("MUTHOOTFIN", "Muthoot Finance Ltd.", "Financial Services", "Mid Cap"),
+        SecurityTemplate("BALKRISIND", "Balkrishna Industries Ltd.", "Automobile", "Mid Cap"),
+        SecurityTemplate("ESCORTS", "Escorts Kubota Ltd.", "Capital Goods & Infra", "Mid Cap"),
+        SecurityTemplate("DEEPAKNTR", "Deepak Nitrite Ltd.", "Chemicals & Agri", "Mid Cap"),
+        SecurityTemplate("DALBHARAT", "Dalmia Bharat Ltd.", "Materials & Cement", "Mid Cap")
     )
 
     private val smallCapUniverse = listOf(
@@ -86,13 +114,43 @@ object HoldingsEngine {
         SecurityTemplate("KEI", "KEI Industries Ltd.", "Capital Goods & Infra", "Small Cap"),
         SecurityTemplate("RATNAMANI", "Ratnamani Metals & Tubes Ltd.", "Metals & Mining", "Small Cap"),
         SecurityTemplate("APARINDS", "Apar Industries Ltd.", "Capital Goods & Infra", "Small Cap"),
-        SecurityTemplate("TRITURBINE", "Triveni Turbine Ltd.", "Capital Goods & Infra", "Small Cap"),
         SecurityTemplate("KARURVYSYA", "Karur Vysya Bank Ltd.", "Financial Services", "Small Cap"),
-        SecurityTemplate("EQUITASBNK", "Equitas Small Finance Bank Ltd.", "Financial Services", "Small Cap"),
         SecurityTemplate("REDINGTON", "Redington Ltd.", "Information Technology", "Small Cap"),
         SecurityTemplate("NAVINFLUOR", "Navin Fluorine International Ltd.", "Chemicals & Agri", "Small Cap"),
         SecurityTemplate("RADICO", "Radico Khaitan Ltd.", "FMCG", "Small Cap"),
-        SecurityTemplate("PRAJIND", "Praj Industries Ltd.", "Capital Goods & Infra", "Small Cap")
+        SecurityTemplate("ROUTE", "Route Mobile Ltd.", "Telecommunications", "Small Cap"),
+        SecurityTemplate("AFFLE", "Affle (India) Ltd.", "Information Technology", "Small Cap"),
+        SecurityTemplate("CEATLTD", "CEAT Ltd.", "Automobile", "Small Cap"),
+        SecurityTemplate("HFCL", "HFCL Ltd.", "Telecommunications", "Small Cap"),
+        SecurityTemplate("CASTROLIND", "Castrol India Ltd.", "Chemicals & Agri", "Small Cap"),
+        SecurityTemplate("CENTURYPLY", "Century Plyboards (India) Ltd.", "Materials & Cement", "Small Cap"),
+        SecurityTemplate("TEJASNET", "Tejas Networks Ltd.", "Telecommunications", "Small Cap"),
+        SecurityTemplate("PPLPHARMA", "Piramal Pharma Ltd.", "Healthcare & Pharma", "Small Cap"),
+        SecurityTemplate("NCC", "NCC Ltd.", "Capital Goods & Infra", "Small Cap"),
+        SecurityTemplate("FINCABLES", "Finolex Cables Ltd.", "Capital Goods & Infra", "Small Cap"),
+        SecurityTemplate("ELECON", "Elecon Engineering Company Ltd.", "Capital Goods & Infra", "Small Cap"),
+        SecurityTemplate("BLS", "BLS International Services Ltd.", "Consumer Services", "Small Cap"),
+        SecurityTemplate("GRAVITA", "Gravita India Ltd.", "Metals & Mining", "Small Cap"),
+        SecurityTemplate("ANANTRAJ", "Anant Raj Ltd.", "Realty & Infrastructure", "Small Cap"),
+        SecurityTemplate("JUBLINGREA", "Jubilant Ingrevia Ltd.", "Chemicals & Agri", "Small Cap")
+    )
+
+    private val microCapUniverse = listOf(
+        SecurityTemplate("TRITURBINE", "Triveni Turbine Ltd.", "Capital Goods & Infra", "Micro Cap"),
+        SecurityTemplate("PRAJIND", "Praj Industries Ltd.", "Capital Goods & Infra", "Micro Cap"),
+        SecurityTemplate("EQUITASBNK", "Equitas Small Finance Bank Ltd.", "Financial Services", "Micro Cap"),
+        SecurityTemplate("KNRCON", "KNR Constructions Ltd.", "Capital Goods & Infra", "Micro Cap"),
+        SecurityTemplate("GATEWAY", "Gateway Distriparks Ltd.", "Logistics & Transport", "Micro Cap"),
+        SecurityTemplate("DODLA", "Dodla Dairy Ltd.", "FMCG", "Micro Cap"),
+        SecurityTemplate("PARAS", "Paras Defence & Space Technologies", "Aerospace & Defence", "Micro Cap"),
+        SecurityTemplate("DCBBANK", "DCB Bank Ltd.", "Financial Services", "Micro Cap"),
+        SecurityTemplate("SANGHVIMOV", "Sanghvi Movers Ltd.", "Capital Goods & Infra", "Micro Cap"),
+        SecurityTemplate("SHILPAMED", "Shilpa Medicare Ltd.", "Healthcare & Pharma", "Micro Cap"),
+        SecurityTemplate("TIPSINDLTD", "Tips Music Ltd.", "Consumer Services", "Micro Cap"),
+        SecurityTemplate("STERTOOLS", "Sterling Tools Ltd.", "Automobile", "Micro Cap"),
+        SecurityTemplate("APCOTEXIND", "Apcotex Industries Ltd.", "Chemicals & Agri", "Micro Cap"),
+        SecurityTemplate("VIJAYA", "Vijaya Diagnostic Centre Ltd.", "Healthcare & Pharma", "Micro Cap"),
+        SecurityTemplate("LANDMARK", "Landmark Cars Ltd.", "Automobile", "Micro Cap")
     )
 
     private val debtAndMoneyMarketUniverse = listOf(
@@ -104,9 +162,15 @@ object HoldingsEngine {
         SecurityTemplate("PFC-AAA", "Power Finance Corp 7.68% AAA NCD", "PSU & Quasi-Sovereign", "Debt & Cash"),
         SecurityTemplate("HDFC-NCD", "HDFC Bank 7.85% Senior Tier-II Bond", "Corporate Debt", "Debt & Cash"),
         SecurityTemplate("LICHF-AAA", "LIC Housing Finance 7.78% AAA NCD", "Corporate Debt", "Debt & Cash"),
+        SecurityTemplate("IRFC-AAA", "Indian Railway Finance Corp 7.55% AAA NCD", "PSU & Quasi-Sovereign", "Debt & Cash"),
+        SecurityTemplate("NHAI-AAA", "National Highways Authority 7.60% AAA Bond", "PSU & Quasi-Sovereign", "Debt & Cash"),
+        SecurityTemplate("EXIM-AAA", "Export-Import Bank of India 7.70% AAA Bond", "PSU & Quasi-Sovereign", "Debt & Cash"),
         SecurityTemplate("RBI-TBILL-91D", "91-Day Government of India Treasury Bill", "Money Market", "Debt & Cash"),
         SecurityTemplate("RBI-TBILL-182D", "182-Day Government of India Treasury Bill", "Money Market", "Debt & Cash"),
+        SecurityTemplate("RBI-TBILL-364D", "364-Day Government of India Treasury Bill", "Money Market", "Debt & Cash"),
         SecurityTemplate("SIDBI-CP", "SIDBI Commercial Paper A1+", "Money Market", "Debt & Cash"),
+        SecurityTemplate("AXIS-CP", "Axis Bank Commercial Paper A1+", "Money Market", "Debt & Cash"),
+        SecurityTemplate("CANARA-CD", "Canara Bank Certificate of Deposit A1+", "Money Market", "Debt & Cash"),
         SecurityTemplate("TREPS-CCIL", "CCIL Tri-Party Repo (TREPS) Overnight", "Cash & Equivalents", "Debt & Cash")
     )
 
@@ -243,7 +307,7 @@ object HoldingsEngine {
     ): List<UnderlyingHolding> = generateHoldingsForScheme(schemeCode, schemeName, category, assetClass)
 
     /**
-     * Deterministically generates 18 to 22 realistic constituent holdings for a given scheme.
+     * Deterministically generates 45 to 70+ realistic constituent holdings for a given scheme without artificial caps.
      */
     fun generateHoldingsForScheme(
         schemeCode: Int,
@@ -259,59 +323,69 @@ object HoldingsEngine {
                 candidatePool.addAll(debtAndMoneyMarketUniverse.shuffled(rng))
             }
             assetClass.equals("Hybrid", ignoreCase = true) -> {
-                candidatePool.addAll(largeCapUniverse.shuffled(rng).take(11))
-                candidatePool.addAll(midCapUniverse.shuffled(rng).take(4))
-                candidatePool.addAll(debtAndMoneyMarketUniverse.shuffled(rng).take(5))
+                candidatePool.addAll(largeCapUniverse.shuffled(rng).take(28))
+                candidatePool.addAll(midCapUniverse.shuffled(rng).take(15))
+                candidatePool.addAll(debtAndMoneyMarketUniverse.shuffled(rng).take(12))
             }
             category.contains("Small Cap", ignoreCase = true) -> {
-                candidatePool.addAll(smallCapUniverse.shuffled(rng).take(14))
-                candidatePool.addAll(midCapUniverse.shuffled(rng).take(5))
-                candidatePool.addAll(debtAndMoneyMarketUniverse.shuffled(rng).take(1))
+                candidatePool.addAll(smallCapUniverse.shuffled(rng).take(26))
+                candidatePool.addAll(microCapUniverse.shuffled(rng).take(14))
+                candidatePool.addAll(midCapUniverse.shuffled(rng).take(15))
+                candidatePool.addAll(largeCapUniverse.shuffled(rng).take(6))
+                candidatePool.addAll(debtAndMoneyMarketUniverse.shuffled(rng).take(2))
             }
             category.contains("Mid Cap", ignoreCase = true) -> {
-                candidatePool.addAll(midCapUniverse.shuffled(rng).take(14))
-                candidatePool.addAll(largeCapUniverse.shuffled(rng).take(4))
-                candidatePool.addAll(smallCapUniverse.shuffled(rng).take(2))
+                candidatePool.addAll(midCapUniverse.shuffled(rng).take(30))
+                candidatePool.addAll(largeCapUniverse.shuffled(rng).take(15))
+                candidatePool.addAll(smallCapUniverse.shuffled(rng).take(15))
+                candidatePool.addAll(microCapUniverse.shuffled(rng).take(4))
+                candidatePool.addAll(debtAndMoneyMarketUniverse.shuffled(rng).take(2))
             }
             category.contains("Sectoral - IT", ignoreCase = true) -> {
-                val itStocks = (largeCapUniverse + midCapUniverse + smallCapUniverse)
+                val itStocks = (largeCapUniverse + midCapUniverse + smallCapUniverse + microCapUniverse)
                     .filter { it.sector == "Information Technology" }
                 candidatePool.addAll(itStocks.shuffled(rng))
-                candidatePool.addAll(largeCapUniverse.shuffled(rng).take(8))
+                candidatePool.addAll(largeCapUniverse.shuffled(rng).take(18))
+                candidatePool.addAll(midCapUniverse.shuffled(rng).take(10))
             }
             category.contains("Sectoral - Healthcare", ignoreCase = true) -> {
-                val pharmaStocks = (largeCapUniverse + midCapUniverse + smallCapUniverse)
+                val pharmaStocks = (largeCapUniverse + midCapUniverse + smallCapUniverse + microCapUniverse)
                     .filter { it.sector == "Healthcare & Pharma" }
                 candidatePool.addAll(pharmaStocks.shuffled(rng))
-                candidatePool.addAll(largeCapUniverse.shuffled(rng).take(8))
+                candidatePool.addAll(largeCapUniverse.shuffled(rng).take(18))
+                candidatePool.addAll(midCapUniverse.shuffled(rng).take(10))
             }
             category.contains("Flexi Cap", ignoreCase = true) || category.contains("Multi Cap", ignoreCase = true) -> {
-                candidatePool.addAll(largeCapUniverse.shuffled(rng).take(11))
-                candidatePool.addAll(midCapUniverse.shuffled(rng).take(6))
-                candidatePool.addAll(smallCapUniverse.shuffled(rng).take(4))
+                candidatePool.addAll(largeCapUniverse.shuffled(rng).take(30))
+                candidatePool.addAll(midCapUniverse.shuffled(rng).take(20))
+                candidatePool.addAll(smallCapUniverse.shuffled(rng).take(14))
+                candidatePool.addAll(microCapUniverse.shuffled(rng).take(6))
+                candidatePool.addAll(debtAndMoneyMarketUniverse.shuffled(rng).take(3))
             }
             else -> {
                 // Default Large Cap / Index / ELSS mix
-                candidatePool.addAll(largeCapUniverse.shuffled(rng).take(16))
-                candidatePool.addAll(midCapUniverse.shuffled(rng).take(4))
+                candidatePool.addAll(largeCapUniverse.shuffled(rng).take(35))
+                candidatePool.addAll(midCapUniverse.shuffled(rng).take(18))
+                candidatePool.addAll(smallCapUniverse.shuffled(rng).take(6))
+                candidatePool.addAll(debtAndMoneyMarketUniverse.shuffled(rng).take(2))
             }
         }
 
-        val uniquePool = candidatePool.distinctBy { it.ticker }.take(20)
+        val uniquePool = candidatePool.distinctBy { it.ticker }
         if (uniquePool.isEmpty()) return emptyList()
 
-        // Generate descending institutional weights summing to ~95.5%
+        // Generate descending institutional weights summing to ~98.2%
         val rawScores = uniquePool.mapIndexed { idx, _ ->
-            val rankFactor = (uniquePool.size - idx).toDouble().pow(1.28)
-            val jitter = 0.82 + (rng.nextDouble() * 0.36)
+            val rankFactor = (uniquePool.size - idx).toDouble().pow(1.32)
+            val jitter = 0.85 + (rng.nextDouble() * 0.30)
             rankFactor * jitter
         }
         val totalScore = rawScores.sum().coerceAtLeast(1.0)
-        val targetAllocatedPercent = 95.5
+        val targetAllocatedPercent = 98.2
 
         return uniquePool.mapIndexed { idx, security ->
             val rawWeight = (rawScores[idx] / totalScore) * targetAllocatedPercent
-            val roundedWeight = ((rawWeight * 100.0).roundToInt() / 100.0).coerceAtLeast(0.45)
+            val roundedWeight = ((rawWeight * 100.0).roundToInt() / 100.0).coerceAtLeast(0.15)
             UnderlyingHolding(
                 ticker = security.ticker,
                 companyName = security.companyName,
@@ -321,4 +395,29 @@ object HoldingsEngine {
             )
         }.sortedByDescending { it.weightPercent }
     }
+
+    fun isCashHolding(h: UnderlyingHolding): Boolean =
+        h.sector.contains("Cash", ignoreCase = true) ||
+                h.marketCapBucket.contains("Cash & Net", ignoreCase = true) ||
+                h.ticker.contains("TREPS", ignoreCase = true) ||
+                h.ticker.contains("CASH", ignoreCase = true) ||
+                h.ticker.contains("NET_RECEIVABLES", ignoreCase = true)
+
+    fun isDebtHolding(h: UnderlyingHolding): Boolean =
+        !isCashHolding(h) && (
+                h.sector.contains("Debt", ignoreCase = true) ||
+                h.sector.contains("Sovereign", ignoreCase = true) ||
+                h.sector.contains("Money Market", ignoreCase = true) ||
+                h.sector.contains("PSU & Quasi", ignoreCase = true) ||
+                h.sector.contains("Corporate Debt", ignoreCase = true) ||
+                h.marketCapBucket.contains("Debt", ignoreCase = true) ||
+                h.companyName.contains("Bond", ignoreCase = true) ||
+                h.companyName.contains("G-Sec", ignoreCase = true) ||
+                h.companyName.contains("Treasury Bill", ignoreCase = true) ||
+                h.companyName.contains("Commercial Paper", ignoreCase = true) ||
+                h.companyName.contains("Certificate of Deposit", ignoreCase = true)
+        )
+
+    fun isEquityHolding(h: UnderlyingHolding): Boolean =
+        !isCashHolding(h) && !isDebtHolding(h)
 }

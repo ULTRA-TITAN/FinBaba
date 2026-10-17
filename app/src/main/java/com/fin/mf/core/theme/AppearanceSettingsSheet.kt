@@ -226,7 +226,7 @@ private fun LiveThemePreviewCard(gradient: VaultGradient) {
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "INSTITUTIONAL CORE • ${gradient.displayName.uppercase()}",
+                            text = "FINBABA STUDIO • ${gradient.displayName.uppercase()}",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White.copy(alpha = 0.85f)
@@ -368,7 +368,7 @@ private fun ThemePresetPill(
                         color = SheetSlatePrimary
                     )
                     Text(
-                        text = if (preset.id == "cobalt_sky") "Default Institutional Palette" else "Dynamic Studio Brand Preset",
+                        text = if (preset.id == "cobalt_sky") "Default Studio Palette" else "Dynamic Studio Brand Preset",
                         fontSize = 11.sp,
                         color = SheetSlateSecondary
                     )

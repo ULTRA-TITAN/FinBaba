@@ -106,12 +106,13 @@ object PortfolioAnalyticsEngine {
                 allocatedHoldingsRupees += rupeeContribution
 
                 val normalizedTicker = holding.ticker.trim().uppercase(Locale.US)
+                val classifiedTier = classifyMarketCapTier(holding.marketCapBucket, holding.sector)
                 val accumulator = stockMap.getOrPut(normalizedTicker) {
                     MutableStockAccumulator(
                         ticker = normalizedTicker,
                         companyName = holding.companyName,
                         sector = holding.sector,
-                        marketCapBucket = holding.marketCapBucket
+                        marketCapBucket = classifiedTier
                     )
                 }
                 accumulator.totalRupeeExposure += rupeeContribution
@@ -124,28 +125,45 @@ object PortfolioAnalyticsEngine {
                     )
                 )
 
-                val bucketKey = holding.marketCapBucket.ifBlank { "Large Cap" }
-                marketCapRupeeMap[bucketKey] =
-                    (marketCapRupeeMap[bucketKey] ?: 0.0) + rupeeContribution
+                marketCapRupeeMap[classifiedTier] =
+                    (marketCapRupeeMap[classifiedTier] ?: 0.0) + rupeeContribution
             }
         }
 
         val unallocatedTailRupees = (totalCurrentValue - allocatedHoldingsRupees).coerceAtLeast(0.0)
         if (unallocatedTailRupees > 1.0) {
-            marketCapRupeeMap["Diversified Tail & Cash"] =
-                (marketCapRupeeMap["Diversified Tail & Cash"] ?: 0.0) + unallocatedTailRupees
+            marketCapRupeeMap["Debt & Cash"] =
+                (marketCapRupeeMap["Debt & Cash"] ?: 0.0) + unallocatedTailRupees
         }
 
-        val marketCapBreakdown = marketCapRupeeMap.entries
-            .map { (bucket, value) ->
-                val weight = if (totalCurrentValue > 0.0) (value / totalCurrentValue) * 100.0 else 0.0
+        // Standard SEBI Order: Large Cap -> Mid Cap -> Small Cap -> Micro Cap
+        val sebiTiers = listOf("Large Cap", "Mid Cap", "Small Cap", "Micro Cap")
+        val marketCapBreakdown = mutableListOf<AllocationSlice>()
+
+        for (tier in sebiTiers) {
+            val value = marketCapRupeeMap[tier] ?: 0.0
+            val weight = if (totalCurrentValue > 0.0) (value / totalCurrentValue) * 100.0 else 0.0
+            marketCapBreakdown.add(
                 AllocationSlice(
-                    label = bucket,
+                    label = tier,
                     rupeeValue = value,
                     weightPercent = weight
                 )
+            )
+        }
+
+        for ((bucket, value) in marketCapRupeeMap) {
+            if (bucket !in sebiTiers && value > 0.0) {
+                val weight = if (totalCurrentValue > 0.0) (value / totalCurrentValue) * 100.0 else 0.0
+                marketCapBreakdown.add(
+                    AllocationSlice(
+                        label = bucket,
+                        rupeeValue = value,
+                        weightPercent = weight
+                    )
+                )
             }
-            .sortedByDescending { it.rupeeValue }
+        }
 
         val aggregatedStocks = stockMap.values
             .map { acc ->
@@ -187,6 +205,17 @@ object PortfolioAnalyticsEngine {
             }
             .sortedByDescending { it.totalRupeeValue }
 
+        // Day-over-day P&L calculation
+        val hasAnyDayChange = schemes.any { it.dayChange != 0.0 }
+        val (todayGain, todayGainPercent) = if (hasAnyDayChange) {
+            val netTodayGain = schemes.sumOf { it.units * it.dayChange }
+            val prevPortfolioVal = totalCurrentValue - netTodayGain
+            val pct = if (prevPortfolioVal > 0.0) (netTodayGain / prevPortfolioVal) * 100.0 else 0.0
+            Pair(netTodayGain, pct)
+        } else {
+            Pair(null, null)
+        }
+
         return PortfolioAnalyticsSummary(
             totalInvested = totalInvested,
             totalCurrentValue = totalCurrentValue,
@@ -198,8 +227,44 @@ object PortfolioAnalyticsEngine {
             marketCapBreakdown = marketCapBreakdown,
             topHoldings = aggregatedStocks,
             sectorBreakdown = sectorBreakdown,
-            highOverlapStocksCount = highOverlapStocksCount
+            highOverlapStocksCount = highOverlapStocksCount,
+            todayGain = todayGain,
+            todayGainPercent = todayGainPercent
         )
+    }
+
+    /**
+     * Normalizes and explicitly classifies market cap buckets into standard SEBI tiers or Debt/Cash.
+     * Prevents string mismatch anomalies and separates non-equity instruments.
+     */
+    private fun classifyMarketCapTier(bucket: String, sector: String): String {
+        val normalized = bucket.trim().lowercase(Locale.US)
+        val normalizedSector = sector.trim().lowercase(Locale.US)
+
+        val isDebtOrCash = normalized.contains("debt") ||
+                normalized.contains("cash") ||
+                normalized.contains("money market") ||
+                normalized.contains("g-sec") ||
+                normalized.contains("t-bill") ||
+                normalized.contains("repo") ||
+                normalized.contains("bond") ||
+                normalizedSector.contains("sovereign debt") ||
+                normalizedSector.contains("corporate debt") ||
+                normalizedSector.contains("money market") ||
+                normalizedSector.contains("cash & equivalents") ||
+                normalizedSector.contains("psu & quasi-sovereign")
+
+        if (isDebtOrCash) {
+            return "Debt & Cash"
+        }
+
+        return when {
+            normalized.contains("large") || normalized.contains("top 100") -> "Large Cap"
+            normalized.contains("mid") || normalized.contains("101-250") -> "Mid Cap"
+            normalized.contains("micro") || normalized.contains("501+") -> "Micro Cap"
+            normalized.contains("small") || normalized.contains("251-500") || normalized.contains("251+") -> "Small Cap"
+            else -> "Unclassified Equity"
+        }
     }
 
     /**

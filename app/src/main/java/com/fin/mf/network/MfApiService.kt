@@ -58,7 +58,7 @@ object NetworkClient {
 
     /**
      * Shared Moshi instance exposed so PortfolioRepository can reuse the exact same
-     * reflection factory for reading/writing `portfolio_seed.json` and `portfolio_active.json`.
+     * reflection factory for reading/writing `portfolios_manifest.json` and `portfolio_{id}.json`.
      */
     val moshi: Moshi by lazy {
         Moshi.Builder()

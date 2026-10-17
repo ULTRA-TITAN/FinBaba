@@ -3,18 +3,26 @@ package com.fin.mf.tools.terminal.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fin.mf.tools.terminal.data.BenchmarkComparisonPoint
+import com.fin.mf.tools.terminal.data.ChartDataPoint
 import com.fin.mf.tools.terminal.data.MarketTerminalRepository
+import com.fin.mf.tools.terminal.data.StockFundamentalSummary
 import com.fin.mf.tools.terminal.data.TerminalAssetQuote
 import com.fin.mf.tools.terminal.data.TerminalChartPoint
 import com.fin.mf.tools.terminal.data.TerminalTimeframe
 import com.fin.mf.tools.terminal.data.YahooSearchQuoteItem
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class WatchlistStock(
     val symbol: String,
@@ -25,15 +33,30 @@ data class WatchlistStock(
     val currency: String? = null
 )
 
+data class ChartIndicatorConfig(
+    val showVolume: Boolean = true,
+    val showSma50: Boolean = true,
+    val showSma200: Boolean = false,
+    val isRulerActive: Boolean = false,
+    val showBenchmarkNifty50: Boolean = false
+)
+
 data class TerminalUiState(
     val selectedSymbol: String = "RELIANCE.NS",
     val selectedTimeframe: TerminalTimeframe = TerminalTimeframe.ONE_DAY,
     val activeQuote: TerminalAssetQuote? = null,
+    val stockFundamentals: StockFundamentalSummary? = null,
     val isLoadingChart: Boolean = false,
+    val isLoadingFundamentals: Boolean = false,
     val chartErrorMessage: String? = null,
     val isBenchmarkOverlayEnabled: Boolean = false,
     val benchmarkSymbol: String = "^NSEI",
     val benchmarkComparisonPoints: List<BenchmarkComparisonPoint> = emptyList(),
+    val benchmarkPoints: List<ChartDataPoint> = emptyList(),
+    val sma50Series: List<Float?> = emptyList(),
+    val sma200Series: List<Float?> = emptyList(),
+    val indicatorConfig: ChartIndicatorConfig = ChartIndicatorConfig(),
+    val isFullscreenOpen: Boolean = false,
     val isLoadingBenchmark: Boolean = false,
     val searchQuery: String = "",
     val isSearching: Boolean = false,
@@ -60,16 +83,60 @@ class MarketTerminalViewModel(
     private val _uiState = MutableStateFlow(TerminalUiState())
     val uiState: StateFlow<TerminalUiState> = _uiState.asStateFlow()
 
+    // Individual StateFlows for high-frequency consumption
+    val selectedSymbol: StateFlow<String> = _uiState.map { it.selectedSymbol }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, _uiState.value.selectedSymbol)
+    val selectedTimeframe: StateFlow<TerminalTimeframe> = _uiState.map { it.selectedTimeframe }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, _uiState.value.selectedTimeframe)
+    val activeQuote: StateFlow<TerminalAssetQuote?> = _uiState.map { it.activeQuote }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, _uiState.value.activeQuote)
+    val stockFundamentals: StateFlow<StockFundamentalSummary?> = _uiState.map { it.stockFundamentals }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, _uiState.value.stockFundamentals)
+    val isLoadingChart: StateFlow<Boolean> = _uiState.map { it.isLoadingChart }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, _uiState.value.isLoadingChart)
+    val isLoadingFundamentals: StateFlow<Boolean> = _uiState.map { it.isLoadingFundamentals }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, _uiState.value.isLoadingFundamentals)
+    val indicatorConfig: StateFlow<ChartIndicatorConfig> = _uiState.map { it.indicatorConfig }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, _uiState.value.indicatorConfig)
+    val isFullscreenOpen: StateFlow<Boolean> = _uiState.map { it.isFullscreenOpen }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, _uiState.value.isFullscreenOpen)
+    val sma50Series: StateFlow<List<Float?>> = _uiState.map { it.sma50Series }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, _uiState.value.sma50Series)
+    val sma200Series: StateFlow<List<Float?>> = _uiState.map { it.sma200Series }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, _uiState.value.sma200Series)
+    val benchmarkPoints: StateFlow<List<ChartDataPoint>> = _uiState.map { it.benchmarkPoints }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, _uiState.value.benchmarkPoints)
+    val searchQuery: StateFlow<String> = _uiState.map { it.searchQuery }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, _uiState.value.searchQuery)
+    val searchResults: StateFlow<List<YahooSearchQuoteItem>> = _uiState.map { it.searchResults }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, _uiState.value.searchResults)
+    val errorMessage: StateFlow<String?> = _uiState.map { it.chartErrorMessage }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, _uiState.value.chartErrorMessage)
+
+    val quickWatchlistSymbols = listOf(
+        "RELIANCE.NS",
+        "TCS.NS",
+        "HDFCBANK.NS",
+        "INFY.NS",
+        "ICICIBANK.NS",
+        "AAPL",
+        "NVDA",
+        "MSFT"
+    )
+
     private var chartFetchJob: Job? = null
+    private var fundamentalsJob: Job? = null
     private var benchmarkFetchJob: Job? = null
     private var searchJob: Job? = null
 
     init {
         loadAssetChart(_uiState.value.selectedSymbol, _uiState.value.selectedTimeframe)
+        triggerFundamentalsFetch(_uiState.value.selectedSymbol)
     }
 
     fun selectSymbol(symbol: String) {
         val cleanSymbol = symbol.trim().uppercase()
+        if (cleanSymbol.isEmpty()) return
         if (cleanSymbol == _uiState.value.selectedSymbol && _uiState.value.activeQuote != null) return
 
         _uiState.update {
@@ -79,14 +146,16 @@ class MarketTerminalViewModel(
                 pointerA = null,
                 pointerB = null,
                 searchQuery = "",
-                searchResults = emptyList()
+                searchResults = emptyList(),
+                chartErrorMessage = null
             )
         }
         loadAssetChart(cleanSymbol, _uiState.value.selectedTimeframe)
+        triggerFundamentalsFetch(cleanSymbol)
     }
 
     fun selectTimeframe(timeframe: TerminalTimeframe) {
-        if (timeframe == _uiState.value.selectedTimeframe) return
+        if (timeframe == _uiState.value.selectedTimeframe && _uiState.value.activeQuote != null) return
         _uiState.update {
             it.copy(
                 selectedTimeframe = timeframe,
@@ -98,16 +167,51 @@ class MarketTerminalViewModel(
         loadAssetChart(_uiState.value.selectedSymbol, timeframe)
     }
 
-    fun toggleBenchmarkOverlay() {
-        val willEnable = !_uiState.value.isBenchmarkOverlayEnabled
-        _uiState.update { it.copy(isBenchmarkOverlayEnabled = willEnable) }
-        if (willEnable) {
+    fun toggleVolume() {
+        _uiState.update { it.copy(indicatorConfig = it.indicatorConfig.copy(showVolume = !it.indicatorConfig.showVolume)) }
+    }
+
+    fun toggleSma50() {
+        _uiState.update { it.copy(indicatorConfig = it.indicatorConfig.copy(showSma50 = !it.indicatorConfig.showSma50)) }
+    }
+
+    fun toggleSma200() {
+        _uiState.update { it.copy(indicatorConfig = it.indicatorConfig.copy(showSma200 = !it.indicatorConfig.showSma200)) }
+    }
+
+    fun toggleRulerTool() {
+        _uiState.update {
+            val nextRuler = !it.indicatorConfig.isRulerActive
+            it.copy(
+                isDualPointerMode = nextRuler,
+                indicatorConfig = it.indicatorConfig.copy(isRulerActive = nextRuler)
+            )
+        }
+    }
+
+    fun toggleBenchmarkNifty50() {
+        val nextState = !_uiState.value.indicatorConfig.showBenchmarkNifty50
+        _uiState.update {
+            it.copy(
+                isBenchmarkOverlayEnabled = nextState,
+                indicatorConfig = it.indicatorConfig.copy(showBenchmarkNifty50 = nextState)
+            )
+        }
+        if (nextState) {
             loadBenchmarkComparison(
                 _uiState.value.selectedSymbol,
                 _uiState.value.benchmarkSymbol,
                 _uiState.value.selectedTimeframe
             )
         }
+    }
+
+    fun setFullscreenOpen(open: Boolean) {
+        _uiState.update { it.copy(isFullscreenOpen = open) }
+    }
+
+    fun toggleBenchmarkOverlay() {
+        toggleBenchmarkNifty50()
     }
 
     fun setBenchmarkSymbol(benchmarkSymbol: String) {
@@ -123,6 +227,7 @@ class MarketTerminalViewModel(
 
     fun refreshActiveQuote() {
         loadAssetChart(_uiState.value.selectedSymbol, _uiState.value.selectedTimeframe)
+        triggerFundamentalsFetch(_uiState.value.selectedSymbol)
     }
 
     fun onSearchQueryChanged(query: String) {
@@ -156,26 +261,7 @@ class MarketTerminalViewModel(
     }
 
     fun toggleDualPointerMode() {
-        val willBeDual = !_uiState.value.isDualPointerMode
-        _uiState.update { current ->
-            if (willBeDual) {
-                val points = current.activeQuote?.chartPoints ?: emptyList()
-                val ptA = points.getOrNull((points.size * 0.25).toInt()) ?: points.firstOrNull()
-                val ptB = points.getOrNull((points.size * 0.85).toInt()) ?: points.lastOrNull()
-                current.copy(
-                    isDualPointerMode = true,
-                    pointerA = ptA,
-                    pointerB = ptB,
-                    scrubbedPoint = null
-                )
-            } else {
-                current.copy(
-                    isDualPointerMode = false,
-                    pointerA = null,
-                    pointerB = null
-                )
-            }
-        }
+        toggleRulerTool()
     }
 
     fun setPointerA(point: TerminalChartPoint?) {
@@ -198,6 +284,26 @@ class MarketTerminalViewModel(
         }
     }
 
+    private fun triggerFundamentalsFetch(symbol: String) {
+        fundamentalsJob?.cancel()
+        fundamentalsJob = viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingFundamentals = true) }
+            repository.fetchStockFundamentals(symbol)
+                .onSuccess { summary ->
+                    val currentLtp = _uiState.value.activeQuote?.ltp
+                    val finalSummary = if (summary.currentPrice == null && currentLtp != null) {
+                        summary.copy(currentPrice = currentLtp)
+                    } else {
+                        summary
+                    }
+                    _uiState.update { it.copy(stockFundamentals = finalSummary, isLoadingFundamentals = false) }
+                }
+                .onFailure {
+                    _uiState.update { it.copy(isLoadingFundamentals = false) }
+                }
+        }
+    }
+
     private fun loadAssetChart(symbol: String, timeframe: TerminalTimeframe) {
         chartFetchJob?.cancel()
         chartFetchJob = viewModelScope.launch {
@@ -205,6 +311,11 @@ class MarketTerminalViewModel(
             val chartResult = repository.fetchChart(symbol, timeframe)
 
             chartResult.onSuccess { quote ->
+                // Compute Moving Averages on Dispatchers.Default
+                val (sma50, sma200) = withContext(Dispatchers.Default) {
+                    computeMovingAverages(quote.points)
+                }
+
                 _uiState.update {
                     val defaultPtA = if (it.isDualPointerMode) {
                         quote.chartPoints.getOrNull((quote.chartPoints.size * 0.25).toInt()) ?: quote.chartPoints.firstOrNull()
@@ -229,8 +340,23 @@ class MarketTerminalViewModel(
                         isLoadingChart = false,
                         chartErrorMessage = null,
                         pointerA = defaultPtA,
-                        pointerB = defaultPtB
+                        pointerB = defaultPtB,
+                        sma50Series = sma50,
+                        sma200Series = sma200
                     )
+                }
+
+                // Synchronize price with stock fundamentals
+                _uiState.update { current ->
+                    current.stockFundamentals?.let { fund ->
+                        current.copy(
+                            stockFundamentals = fund.copy(
+                                currentPrice = quote.ltp,
+                                fiftyTwoWeekHigh = fund.fiftyTwoWeekHigh ?: quote.fiftyTwoWeekHigh,
+                                fiftyTwoWeekLow = fund.fiftyTwoWeekLow ?: quote.fiftyTwoWeekLow
+                            )
+                        )
+                    } ?: current
                 }
 
                 if (_uiState.value.isBenchmarkOverlayEnabled) {
@@ -273,5 +399,38 @@ class MarketTerminalViewModel(
                 }
             }
         }
+    }
+
+    private fun computeMovingAverages(
+        points: List<ChartDataPoint>
+    ): Pair<List<Float?>, List<Float?>> {
+        if (points.isEmpty()) return emptyList<Float?>() to emptyList()
+        val n = points.size
+        val sma50 = MutableList<Float?>(n) { null }
+        val sma200 = MutableList<Float?>(n) { null }
+
+        var rollingSum50 = 0.0
+        var rollingSum200 = 0.0
+
+        for (i in 0 until n) {
+            val close = points[i].close.toDouble()
+            rollingSum50 += close
+            rollingSum200 += close
+
+            if (i >= 50) {
+                rollingSum50 -= points[i - 50].close.toDouble()
+            }
+            if (i >= 49) {
+                sma50[i] = (rollingSum50 / 50.0).toFloat()
+            }
+
+            if (i >= 200) {
+                rollingSum200 -= points[i - 200].close.toDouble()
+            }
+            if (i >= 199) {
+                sma200[i] = (rollingSum200 / 200.0).toFloat()
+            }
+        }
+        return sma50 to sma200
     }
 }

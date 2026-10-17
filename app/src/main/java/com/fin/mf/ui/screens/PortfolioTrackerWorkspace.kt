@@ -1,8 +1,14 @@
 package com.fin.mf.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,6 +30,8 @@ import androidx.compose.material.icons.filled.AutoGraph
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import com.fin.mf.data.PortfolioMeta
 import com.fin.mf.ui.workspace.dialogs.PortfolioSwitcherBottomSheet
 import com.fin.mf.ui.workspace.dialogs.CreatePortfolioDialog
@@ -41,6 +49,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
@@ -50,6 +59,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.fin.mf.ui.components.bounceClick
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -126,7 +136,7 @@ fun PortfolioTrackerWorkspace(
     var activeTab by rememberSaveable(initialTabIndex) {
         mutableStateOf(WorkspaceTab.fromIndex(initialTabIndex))
     }
-    var showResetConfirmDialog by remember { mutableStateOf(false) }
+    var showClearConfirmDialog by remember { mutableStateOf(false) }
     var showAmfiAddDialog by rememberSaveable { mutableStateOf(false) }
     var showCsvDialog by rememberSaveable { mutableStateOf(false) }
     var showSettingsDialog by rememberSaveable { mutableStateOf(false) }
@@ -166,56 +176,51 @@ fun PortfolioTrackerWorkspace(
                     }
                 },
                 title = {
-                    Column {
-                        val isXRay = activeTab == WorkspaceTab.XRAY
-                        val schemeCount = uiState.portfolioData?.schemes?.size ?: 0
-                        val holdingsCount = uiState.analytics?.topHoldings?.size ?: 0
+                    val activeVaultName = uiState.portfolioData?.portfolioName ?: "Primary Vault"
+                    val schemeCount = uiState.portfolioData?.schemes?.size ?: 0
 
-                        if (isXRay) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { showPortfolioSwitcherSheet = true }
+                                .padding(vertical = 2.dp, horizontal = 2.dp)
+                        ) {
                             Text(
-                                text = "Portfolio X-Ray",
+                                text = activeVaultName,
                                 fontSize = 17.sp,
-                                fontWeight = FontWeight.ExtraBold,
+                                fontWeight = FontWeight.Bold,
                                 color = WsSlateTextPrimary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            Text(
-                                text = "DEEP DIAGNOSTICS • $schemeCount FUNDS • $holdingsCount STOCKS",
-                                fontSize = 11.sp,
-                                color = WsSlateTextSecondary
-                            )
-                        } else {
-                            val activeName = uiState.portfolioData?.portfolioName ?: "Portfolio"
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .clickable { showPortfolioSwitcherSheet = true }
-                                    .padding(vertical = 2.dp)
-                            ) {
-                                Text(
-                                    text = activeName,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = WsSlateTextPrimary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = "Switch Portfolio",
-                                    tint = gradient.startColor,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Text(
-                                text = "$schemeCount Active Schemes • Tap to Switch",
-                                fontSize = 11.sp,
-                                color = WsSlateTextSecondary
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowDown,
+                                contentDescription = "Switch Portfolio",
+                                tint = WsSlateTextSecondary,
+                                modifier = Modifier.size(18.dp)
                             )
                         }
+
+                        val subtitleText = when (activeTab) {
+                            WorkspaceTab.XRAY -> {
+                                val holdingsCount = uiState.analytics?.topHoldings?.size ?: 0
+                                "DEEP DIAGNOSTICS • $schemeCount FUNDS • $holdingsCount STOCKS"
+                            }
+                            WorkspaceTab.MF_HUNTER -> "Constituent Look-Through & Search"
+                            WorkspaceTab.COMPARE -> "Base-100 Performance & Factor Matrix"
+                            else -> "$schemeCount Active Schemes • Live AMFI"
+                        }
+                        Text(
+                            text = subtitleText,
+                            fontSize = 11.sp,
+                            color = WsSlateTextSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(horizontal = 2.dp)
+                        )
                     }
                 },
                 actions = {
@@ -227,33 +232,6 @@ fun PortfolioTrackerWorkspace(
                             tint = WsSlateTextSecondary
                         )
                     }
-                    // Add Scheme via AMFI Search
-                    IconButton(onClick = { showAmfiAddDialog = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add Scheme",
-                            tint = gradient.startColor
-                        )
-                    }
-                    // Parallel Live NAV Sync
-                    IconButton(
-                        onClick = { portfolioViewModel.syncAllLiveNavs() },
-                        enabled = !uiState.isSyncingNavs
-                    ) {
-                        if (uiState.isSyncingNavs) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp,
-                                color = gradient.startColor
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = "Sync Live NAVs",
-                                tint = gradient.startColor
-                            )
-                        }
-                    }
                     // Settings Gear Icon
                     IconButton(onClick = { showSettingsDialog = true }) {
                         Icon(
@@ -264,6 +242,37 @@ fun PortfolioTrackerWorkspace(
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            AnimatedVisibility(
+                visible = uiState.isFloatingFabEnabled,
+                enter = fadeIn() + scaleIn(),
+                exit = fadeOut() + scaleOut()
+            ) {
+                FloatingActionButton(
+                    onClick = { showAmfiAddDialog = true },
+                    containerColor = gradient.startColor,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.bounceClick()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add Scheme"
+                        )
+                        Text(
+                            text = "Add Scheme",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
         },
         bottomBar = {
             NavigationBar(
@@ -358,8 +367,9 @@ fun PortfolioTrackerWorkspace(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator(color = WsPrimaryIndigo)
                         Spacer(modifier = Modifier.height(12.dp))
+                        // UI TEXT (Safe to edit):
                         Text(
-                            text = "Loading Institutional Portfolio...",
+                            text = "Loading Portfolio Vault...",
                             color = WsSlateTextSecondary,
                             fontSize = 14.sp
                         )
@@ -376,7 +386,9 @@ fun PortfolioTrackerWorkspace(
                                 activeTab = WorkspaceTab.MF_HUNTER
                             },
                             onNavigateToXRay = { activeTab = WorkspaceTab.XRAY },
-                            onDeleteScheme = { schemeToDelete = it }
+                            onDeleteScheme = { schemeToDelete = it },
+                            onAddSchemeClick = { showAmfiAddDialog = true },
+                            onUpdateMandate = { portfolioViewModel.updateMarketCapMandate(it) }
                         )
                     }
                     WorkspaceTab.PORTFOLIO -> {
@@ -388,7 +400,9 @@ fun PortfolioTrackerWorkspace(
                                 portfolioViewModel.selectSchemeForDeepDive(schemeCode)
                                 activeTab = WorkspaceTab.MF_HUNTER
                             },
-                            onDeleteScheme = { schemeToDelete = it }
+                            onDeleteScheme = { schemeToDelete = it },
+                            onAddSchemeClick = { showAmfiAddDialog = true },
+                            onRefresh = { portfolioViewModel.syncAllLiveNavs() }
                         )
                     }
                     WorkspaceTab.XRAY -> {
@@ -428,9 +442,9 @@ fun PortfolioTrackerWorkspace(
                 showSettingsDialog = false
                 showCsvDialog = true
             },
-            onPromptResetSeed = {
+            onPromptClearPortfolio = {
                 showSettingsDialog = false
-                showResetConfirmDialog = true
+                showClearConfirmDialog = true
             },
             onOpenAppearanceSheet = {
                 showSettingsDialog = false
@@ -439,25 +453,25 @@ fun PortfolioTrackerWorkspace(
         )
     }
 
-    // Reset Confirmation Dialog
-    if (showResetConfirmDialog) {
+    // Clear Confirmation Dialog
+    if (showClearConfirmDialog) {
         AlertDialog(
-            onDismissRequest = { showResetConfirmDialog = false },
-            title = { Text(text = "Restore Factory 20-Scheme Seed?", fontWeight = FontWeight.Bold) },
-            text = { Text("This will overwrite portfolio_active.json with the factory 20-scheme seed from assets and trigger a fresh AMFI NAV sync.") },
+            onDismissRequest = { showClearConfirmDialog = false },
+            title = { Text(text = "Clear Active Vault?", fontWeight = FontWeight.Bold) },
+            text = { Text("This will remove all schemes from your active vault, returning it to an authentic empty state.") },
             confirmButton = {
                 Button(
                     onClick = {
-                        showResetConfirmDialog = false
-                        portfolioViewModel.resetPortfolioToSeed()
+                        showClearConfirmDialog = false
+                        portfolioViewModel.clearActivePortfolio()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = WsCrimsonNegative)
                 ) {
-                    Text("Reset Portfolio")
+                    Text("Clear Vault")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showResetConfirmDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showClearConfirmDialog = false }) { Text("Cancel") }
             }
         )
     }
@@ -516,7 +530,7 @@ fun PortfolioTrackerWorkspace(
             portfolios = listOf(
                 PortfolioMeta(
                     id = "default",
-                    name = uiState.portfolioData?.portfolioName ?: "Institutional Portfolio",
+                    name = uiState.portfolioData?.portfolioName ?: "Primary Vault",
                     createdAtEpochMs = System.currentTimeMillis(),
                     schemeCount = uiState.portfolioData?.schemes?.size ?: 0,
                     totalValue = uiState.analytics?.totalCurrentValue ?: 0.0

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Restore
@@ -53,10 +54,24 @@ fun SettingsModalDialog(
     portfolioViewModel: PortfolioViewModel,
     onDismiss: () -> Unit,
     onOpenCsv: () -> Unit,
-    onPromptResetSeed: () -> Unit,
+    onPromptClearPortfolio: () -> Unit,
     onOpenAppearanceSheet: () -> Unit
 ) {
     val gradient = LocalVaultGradient.current
+
+    // =========================================================================
+    // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
+    // =========================================================================
+    val dialogTitle = "Studio Settings & Tools"
+    val visualIdentityTitle = "Visual Identity & Palette"
+    val privacyModeTitle = "Privacy Mask Mode"
+    val privacyModeSubtitle = "Obscures rupee valuations (₹ ••••••)"
+    val dataManagementTitle = "Data Management"
+    val btnCsvText = "Import / Export Portfolio CSV"
+    val btnClearVaultText = "Clear Active Vault"
+    val appEditionTitle = "FinBaba Studio v2.1.0"
+    // =========================================================================
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -69,7 +84,7 @@ fun SettingsModalDialog(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Studio Settings & Tools",
+                    text = dialogTitle,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     color = WsSlateTextPrimary
@@ -107,7 +122,7 @@ fun SettingsModalDialog(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
-                                    text = "Visual Identity & Palette",
+                                    text = visualIdentityTitle,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = WsSlateTextPrimary
@@ -149,13 +164,13 @@ fun SettingsModalDialog(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Privacy Mask Mode",
+                                text = privacyModeTitle,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = WsSlateTextPrimary
                             )
                             Text(
-                                text = "Obscures rupee valuations (₹ ••••••)",
+                                text = privacyModeSubtitle,
                                 fontSize = 11.sp,
                                 color = WsSlateTextSecondary
                             )
@@ -168,10 +183,80 @@ fun SettingsModalDialog(
                     }
                 }
 
+                // Feature Toggle: Floating Quick-Action Button (FAB)
+                Surface(
+                    color = Color(0xFFF8FAFC),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, WsSlateBorder),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Floating Action Button",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = WsSlateTextPrimary
+                            )
+                            Text(
+                                text = "Quick-access '+ Add Scheme' button",
+                                fontSize = 11.sp,
+                                color = WsSlateTextSecondary
+                            )
+                        }
+                        Switch(
+                            checked = uiState.isFloatingFabEnabled,
+                            onCheckedChange = { portfolioViewModel.setFloatingFabEnabled(it) },
+                            colors = SwitchDefaults.colors(checkedTrackColor = gradient.startColor)
+                        )
+                    }
+                }
+
+                // Feature Toggle: Floating Market Status / Holiday Ticker Pill
+                Surface(
+                    color = Color(0xFFF8FAFC),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, WsSlateBorder),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Market Status & Holiday Ticker",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = WsSlateTextPrimary
+                            )
+                            Text(
+                                text = "Live NSE/BSE trading status & holiday pill",
+                                fontSize = 11.sp,
+                                color = WsSlateTextSecondary
+                            )
+                        }
+                        Switch(
+                            checked = uiState.isMarketStatusTickerEnabled,
+                            onCheckedChange = { portfolioViewModel.setMarketStatusTickerEnabled(it) },
+                            colors = SwitchDefaults.colors(checkedTrackColor = gradient.startColor)
+                        )
+                    }
+                }
+
                 // Data Management Buttons
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Data Management",
+                        text = dataManagementTitle,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = WsSlateTextSecondary
@@ -184,18 +269,18 @@ fun SettingsModalDialog(
                     ) {
                         Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Import / Export Portfolio CSV", fontSize = 12.sp)
+                        Text(btnCsvText, fontSize = 12.sp)
                     }
 
                     OutlinedButton(
-                        onClick = onPromptResetSeed,
+                        onClick = onPromptClearPortfolio,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = WsCrimsonNegative)
                     ) {
-                        Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Restore 20-Scheme Seed", fontSize = 12.sp)
+                        Text(btnClearVaultText, fontSize = 12.sp)
                     }
                 }
 
@@ -204,7 +289,7 @@ fun SettingsModalDialog(
                 // App Info & Diagnostic Stats
                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(
-                        text = "FinBaba Institutional v2.1.0",
+                        text = appEditionTitle,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = WsSlateTextPrimary

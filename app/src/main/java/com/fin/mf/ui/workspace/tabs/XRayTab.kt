@@ -226,7 +226,7 @@ fun WorkspaceXRayTab(
             BottomPersistentCtas(
                 onDownloadPdf = {
                     val activeData = portfolioData ?: PortfolioData(
-                        portfolioName = "FinBaba Institutional Core",
+                        portfolioName = "Primary Vault",
                         ownerName = "Active Investor",
                         lastSyncedEpochMs = System.currentTimeMillis(),
                         schemes = schemes
@@ -291,6 +291,13 @@ private fun HealthScorecardCard(
     isMasked: Boolean,
     onCardClick: () -> Unit
 ) {
+    // =========================================================================
+    // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
+    // =========================================================================
+    val cardTitle = "Health Scorecard"
+    val cardSubtitle = "Multi-factor portfolio quality & balance metric"
+    // =========================================================================
+
     WsElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -312,13 +319,13 @@ private fun HealthScorecardCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     Column {
                         Text(
-                            text = "Health Scorecard",
+                            text = cardTitle,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = WsSlateTextPrimary
                         )
                         Text(
-                            text = "Institutional multi-factor quality & balance metric",
+                            text = cardSubtitle,
                             fontSize = 11.sp,
                             color = WsSlateTextSecondary
                         )
@@ -539,6 +546,13 @@ private fun SebiMarketCapAlignmentCard(
     val smallWeight = smallSlice?.weightPercent ?: 0.0
     val microWeight = microSlice?.weightPercent ?: 0.0
 
+    // =========================================================================
+    // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
+    // =========================================================================
+    val cardTitle = "Market Cap Alignment"
+    val badgeLabel = "SEBI Breakdown"
+    // =========================================================================
+
     WsElevatedCard {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
@@ -547,7 +561,7 @@ private fun SebiMarketCapAlignmentCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Market Cap Alignment",
+                    text = cardTitle,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = WsSlateTextPrimary
@@ -558,7 +572,7 @@ private fun SebiMarketCapAlignmentCard(
                     border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
                 ) {
                     Text(
-                        text = "SEBI Breakdown",
+                        text = badgeLabel,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         color = WsSlateTextSecondary,
@@ -701,6 +715,13 @@ private fun IndexMatrixCard(
     isMasked: Boolean,
     onIndexClick: (BenchmarkIndexRow) -> Unit
 ) {
+    // =========================================================================
+    // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
+    // =========================================================================
+    val cardTitle = "Index Matrix"
+    val cardSubtitle = "Constituent exposure benchmarked against major indices"
+    // =========================================================================
+
     WsElevatedCard {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
@@ -710,13 +731,13 @@ private fun IndexMatrixCard(
             ) {
                 Column {
                     Text(
-                        text = "Index Matrix",
+                        text = cardTitle,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = WsSlateTextPrimary
                     )
                     Text(
-                        text = "Constituent exposure benchmarked against major indices",
+                        text = cardSubtitle,
                         fontSize = 11.sp,
                         color = WsSlateTextSecondary
                     )
@@ -806,6 +827,13 @@ private fun SectorExposuresCard(
     val displayedSectors = if (isExpanded) sectorBreakdown else sectorBreakdown.take(5)
     val maxWeight = sectorBreakdown.maxOfOrNull { it.portfolioWeightPercent } ?: 1.0
 
+    // =========================================================================
+    // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
+    // =========================================================================
+    val cardTitle = "Sector Exposures"
+    val trackedSectorsLabel = "${sectorBreakdown.size} Tracked Sectors"
+    // =========================================================================
+
     WsElevatedCard {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
@@ -814,7 +842,7 @@ private fun SectorExposuresCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Sector Exposures",
+                    text = cardTitle,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = WsSlateTextPrimary
@@ -825,7 +853,7 @@ private fun SectorExposuresCard(
                     border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
                 ) {
                     Text(
-                        text = "${sectorBreakdown.size} Tracked Sectors",
+                        text = trackedSectorsLabel,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         color = gradient.startColor,
@@ -948,6 +976,12 @@ private fun HighDuplicateOverlapCard(
     isMasked: Boolean,
     onStockClick: (AggregatedStockExposure) -> Unit
 ) {
+    // =========================================================================
+    // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
+    // =========================================================================
+    val cardTitle = "High Duplicate Overlap"
+    // =========================================================================
+
     WsElevatedCard {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
@@ -964,7 +998,7 @@ private fun HighDuplicateOverlapCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "High Duplicate Overlap",
+                        text = cardTitle,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = WsSlateTextPrimary
@@ -1117,6 +1151,13 @@ private fun ConsolidatedEquitiesCard(
 ) {
     val gradient = LocalVaultGradient.current
 
+    // =========================================================================
+    // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
+    // =========================================================================
+    val cardTitle = "Consolidated Equities"
+    val subtitleText = "Top 10 of $totalStocks"
+    // =========================================================================
+
     WsElevatedCard {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
@@ -1126,13 +1167,13 @@ private fun ConsolidatedEquitiesCard(
             ) {
                 Column {
                     Text(
-                        text = "Consolidated Equities",
+                        text = cardTitle,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = WsSlateTextPrimary
                     )
                     Text(
-                        text = "Top 10 of $totalStocks",
+                        text = subtitleText,
                         fontSize = 11.sp,
                         color = WsSlateTextSecondary
                     )
@@ -1238,6 +1279,13 @@ private fun BottomPersistentCtas(
 ) {
     val gradient = LocalVaultGradient.current
 
+    // =========================================================================
+    // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
+    // =========================================================================
+    val downloadPdfText = "Download Comprehensive Audit (PDF)"
+    val simulateInflowText = "Simulate Inflow Rebalance"
+    // =========================================================================
+
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Button(
             onClick = onDownloadPdf,
@@ -1254,7 +1302,7 @@ private fun BottomPersistentCtas(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Download Comprehensive Audit (PDF)",
+                text = downloadPdfText,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -1276,7 +1324,7 @@ private fun BottomPersistentCtas(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Simulate Inflow Rebalance",
+                text = simulateInflowText,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = gradient.startColor

@@ -21,17 +21,28 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.fin.mf.ui.components.bounceClick
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,15 +53,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fin.mf.core.theme.LocalVaultGradient
 import com.fin.mf.core.theme.SemanticFinanceColors
+import com.fin.mf.data.MarketCapMandate
 import com.fin.mf.data.MutualFundScheme
 import com.fin.mf.data.PortfolioAnalyticsSummary
 import com.fin.mf.ui.PortfolioUiState
+import com.fin.mf.ui.workspace.components.OnboardingTutorialCard
+import com.fin.mf.ui.workspace.sheets.AssetSplitDetailSheet
+import com.fin.mf.ui.workspace.sheets.MarketCapDetailSheet
+import com.fin.mf.ui.workspace.sheets.SectorDetailSheet
 import com.fin.mf.ui.workspace.components.WsAccentRoyal
 import com.fin.mf.ui.workspace.components.WsElevatedCard
 import com.fin.mf.ui.workspace.components.WsPrimaryIndigo
 import com.fin.mf.ui.workspace.components.WsSchemeSummaryCard
 import com.fin.mf.ui.workspace.components.WsSlateTextPrimary
 import com.fin.mf.ui.workspace.components.WsSlateTextSecondary
+import com.fin.mf.ui.workspace.dialogs.EditMarketCapMandateDialog
 import com.fin.mf.ui.workspace.components.formatWsInr
 import com.fin.mf.ui.workspace.components.formatWsPercent
 import java.util.Locale
@@ -63,23 +80,61 @@ private val WsAmberWarning = SemanticFinanceColors.BenchmarkAmber
  * Tab #1: Executive overview with Net Worth snapshot, SEBI Market Cap exposure,
  * Consolidated Asset Split, Sector breakdown, TER drag, and scheme holdings.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkspaceOverviewTab(
     uiState: PortfolioUiState,
     onSyncClick: () -> Unit,
     onInspectScheme: (Int) -> Unit,
     onNavigateToXRay: () -> Unit,
-    onDeleteScheme: (MutualFundScheme) -> Unit
+    onDeleteScheme: (MutualFundScheme) -> Unit,
+    onAddSchemeClick: () -> Unit = {},
+    onUpdateMandate: (MarketCapMandate) -> Unit = {}
 ) {
     val analytics = uiState.analytics ?: return
     val isMasked = uiState.isPrivacyMasked
     val schemes = uiState.portfolioData?.schemes.orEmpty()
+    val mandate = uiState.portfolioData?.marketCapMandate ?: MarketCapMandate()
+    val gradient = LocalVaultGradient.current
 
-    LazyColumn(
+    if (schemes.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            OnboardingTutorialCard(
+                onAddSchemeClick = onAddSchemeClick
+            )
+        }
+        return
+    }
+
+    val pullRefreshState = rememberPullToRefreshState()
+    var showMarketCapSheet by remember { mutableStateOf(false) }
+    var showAssetSplitSheet by remember { mutableStateOf(false) }
+    var showSectorSheet by remember { mutableStateOf(false) }
+
+    PullToRefreshBox(
+        isRefreshing = uiState.isSyncingNavs,
+        onRefresh = onSyncClick,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        state = pullRefreshState,
+        indicator = {
+            PullToRefreshDefaults.Indicator(
+                state = pullRefreshState,
+                isRefreshing = uiState.isSyncingNavs,
+                modifier = Modifier.align(Alignment.TopCenter),
+                color = gradient.startColor
+            )
+        }
     ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
         // 1. Card A: Net Worth Snapshot Card
         item {
             NetWorthSnapshotCard(
@@ -92,7 +147,10 @@ fun WorkspaceOverviewTab(
         item {
             SebiMarketCapExposureCard(
                 analytics = analytics,
-                isMasked = isMasked
+                mandate = mandate,
+                onUpdateMandate = onUpdateMandate,
+                isMasked = isMasked,
+                onCardClick = { showMarketCapSheet = true }
             )
         }
 
@@ -101,7 +159,8 @@ fun WorkspaceOverviewTab(
             ConsolidatedAssetSplitCard(
                 analytics = analytics,
                 schemes = schemes,
-                isMasked = isMasked
+                isMasked = isMasked,
+                onCardClick = { showAssetSplitSheet = true }
             )
         }
 
@@ -109,12 +168,21 @@ fun WorkspaceOverviewTab(
         item {
             SectorBreakdownCard(
                 analytics = analytics,
-                onNavigateToXRay = onNavigateToXRay
+                onNavigateToXRay = onNavigateToXRay,
+                onCardClick = { showSectorSheet = true }
             )
         }
 
-        // 5. Institutional Metrics: TER Drag & Stock Overlap Alerts
+        // 5. Core Metrics: TER Drag & Stock Overlap Alerts
         item {
+            // =========================================================================
+            // DISPLAY TEXT CONFIGURATION: Core Metrics (Safe to edit below)
+            // =========================================================================
+            val terDragTitle = "Weighted TER Drag"
+            val overlapAlertTitle = "Stock Overlap Alert"
+            val overlapSubtitle = "Held in 3+ mutual funds"
+            // =========================================================================
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -122,7 +190,7 @@ fun WorkspaceOverviewTab(
                 WsElevatedCard(modifier = Modifier.weight(1f)) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "Weighted TER Drag",
+                            text = terDragTitle,
                             fontSize = 12.sp,
                             color = WsSlateTextSecondary,
                             fontWeight = FontWeight.Medium
@@ -151,7 +219,7 @@ fun WorkspaceOverviewTab(
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "Stock Overlap Alert",
+                                text = overlapAlertTitle,
                                 fontSize = 12.sp,
                                 color = WsSlateTextSecondary,
                                 fontWeight = FontWeight.Medium
@@ -173,7 +241,7 @@ fun WorkspaceOverviewTab(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Held in 3+ mutual funds",
+                            text = overlapSubtitle,
                             fontSize = 11.sp,
                             color = WsSlateTextSecondary
                         )
@@ -184,13 +252,20 @@ fun WorkspaceOverviewTab(
 
         // 6. Largest Scheme Holdings Header
         item {
+            // =========================================================================
+            // DISPLAY TEXT CONFIGURATION: Largest Positions (Safe to edit below)
+            // =========================================================================
+            val positionsTitle = "Largest Scheme Positions"
+            val btnSyncText = "Sync Live NAVs"
+            // =========================================================================
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Largest Scheme Positions",
+                    text = positionsTitle,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = WsSlateTextPrimary
@@ -206,7 +281,7 @@ fun WorkspaceOverviewTab(
                         modifier = Modifier.size(15.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Sync Live NAVs", fontSize = 12.sp)
+                    Text(btnSyncText, fontSize = 12.sp)
                 }
             }
         }
@@ -226,6 +301,33 @@ fun WorkspaceOverviewTab(
     }
 }
 
+    if (showMarketCapSheet) {
+        MarketCapDetailSheet(
+            analytics = analytics,
+            mandate = mandate,
+            isMasked = isMasked,
+            onDismiss = { showMarketCapSheet = false }
+        )
+    }
+
+    if (showAssetSplitSheet) {
+        AssetSplitDetailSheet(
+            analytics = analytics,
+            schemes = schemes,
+            isMasked = isMasked,
+            onDismiss = { showAssetSplitSheet = false }
+        )
+    }
+
+    if (showSectorSheet) {
+        SectorDetailSheet(
+            analytics = analytics,
+            isMasked = isMasked,
+            onDismiss = { showSectorSheet = false }
+        )
+    }
+}
+
 /**
  * Card A: Net Worth Snapshot Card with inline INR badge, return pill, and metrics split.
  */
@@ -238,8 +340,18 @@ private fun NetWorthSnapshotCard(
     val isPositive = analytics.totalGain >= 0
     val returnColor = if (isPositive) Color(0xFF34D399) else Color(0xFFF87171)
 
+    // =========================================================================
+    // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
+    // =========================================================================
+    val netWorthHeader = "NET WORTH"
+    val investedLabel = "Invested Principal"
+    val capitalGainLabel = "Net Capital Gain"
+    // =========================================================================
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .bounceClick(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         border = androidx.compose.foundation.BorderStroke(1.dp, gradient.startColor.copy(alpha = 0.35f)),
@@ -265,7 +377,7 @@ private fun NetWorthSnapshotCard(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "NET WORTH",
+                            text = netWorthHeader,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Black,
                             color = Color.White.copy(alpha = 0.95f),
@@ -273,27 +385,63 @@ private fun NetWorthSnapshotCard(
                         )
                     }
 
+                    val todayGain = analytics.todayGain
+                    val isDayGain = todayGain != null && todayGain >= 0.0
+                    val isDayLoss = todayGain != null && todayGain < 0.0
+
+                    val pillBg = when {
+                        todayGain != null && isDayGain -> Color(0xFF059669).copy(alpha = 0.25f)
+                        todayGain != null && isDayLoss -> Color(0xFFDC2626).copy(alpha = 0.25f)
+                        analytics.totalReturnPercent >= 0 -> Color(0xFF059669).copy(alpha = 0.25f)
+                        else -> Color(0xFFDC2626).copy(alpha = 0.25f)
+                    }
+                    val pillBorder = when {
+                        todayGain != null && isDayGain -> Color(0xFF34D399).copy(alpha = 0.45f)
+                        todayGain != null && isDayLoss -> Color(0xFFEF4444).copy(alpha = 0.45f)
+                        analytics.totalReturnPercent >= 0 -> Color(0xFF34D399).copy(alpha = 0.45f)
+                        else -> Color(0xFFEF4444).copy(alpha = 0.45f)
+                    }
+                    val pillContentColor = when {
+                        todayGain != null && isDayGain -> Color(0xFF34D399)
+                        todayGain != null && isDayLoss -> Color(0xFFF87171)
+                        analytics.totalReturnPercent >= 0 -> Color(0xFF34D399)
+                        else -> Color(0xFFF87171)
+                    }
+
+                    val badgeText = if (todayGain != null) {
+                        val sign = if (isDayGain) "+" else "-"
+                        "$sign${formatWsInr(kotlin.math.abs(todayGain), isMasked)} Today"
+                    } else {
+                        "${formatWsPercent(analytics.totalReturnPercent)} Return"
+                    }
+
+                    val badgeIcon = if (todayGain != null) {
+                        if (isDayGain) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown
+                    } else {
+                        if (analytics.totalReturnPercent >= 0) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown
+                    }
+
                     Surface(
-                        color = Color.White.copy(alpha = 0.16f),
+                        color = pillBg,
                         shape = RoundedCornerShape(12.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.30f))
+                        border = androidx.compose.foundation.BorderStroke(1.dp, pillBorder)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(6.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF34D399))
+                            Icon(
+                                imageVector = badgeIcon,
+                                contentDescription = null,
+                                tint = pillContentColor,
+                                modifier = Modifier.size(12.dp)
                             )
-                            Spacer(modifier = Modifier.width(5.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Live Look-Through",
-                                fontSize = 10.sp,
+                                text = badgeText,
+                                fontSize = 10.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = pillContentColor
                             )
                         }
                     }
@@ -369,7 +517,7 @@ private fun NetWorthSnapshotCard(
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(
-                                text = "Invested Principal",
+                                text = investedLabel,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = Color.White.copy(alpha = 0.8f)
@@ -392,7 +540,7 @@ private fun NetWorthSnapshotCard(
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(
-                                text = "Net Capital Gain",
+                                text = capitalGainLabel,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = Color.White.copy(alpha = 0.8f)
@@ -413,13 +561,18 @@ private fun NetWorthSnapshotCard(
 }
 
 /**
- * Card B: SEBI Market Cap Exposure Card with target mandate, progress bar, and 4-tier grid.
+ * Card B: SEBI Market Cap Exposure Card with target mandate, progress bar, 4-tier grid, and Edit Mandate sheet.
  */
 @Composable
 private fun SebiMarketCapExposureCard(
     analytics: PortfolioAnalyticsSummary,
-    isMasked: Boolean
+    mandate: MarketCapMandate,
+    onUpdateMandate: (MarketCapMandate) -> Unit,
+    isMasked: Boolean,
+    onCardClick: () -> Unit = {}
 ) {
+    var showEditMandateDialog by remember { mutableStateOf(false) }
+
     val largeSlice = analytics.marketCapBreakdown.firstOrNull { it.label.contains("Large", ignoreCase = true) }
     val midSlice = analytics.marketCapBreakdown.firstOrNull { it.label.contains("Mid", ignoreCase = true) }
     val smallSlice = analytics.marketCapBreakdown.firstOrNull { it.label.contains("Small", ignoreCase = true) }
@@ -428,14 +581,28 @@ private fun SebiMarketCapExposureCard(
     val largeWeight = largeSlice?.weightPercent ?: 0.0
     val midWeight = midSlice?.weightPercent ?: 0.0
     val smallWeight = smallSlice?.weightPercent ?: 0.0
-    val microWeight = microSlice?.weightPercent ?: 0.0
+    val nonLargeMidSmall = analytics.marketCapBreakdown.filter {
+        !it.label.contains("Large", ignoreCase = true) &&
+        !it.label.contains("Mid", ignoreCase = true) &&
+        !it.label.contains("Small", ignoreCase = true)
+    }
+    val microWeight = nonLargeMidSmall.sumOf { it.weightPercent }.coerceAtLeast(microSlice?.weightPercent ?: 0.0)
 
     val largeVal = largeSlice?.rupeeValue ?: 0.0
     val midVal = midSlice?.rupeeValue ?: 0.0
     val smallVal = smallSlice?.rupeeValue ?: 0.0
-    val microVal = microSlice?.rupeeValue ?: 0.0
+    val microVal = nonLargeMidSmall.sumOf { it.rupeeValue }.coerceAtLeast(microSlice?.rupeeValue ?: 0.0)
 
-    WsElevatedCard {
+    // =========================================================================
+    // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
+    // =========================================================================
+    val cardTitle = "Market Cap Alignment"
+    val editMandateText = "Edit Mandate"
+    // =========================================================================
+
+    WsElevatedCard(
+        modifier = Modifier.bounceClick(scaleDown = 0.985f, onClick = onCardClick)
+    ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -444,7 +611,7 @@ private fun SebiMarketCapExposureCard(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "Market Cap Exposure",
+                        text = cardTitle,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = WsSlateTextPrimary
@@ -459,24 +626,36 @@ private fun SebiMarketCapExposureCard(
                 }
 
                 Surface(
-                    color = Color(0xFFF1F5F9),
+                    color = Color(0xFFEFF6FF),
                     shape = RoundedCornerShape(6.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBFDBFE)),
+                    modifier = Modifier.clickable { showEditMandateDialog = true }
                 ) {
-                    Text(
-                        text = "Breakdown",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = WsSlateTextSecondary,
-                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.5.dp)
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Tune,
+                            contentDescription = null,
+                            tint = Color(0xFF1D4ED8),
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = editMandateText,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1D4ED8)
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Target Mandate: 50% Large / 25% Mid / 25% Small",
+                text = "Target Mandate: ${mandate.largeCapTarget.roundToInt()}% Large / ${mandate.midCapTarget.roundToInt()}% Mid / ${mandate.smallCapTarget.roundToInt()}% Small / ${mandate.microCapTarget.roundToInt()}% Micro",
                 fontSize = 11.sp,
                 color = WsSlateTextSecondary,
                 fontWeight = FontWeight.Medium
@@ -537,7 +716,7 @@ private fun SebiMarketCapExposureCard(
                     dotColor = SemanticFinanceColors.SebiLargeCap,
                     weightPct = largeWeight,
                     rupeeVal = largeVal,
-                    statusChip = formatMarketCapDelta(largeWeight, 50.0),
+                    statusChip = formatMarketCapDelta(largeWeight, mandate.largeCapTarget),
                     isMasked = isMasked
                 )
                 MarketCapTierCell(
@@ -546,7 +725,7 @@ private fun SebiMarketCapExposureCard(
                     dotColor = SemanticFinanceColors.SebiMidCap,
                     weightPct = midWeight,
                     rupeeVal = midVal,
-                    statusChip = formatMarketCapDelta(midWeight, 25.0),
+                    statusChip = formatMarketCapDelta(midWeight, mandate.midCapTarget),
                     isMasked = isMasked
                 )
                 MarketCapTierCell(
@@ -555,7 +734,7 @@ private fun SebiMarketCapExposureCard(
                     dotColor = SemanticFinanceColors.SebiSmallCap,
                     weightPct = smallWeight,
                     rupeeVal = smallVal,
-                    statusChip = formatMarketCapDelta(smallWeight, 25.0),
+                    statusChip = formatMarketCapDelta(smallWeight, mandate.smallCapTarget),
                     isMasked = isMasked
                 )
                 MarketCapTierCell(
@@ -564,11 +743,66 @@ private fun SebiMarketCapExposureCard(
                     dotColor = SemanticFinanceColors.SebiMicroCap,
                     weightPct = microWeight,
                     rupeeVal = microVal,
-                    statusChip = if (microWeight <= 0.5) "0% Target" else "+${roundOne(microWeight)}% Micro",
+                    statusChip = formatMarketCapDelta(microWeight, mandate.microCapTarget),
                     isMasked = isMasked
                 )
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Dynamic Advisory Note Addressing Largest Negative Drift Gap
+            val drifts = listOf(
+                Pair("Large Cap", largeWeight - mandate.largeCapTarget),
+                Pair("Mid Cap", midWeight - mandate.midCapTarget),
+                Pair("Small Cap", smallWeight - mandate.smallCapTarget),
+                Pair("Micro Cap", microWeight - mandate.microCapTarget)
+            )
+            val mostUnderweight = drifts.filter { it.second < -2.0 }.minByOrNull { it.second }
+
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = if (mostUnderweight != null) Color(0xFFFEF2F2) else Color(0xFFF0FDF4),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    if (mostUnderweight != null) Color(0xFFFECACA) else Color(0xFFBBF7D0)
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = if (mostUnderweight != null) Icons.Default.Warning else Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = if (mostUnderweight != null) Color(0xFFDC2626) else Color(0xFF16A34A),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (mostUnderweight != null) {
+                            "Advisory: ${mostUnderweight.first} is underweight by ${roundOne(abs(mostUnderweight.second))}%. Consider allocating your next SIP inflow here."
+                        } else {
+                            "Advisory: Portfolio allocation is balanced across SEBI market cap tiers within target mandate bands."
+                        },
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (mostUnderweight != null) Color(0xFF991B1B) else Color(0xFF166534)
+                    )
+                }
+            }
         }
+    }
+
+    if (showEditMandateDialog) {
+        EditMarketCapMandateDialog(
+            currentMandate = mandate,
+            onSave = {
+                onUpdateMandate(it)
+                showEditMandateDialog = false
+            },
+            onDismiss = { showEditMandateDialog = false }
+        )
     }
 }
 
@@ -662,7 +896,8 @@ private fun MarketCapTierCell(
 private fun ConsolidatedAssetSplitCard(
     analytics: PortfolioAnalyticsSummary,
     schemes: List<MutualFundScheme>,
-    isMasked: Boolean
+    isMasked: Boolean,
+    onCardClick: () -> Unit = {}
 ) {
     val totalVal = analytics.totalCurrentValue
     val equitySchemesVal = schemes.filter { it.assetClass.equals("Equity", ignoreCase = true) }.sumOf { it.currentValue }
@@ -685,7 +920,16 @@ private fun ConsolidatedAssetSplitCard(
     val colorCash = Color(0xFF059669)
     val colorReits = Color(0xFFD97706)
 
-    WsElevatedCard {
+    // =========================================================================
+    // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
+    // =========================================================================
+    val cardTitle = "Consolidated Asset Split"
+    val assetClassesLabel = "4 Asset Classes"
+    // =========================================================================
+
+    WsElevatedCard(
+        modifier = Modifier.bounceClick(scaleDown = 0.985f, onClick = onCardClick)
+    ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -693,7 +937,7 @@ private fun ConsolidatedAssetSplitCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Consolidated Asset Split",
+                    text = cardTitle,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = WsSlateTextPrimary
@@ -704,7 +948,7 @@ private fun ConsolidatedAssetSplitCard(
                     border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
                 ) {
                     Text(
-                        text = "4 Asset Classes",
+                        text = assetClassesLabel,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         color = WsSlateTextSecondary,
@@ -867,13 +1111,24 @@ private fun AssetSplitGridCell(
 @Composable
 private fun SectorBreakdownCard(
     analytics: PortfolioAnalyticsSummary,
-    onNavigateToXRay: () -> Unit
+    onNavigateToXRay: () -> Unit,
+    onCardClick: () -> Unit = {}
 ) {
     val gradient = LocalVaultGradient.current
     val topSectors = analytics.sectorBreakdown.take(6)
     val maxWeight = topSectors.maxOfOrNull { it.portfolioWeightPercent } ?: 1.0
 
-    WsElevatedCard {
+    // =========================================================================
+    // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
+    // =========================================================================
+    val cardTitle = "Sector Breakdown"
+    val cardSubtitle = "Ranked exposure by total AUM weighting"
+    val badgeLabel = "Top 6 Sectors"
+    // =========================================================================
+
+    WsElevatedCard(
+        modifier = Modifier.bounceClick(scaleDown = 0.985f, onClick = onCardClick)
+    ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -882,13 +1137,13 @@ private fun SectorBreakdownCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Sector Breakdown",
+                        text = cardTitle,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = WsSlateTextPrimary
                     )
                     Text(
-                        text = "Ranked exposure by total AUM weighting",
+                        text = cardSubtitle,
                         fontSize = 11.sp,
                         color = WsSlateTextSecondary
                     )
@@ -901,7 +1156,7 @@ private fun SectorBreakdownCard(
                     modifier = Modifier.clickable { onNavigateToXRay() }
                 ) {
                     Text(
-                        text = "Top 6 Sectors",
+                        text = badgeLabel,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         color = gradient.startColor,
@@ -990,8 +1245,8 @@ private fun formatMarketCapDelta(actual: Double, target: Double): String {
     val delta = actual - target
     return when {
         abs(delta) <= 2.0 -> "Balanced"
-        delta > 0 -> "+${roundOne(delta)}% Over"
-        else -> "-${roundOne(abs(delta))}% Under"
+        delta > 0 -> "+${roundOne(delta)}% Overweight"
+        else -> "-${roundOne(abs(delta))}% Underweight"
     }
 }
 

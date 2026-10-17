@@ -161,6 +161,11 @@ fun BenchmarkOverlayChart(
                     )
                 }
         ) {
+            val targetPath = remember { Path() }
+            val benchPath = remember { Path() }
+            val zeroDashEffect = remember { PathEffect.dashPathEffect(floatArrayOf(8f, 6f)) }
+            val benchDashEffect = remember { PathEffect.dashPathEffect(floatArrayOf(12f, 8f)) }
+
             Canvas(modifier = Modifier.fillMaxSize()) {
                 if (comparisonPoints.size < 2) return@Canvas
 
@@ -189,12 +194,12 @@ fun BenchmarkOverlayChart(
                         start = Offset(0f, zeroY),
                         end = Offset(w, zeroY),
                         strokeWidth = 1.dp.toPx(),
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))
+                        pathEffect = zeroDashEffect
                     )
                 }
 
-                val targetPath = Path()
-                val benchPath = Path()
+                targetPath.reset()
+                benchPath.reset()
 
                 comparisonPoints.forEachIndexed { i, pt ->
                     val x = (i.toFloat() / (comparisonPoints.size - 1)) * w
@@ -221,7 +226,7 @@ fun BenchmarkOverlayChart(
                     style = Stroke(
                         width = 2.dp.toPx(),
                         cap = StrokeCap.Round,
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f))
+                        pathEffect = benchDashEffect
                     )
                 )
 

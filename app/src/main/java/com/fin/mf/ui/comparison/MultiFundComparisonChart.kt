@@ -304,6 +304,11 @@ fun MultiFundComparisonChart(
 
         Spacer(modifier = Modifier.height(14.dp))
 
+        val linePath = remember { Path() }
+        val overlayPath = remember { Path() }
+        val referenceDashEffect = remember { PathEffect.dashPathEffect(floatArrayOf(10f, 8f), 0f) }
+        val overlayDashEffect = remember { PathEffect.dashPathEffect(floatArrayOf(14f, 8f), 0f) }
+
         // Multi-Line Normalized Canvas
         Canvas(
             modifier = Modifier
@@ -333,23 +338,23 @@ fun MultiFundComparisonChart(
                 start = Offset(0f, norm100Y),
                 end = Offset(width, norm100Y),
                 strokeWidth = 1.2.dp.toPx(),
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f), 0f)
+                pathEffect = referenceDashEffect
             )
 
             // 2. Draw each fund's trajectory
             normalizedSeriesList.forEachIndexed { fundIdx, series ->
                 if (series.size >= 2) {
                     val lineColor = ComparisonFundLineColors.getOrElse(fundIdx) { gradient.startColor }
-                    val path = Path()
+                    linePath.reset()
                     series.forEachIndexed { i, pt ->
                         val x = (i.toFloat() / series.lastIndex.toFloat()) * width
                         val normY = ((pt.second - minVal) / valRange).toFloat()
                         val y = height - vPadding - (normY * usableH)
-                        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                        if (i == 0) linePath.moveTo(x, y) else linePath.lineTo(x, y)
                     }
 
                     drawPath(
-                        path = path,
+                        path = linePath,
                         color = lineColor,
                         style = Stroke(width = 2.6.dp.toPx(), cap = StrokeCap.Round)
                     )
@@ -367,7 +372,7 @@ fun MultiFundComparisonChart(
 
             // 3. Draw optional Portfolio Composite Overlay (Dashed Purple Curve)
             if (portfolioOverlaySeries.size >= 2) {
-                val overlayPath = Path()
+                overlayPath.reset()
                 portfolioOverlaySeries.forEachIndexed { i, pt ->
                     val x = (i.toFloat() / portfolioOverlaySeries.lastIndex.toFloat()) * width
                     val normY = ((pt.second - minVal) / valRange).toFloat()
@@ -380,7 +385,7 @@ fun MultiFundComparisonChart(
                     style = Stroke(
                         width = 2.4.dp.toPx(),
                         cap = StrokeCap.Round,
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(14f, 8f), 0f)
+                        pathEffect = overlayDashEffect
                     )
                 )
             }

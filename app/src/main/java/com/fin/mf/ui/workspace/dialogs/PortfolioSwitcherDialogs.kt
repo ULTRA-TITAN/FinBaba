@@ -89,6 +89,17 @@ fun PortfolioSwitcherBottomSheet(
         containerColor = Color.White,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
+        // =========================================================================
+        // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
+        // =========================================================================
+        val sheetTitle = "Switch Portfolio Vault"
+        val sheetSubtitle = "${manifest.portfolios.size} Saved Portfolios On Device"
+        val btnCreateVault = "+ Create New Vault"
+        val actionRename = "Rename Vault"
+        val actionDuplicate = "Duplicate"
+        val actionDelete = "Delete Vault"
+        // =========================================================================
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -109,13 +120,13 @@ fun PortfolioSwitcherBottomSheet(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = "Switch Portfolio Vault",
+                            text = sheetTitle,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = WsSlateTextPrimary
                         )
                         Text(
-                            text = "${manifest.portfolios.size} Saved Portfolios On Device",
+                            text = sheetSubtitle,
                             fontSize = 11.sp,
                             color = WsSlateTextSecondary
                         )
@@ -134,6 +145,13 @@ fun PortfolioSwitcherBottomSheet(
             ) {
                 items(items = manifest.portfolios, key = { it.id }) { meta ->
                     val isActive = meta.id == manifest.activePortfolioId
+                    val lastUpdatedStr = remember(meta.createdAtEpochMs) {
+                        if (meta.createdAtEpochMs > 0L) {
+                            java.text.SimpleDateFormat("dd MMM yyyy", java.util.Locale.US).format(java.util.Date(meta.createdAtEpochMs))
+                        } else {
+                            "Recently"
+                        }
+                    }
 
                     Surface(
                         modifier = Modifier
@@ -178,7 +196,7 @@ fun PortfolioSwitcherBottomSheet(
                                             overflow = TextOverflow.Ellipsis
                                         )
                                         Text(
-                                            text = "${meta.schemeCount} Mutual Funds",
+                                            text = "${meta.schemeCount} Mutual Funds • Updated $lastUpdatedStr",
                                             fontSize = 11.sp,
                                             color = WsSlateTextSecondary
                                         )
@@ -194,16 +212,28 @@ fun PortfolioSwitcherBottomSheet(
                                     )
                                     if (isActive) {
                                         Surface(
-                                            shape = RoundedCornerShape(4.dp),
-                                            color = gradient.startColor
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = gradient.startColor.copy(alpha = 0.12f),
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, gradient.startColor.copy(alpha = 0.35f))
                                         ) {
-                                            Text(
-                                                text = "ACTIVE",
-                                                fontSize = 9.sp,
-                                                fontWeight = FontWeight.Black,
-                                                color = Color.White,
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.5.dp)
-                                            )
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.CheckCircle,
+                                                    contentDescription = "Active",
+                                                    tint = gradient.startColor,
+                                                    modifier = Modifier.size(11.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(3.dp))
+                                                Text(
+                                                    text = "ACTIVE",
+                                                    fontSize = 9.5.sp,
+                                                    fontWeight = FontWeight.Black,
+                                                    color = gradient.startColor
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -224,14 +254,14 @@ fun PortfolioSwitcherBottomSheet(
                                 ) {
                                     Icon(imageVector = Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Rename", fontSize = 11.sp)
+                                    Text(actionRename, fontSize = 11.sp)
                                 }
                                 TextButton(
                                     onClick = { onRequestDuplicate(meta) }
                                 ) {
                                     Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(14.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Duplicate", fontSize = 11.sp)
+                                    Text(actionDuplicate, fontSize = 11.sp)
                                 }
                                 if (manifest.portfolios.size > 1) {
                                     TextButton(
@@ -239,7 +269,7 @@ fun PortfolioSwitcherBottomSheet(
                                     ) {
                                         Icon(imageVector = Icons.Default.Delete, contentDescription = null, tint = SemanticFinanceColors.LossRed, modifier = Modifier.size(14.dp))
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Delete", fontSize = 11.sp, color = SemanticFinanceColors.LossRed)
+                                        Text(actionDelete, fontSize = 11.sp, color = SemanticFinanceColors.LossRed)
                                     }
                                 }
                             }
@@ -261,7 +291,7 @@ fun PortfolioSwitcherBottomSheet(
             ) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Create New Portfolio", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text(btnCreateVault, fontWeight = FontWeight.Bold, fontSize = 13.sp)
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -277,18 +307,27 @@ fun CreatePortfolioDialog(
     onConfirm: (name: String, seedWithDefault: Boolean) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
-    var seedWithDefault by remember { mutableStateOf(false) }
     val gradient = LocalVaultGradient.current
+
+    // =========================================================================
+    // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
+    // =========================================================================
+    val dialogTitle = "Create New Vault"
+    val dialogPrompt = "Enter a distinct name for your portfolio vault:"
+    val namePlaceholder = "e.g. Retirement 2040, Tech Core"
+    val helperInfo = "Initializes an authentic empty vault. Add funds anytime via live AMFI search or CSV import."
+    val btnConfirmText = "Create Vault"
+    // =========================================================================
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(text = "Create New Portfolio", fontWeight = FontWeight.Bold)
+            Text(text = dialogTitle, fontWeight = FontWeight.Bold)
         },
         text = {
             Column {
                 Text(
-                    text = "Enter a distinct name for your portfolio vault:",
+                    text = dialogPrompt,
                     fontSize = 12.sp,
                     color = WsSlateTextSecondary
                 )
@@ -296,69 +335,27 @@ fun CreatePortfolioDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    placeholder = { Text("e.g. Retirement 2040, Tech Core") },
+                    placeholder = { Text(namePlaceholder) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp)
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
-
+                Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = "Initial Scheme Configuration:",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = WsSlateTextPrimary
+                    text = helperInfo,
+                    fontSize = 11.5.sp,
+                    color = WsSlateTextSecondary
                 )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { seedWithDefault = false }
-                        .padding(vertical = 4.dp)
-                ) {
-                    RadioButton(
-                        selected = !seedWithDefault,
-                        onClick = { seedWithDefault = false },
-                        colors = RadioButtonDefaults.colors(selectedColor = gradient.startColor)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Column {
-                        Text("Start Empty (0 schemes)", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                        Text("Manually search or import positions via CSV", fontSize = 11.sp, color = WsSlateTextSecondary)
-                    }
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { seedWithDefault = true }
-                        .padding(vertical = 4.dp)
-                ) {
-                    RadioButton(
-                        selected = seedWithDefault,
-                        onClick = { seedWithDefault = true },
-                        colors = RadioButtonDefaults.colors(selectedColor = gradient.startColor)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Column {
-                        Text("Seed Institutional Basket (20 schemes)", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                        Text("Pre-loads curated Large, Mid, Small, and Debt schemes", fontSize = 11.sp, color = WsSlateTextSecondary)
-                    }
-                }
             }
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(name.ifBlank { "Custom Portfolio" }, seedWithDefault) },
+                onClick = { onConfirm(name.ifBlank { "Custom Vault" }, false) },
                 colors = ButtonDefaults.buttonColors(containerColor = gradient.startColor),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text("Create Portfolio", fontWeight = FontWeight.Bold)
+                Text(btnConfirmText, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
@@ -381,14 +378,22 @@ fun RenamePortfolioDialog(
     var newName by remember { mutableStateOf(currentName) }
     val gradient = LocalVaultGradient.current
 
+    // =========================================================================
+    // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
+    // =========================================================================
+    val dialogTitle = "Rename Vault"
+    val dialogPrompt = "Enter the new name for this vault:"
+    val btnConfirmText = "Save Name"
+    // =========================================================================
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Rename Portfolio", fontWeight = FontWeight.Bold)
+            Text(dialogTitle, fontWeight = FontWeight.Bold)
         },
         text = {
             Column {
-                Text("Enter the new name for this portfolio:", fontSize = 12.sp, color = WsSlateTextSecondary)
+                Text(dialogPrompt, fontSize = 12.sp, color = WsSlateTextSecondary)
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = newName,
@@ -405,7 +410,7 @@ fun RenamePortfolioDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = gradient.startColor),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text("Save Name", fontWeight = FontWeight.Bold)
+                Text(btnConfirmText, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
@@ -425,14 +430,22 @@ fun DeletePortfolioDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
+    // =========================================================================
+    // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
+    // =========================================================================
+    val dialogTitle = "Delete Vault?"
+    val dialogWarning = "Are you sure you want to delete '$portfolioName'? All positions and settings in this vault will be removed from your device."
+    val btnConfirmText = "Delete Vault"
+    // =========================================================================
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Delete Portfolio?", fontWeight = FontWeight.Bold)
+            Text(dialogTitle, fontWeight = FontWeight.Bold)
         },
         text = {
             Text(
-                text = "Are you sure you want to delete '$portfolioName'? All positions and settings in this portfolio will be removed from your device.",
+                text = dialogWarning,
                 fontSize = 13.sp,
                 color = WsSlateTextSecondary
             )
@@ -443,7 +456,7 @@ fun DeletePortfolioDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = SemanticFinanceColors.LossRed),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text("Delete", fontWeight = FontWeight.Bold)
+                Text(btnConfirmText, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {

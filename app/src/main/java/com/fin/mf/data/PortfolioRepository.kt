@@ -24,7 +24,7 @@ import java.util.Locale
  * Single Source of Truth for the user's mutual fund portfolio and institutional analytics.
  *
  * Responsibilities:
- * 1. Seeds `portfolio_active.json` in internal storage from `assets/portfolio_seed.json` on first run.
+ * 1. Initializes an authentic empty `Primary Vault` in internal storage on first run.
  * 2. Persists all portfolio mutations (unit updates, scheme additions/removals, CSV import/export, live NAV syncs) atomically.
  * 3. Delegates look-through holdings generation and AMFI classification to [HoldingsEngine].
  * 4. Delegates pure analytics math, CAGR, fee drag, and overlap to [PortfolioAnalyticsEngine].
@@ -71,21 +71,13 @@ class PortfolioRepository(
     suspend fun loadPortfolio(): PortfolioData = withContext(Dispatchers.IO) {
         fileMutex.withLock {
             val manifest = readManifestLocked()
-            val activePortfolio = readActiveOrSeedLocked()
+            val activePortfolio = readActiveOrDefaultLocked()
 
-            val needsEnrichment = activePortfolio.schemes.any { it.holdings.size < 15 }
+            val needsEnrichment = activePortfolio.schemes.any { it.holdings.size < 35 }
             if (needsEnrichment) {
-                val seed = runCatching { readSeedFromAssetsLocked() }.getOrNull()
-                val seedMap = seed?.schemes?.associateBy { it.schemeCode }.orEmpty()
-
                 val enrichedSchemes = activePortfolio.schemes.map { s ->
-                    if (s.holdings.size < 15) {
-                        val seedScheme = seedMap[s.schemeCode]
-                        val enrichedHoldings = if (seedScheme != null && seedScheme.holdings.size >= 15) {
-                            seedScheme.holdings
-                        } else {
-                            HoldingsEngine.generateHoldings(s.schemeCode, s.schemeName, s.category, s.assetClass)
-                        }
+                    if (s.holdings.size < 35) {
+                        val enrichedHoldings = HoldingsEngine.generateHoldings(s.schemeCode, s.schemeName, s.category, s.assetClass)
                         s.copy(holdings = enrichedHoldings)
                     } else s
                 }
@@ -109,32 +101,26 @@ class PortfolioRepository(
             val updatedManifest = manifest.copy(activePortfolioId = targetMeta.id)
             writeTextAtomically(manifestFile, manifestAdapter.toJson(updatedManifest))
 
-            readActiveOrSeedLocked()
+            readActiveOrDefaultLocked()
         }
     }
 
     /**
-     * Creates a new portfolio (either empty or seeded with default schemes) and makes it active.
+     * Creates a new portfolio and makes it active.
      */
-    suspend fun createNewPortfolio(name: String, seedWithDefault: Boolean): PortfolioData = withContext(Dispatchers.IO) {
+    suspend fun createNewPortfolio(name: String, seedWithDefault: Boolean = false): PortfolioData = withContext(Dispatchers.IO) {
         fileMutex.withLock {
             val manifest = readManifestLocked()
             val newId = "p_${System.currentTimeMillis()}"
-            val newPortfolioName = name.ifBlank { "New Portfolio" }
+            val newPortfolioName = name.ifBlank { "New Vault" }
 
-            val initialPortfolio = if (seedWithDefault) {
-                readSeedFromAssetsLocked().copy(
-                    portfolioName = newPortfolioName,
-                    lastSyncedEpochMs = System.currentTimeMillis()
-                )
-            } else {
-                PortfolioData(
-                    portfolioName = newPortfolioName,
-                    ownerName = "Vault Owner",
-                    lastSyncedEpochMs = System.currentTimeMillis(),
-                    schemes = emptyList()
-                )
-            }
+            val initialPortfolio = PortfolioData(
+                portfolioName = newPortfolioName,
+                ownerName = "Investor",
+                lastSyncedEpochMs = 0L,
+                schemes = emptyList(),
+                marketCapMandate = MarketCapMandate()
+            )
 
             // Save new portfolio file atomically
             writePortfolioToDiskLocked(initialPortfolio, newId)
@@ -144,8 +130,8 @@ class PortfolioRepository(
                 id = newId,
                 name = newPortfolioName,
                 createdAtEpochMs = System.currentTimeMillis(),
-                schemeCount = initialPortfolio.schemes.size,
-                totalValue = initialPortfolio.schemes.sumOf { it.currentValue }
+                schemeCount = 0,
+                totalValue = 0.0
             )
             val updatedManifest = manifest.copy(
                 activePortfolioId = newId,
@@ -228,7 +214,7 @@ class PortfolioRepository(
             val sourcePortfolio = if (srcFile.exists()) {
                 readPortfolioFromFileLocked(srcFile, portfolioId)
             } else {
-                readActiveOrSeedLocked()
+                readActiveOrDefaultLocked()
             }
 
             val newId = "p_${System.currentTimeMillis()}"
@@ -258,13 +244,29 @@ class PortfolioRepository(
     }
 
     /**
-     * Resets the user's active portfolio back to the original bundled 20-scheme `portfolio_seed.json`.
+     * Clears all mutual fund schemes from the active portfolio, resetting to clean empty state.
      */
-    suspend fun resetToSeedPortfolio(): PortfolioData = withContext(Dispatchers.IO) {
+    suspend fun clearActivePortfolio(): PortfolioData = withContext(Dispatchers.IO) {
         fileMutex.withLock {
-            val seedPortfolio = readSeedFromAssetsLocked()
-            writePortfolioToDiskLocked(seedPortfolio)
-            seedPortfolio
+            val current = readActiveOrDefaultLocked()
+            val cleared = current.copy(
+                schemes = emptyList(),
+                lastSyncedEpochMs = 0L
+            )
+            writePortfolioToDiskLocked(cleared)
+            cleared
+        }
+    }
+
+    /**
+     * Updates the SEBI Market Cap target mandate configuration.
+     */
+    suspend fun updateMarketCapMandate(mandate: MarketCapMandate): PortfolioData = withContext(Dispatchers.IO) {
+        fileMutex.withLock {
+            val current = readActiveOrDefaultLocked()
+            val updated = current.copy(marketCapMandate = mandate)
+            writePortfolioToDiskLocked(updated)
+            updated
         }
     }
 
@@ -293,7 +295,7 @@ class PortfolioRepository(
         newInvestedAmount: Double
     ): PortfolioData = withContext(Dispatchers.IO) {
         fileMutex.withLock {
-            val current = readActiveOrSeedLocked()
+            val current = readActiveOrDefaultLocked()
             val updatedSchemes = current.schemes.map { scheme ->
                 if (scheme.schemeCode == schemeCode) {
                     scheme.copy(
@@ -420,7 +422,7 @@ class PortfolioRepository(
     suspend fun getSchemeDetails(schemeCode: Int): Result<MutualFundScheme> = withContext(Dispatchers.IO) {
         runCatching {
             fileMutex.withLock {
-                val current = readActiveOrSeedLocked()
+                val current = readActiveOrDefaultLocked()
                 val existing = current.schemes.find { it.schemeCode == schemeCode }
                 if (existing != null) return@runCatching existing
             }
@@ -476,7 +478,7 @@ class PortfolioRepository(
         investedAmount: Double
     ): PortfolioData = withContext(Dispatchers.IO) {
         fileMutex.withLock {
-            val current = readActiveOrSeedLocked()
+            val current = readActiveOrDefaultLocked()
             val existing = current.schemes.find { it.schemeCode == schemeCode }
             if (existing != null) {
                 val updatedSchemes = current.schemes.map {
@@ -497,8 +499,11 @@ class PortfolioRepository(
             val navBody = navDetailsResponse?.body()
             val meta = navBody?.meta
             val topEntry = navBody?.data?.firstOrNull()
+            val secondEntry = navBody?.data?.getOrNull(1)
 
             val parsedNav = topEntry?.nav?.trim()?.toDoubleOrNull() ?: 10.0
+            val prevNav = secondEntry?.nav?.trim()?.toDoubleOrNull()
+            val dayDiff = if (prevNav != null && prevNav > 0.0) parsedNav - prevNav else 0.0
             val navDate = topEntry?.date ?: SimpleDateFormat("dd-MM-yyyy", Locale.US).format(Date())
 
             val schemeName = meta?.schemeName ?: "Scheme #$schemeCode"
@@ -526,7 +531,8 @@ class PortfolioRepository(
                 investedAmount = investedAmount.coerceAtLeast(0.0),
                 fallbackNav = parsedNav,
                 lastNavDate = navDate,
-                holdings = authenticHoldings
+                holdings = authenticHoldings,
+                dayChange = dayDiff
             )
 
             val updatedSchemes = current.schemes + newScheme
@@ -541,7 +547,7 @@ class PortfolioRepository(
      */
     suspend fun deleteScheme(schemeCode: Int): PortfolioData = withContext(Dispatchers.IO) {
         fileMutex.withLock {
-            val current = readActiveOrSeedLocked()
+            val current = readActiveOrDefaultLocked()
             val updatedSchemes = current.schemes.filterNot { it.schemeCode == schemeCode }
             val updatedPortfolio = current.copy(schemes = updatedSchemes)
             writePortfolioToDiskLocked(updatedPortfolio)
@@ -567,7 +573,7 @@ class PortfolioRepository(
     suspend fun importPortfolioCsv(csvContent: String): PortfolioData = withContext(Dispatchers.IO) {
         val parsedRows = PortfolioCsvParser.parseCsvRows(csvContent)
 
-        val current = fileMutex.withLock { readActiveOrSeedLocked() }
+        val current = fileMutex.withLock { readActiveOrDefaultLocked() }
         val existingMap = current.schemes.associateBy { it.schemeCode }
 
         val importedSchemes = supervisorScope {
@@ -704,11 +710,19 @@ class PortfolioRepository(
             schemes.map { scheme ->
                 async(Dispatchers.IO) {
                     fetchLatestNavForScheme(scheme).fold(
-                        onSuccess = { (latestNav, latestDate) ->
+                        onSuccess = { (latestNav, latestDate, dayDiff) ->
+                            val resolvedDayChange = if (dayDiff != null) {
+                                dayDiff
+                            } else if (scheme.fallbackNav > 0.0 && latestNav != scheme.fallbackNav) {
+                                latestNav - scheme.fallbackNav
+                            } else {
+                                scheme.dayChange
+                            }
                             SingleSchemeNavResult(
                                 scheme = scheme.copy(
                                     fallbackNav = latestNav,
-                                    lastNavDate = latestDate
+                                    lastNavDate = latestDate,
+                                    dayChange = resolvedDayChange
                                 ),
                                 isUpdated = true,
                                 errorMessage = null
@@ -780,20 +794,21 @@ class PortfolioRepository(
         return PortfolioAnalyticsEngine.computeAnalytics(portfolio)
     }
 
-    private suspend fun fetchLatestNavForScheme(scheme: MutualFundScheme): Result<Pair<Double, String>> =
+    private suspend fun fetchLatestNavForScheme(scheme: MutualFundScheme): Result<Triple<Double, String, Double?>> =
         runCatching {
-            val latestResponse = apiService.getSchemeLatestNav(scheme.schemeCode)
-            val responseBody = if (latestResponse.isSuccessful && !latestResponse.body()?.data.isNullOrEmpty()) {
-                latestResponse.body()
+            val detailsResponse = apiService.getSchemeNavDetails(scheme.schemeCode)
+            val responseBody = if (detailsResponse.isSuccessful && !detailsResponse.body()?.data.isNullOrEmpty()) {
+                detailsResponse.body()
             } else {
-                val fallbackResponse = apiService.getSchemeNavDetails(scheme.schemeCode)
+                val fallbackResponse = apiService.getSchemeLatestNav(scheme.schemeCode)
                 if (!fallbackResponse.isSuccessful) {
                     throw IOException("HTTP ${fallbackResponse.code()}")
                 }
                 fallbackResponse.body()
             }
 
-            val topEntry = responseBody?.data?.firstOrNull()
+            val data = responseBody?.data.orEmpty()
+            val topEntry = data.firstOrNull()
                 ?: throw IOException("Empty NAV data array")
 
             val parsedNav = topEntry.nav.trim().toDoubleOrNull()
@@ -803,7 +818,11 @@ class PortfolioRepository(
                 throw IOException("Non-positive NAV: $parsedNav")
             }
 
-            Pair(parsedNav, topEntry.date)
+            val secondEntry = data.getOrNull(1)
+            val prevNav = secondEntry?.nav?.trim()?.toDoubleOrNull()
+            val dayDiff = if (prevNav != null && prevNav > 0.0) parsedNav - prevNav else null
+
+            Triple(parsedNav, topEntry.date, dayDiff)
         }
 
     private fun readManifestLocked(): PortfolioManifest {
@@ -821,19 +840,19 @@ class PortfolioRepository(
         val initialData: PortfolioData = if (defaultFile.exists() && defaultFile.length() > 0L) {
             runCatching {
                 readPortfolioFromFileLocked(defaultFile, DEFAULT_PORTFOLIO_ID)
-            }.getOrNull() ?: readSeedFromAssetsLocked()
+            }.getOrNull() ?: createDefaultEmptyPortfolio()
         } else if (legacyFile.exists() && legacyFile.length() > 0L) {
             val legacyData = runCatching {
                 val json = legacyFile.readText(Charsets.UTF_8)
                 portfolioAdapter.fromJson(json)
-            }.getOrNull() ?: readSeedFromAssetsLocked()
+            }.getOrNull() ?: createDefaultEmptyPortfolio()
             writeTextAtomically(defaultFile, portfolioAdapter.toJson(legacyData))
             runCatching { legacyFile.delete() }
             legacyData
         } else {
-            val seed = readSeedFromAssetsLocked()
-            writeTextAtomically(defaultFile, portfolioAdapter.toJson(seed))
-            seed
+            val emptyPortfolio = createDefaultEmptyPortfolio()
+            writeTextAtomically(defaultFile, portfolioAdapter.toJson(emptyPortfolio))
+            emptyPortfolio
         }
 
         val initialManifest = PortfolioManifest(
@@ -841,7 +860,7 @@ class PortfolioRepository(
             portfolios = listOf(
                 PortfolioMeta(
                     id = DEFAULT_PORTFOLIO_ID,
-                    name = initialData.portfolioName.ifBlank { "Institutional Core" },
+                    name = initialData.portfolioName.ifBlank { "Primary Vault" },
                     createdAtEpochMs = System.currentTimeMillis(),
                     schemeCount = initialData.schemes.size,
                     totalValue = initialData.schemes.sumOf { it.currentValue }
@@ -852,7 +871,17 @@ class PortfolioRepository(
         return initialManifest
     }
 
-    private fun readActiveOrSeedLocked(): PortfolioData {
+    private fun createDefaultEmptyPortfolio(): PortfolioData {
+        return PortfolioData(
+            portfolioName = "Primary Vault",
+            ownerName = "Investor",
+            lastSyncedEpochMs = 0L,
+            schemes = emptyList(),
+            marketCapMandate = MarketCapMandate()
+        )
+    }
+
+    private fun readActiveOrDefaultLocked(): PortfolioData {
         val manifest = readManifestLocked()
         val targetFile = portfolioFile(manifest.activePortfolioId)
         if (targetFile.exists() && targetFile.length() > 0L) {
@@ -873,10 +902,10 @@ class PortfolioRepository(
             }
         }
 
-        // Seed fallback
-        val seed = readSeedFromAssetsLocked()
-        writePortfolioToDiskLocked(seed, DEFAULT_PORTFOLIO_ID)
-        return seed
+        // Clean empty default fallback
+        val defaultPortfolio = createDefaultEmptyPortfolio()
+        writePortfolioToDiskLocked(defaultPortfolio, DEFAULT_PORTFOLIO_ID)
+        return defaultPortfolio
     }
 
     private fun readPortfolioFromFileLocked(file: File, portfolioId: String): PortfolioData {
@@ -894,14 +923,6 @@ class PortfolioRepository(
             runCatching { file.renameTo(bak) }
             throw e
         }
-    }
-
-    private fun readSeedFromAssetsLocked(): PortfolioData {
-        val seedJson = appContext.assets.open(SEED_PORTFOLIO_FILENAME)
-            .bufferedReader(Charsets.UTF_8)
-            .use { it.readText() }
-        return portfolioAdapter.fromJson(seedJson)
-            ?: throw IOException("Failed to deserialize $SEED_PORTFOLIO_FILENAME")
     }
 
     private fun writePortfolioToDiskLocked(portfolio: PortfolioData, portfolioId: String? = null) {
@@ -939,8 +960,30 @@ class PortfolioRepository(
         }
     }
 
+    fun isFloatingFabEnabled(): Boolean {
+        val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_ENABLE_FLOATING_FAB, false)
+    }
+
+    fun setFloatingFabEnabled(enabled: Boolean) {
+        val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_ENABLE_FLOATING_FAB, enabled).apply()
+    }
+
+    fun isMarketStatusTickerEnabled(): Boolean {
+        val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_ENABLE_MARKET_STATUS_TICKER, true)
+    }
+
+    fun setMarketStatusTickerEnabled(enabled: Boolean) {
+        val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_ENABLE_MARKET_STATUS_TICKER, enabled).apply()
+    }
+
     companion object {
-        private const val SEED_PORTFOLIO_FILENAME = "portfolio_seed.json"
+        private const val PREFS_NAME = "finbaba_prefs"
+        const val KEY_ENABLE_FLOATING_FAB = "KEY_ENABLE_FLOATING_FAB"
+        const val KEY_ENABLE_MARKET_STATUS_TICKER = "KEY_ENABLE_MARKET_STATUS_TICKER"
         private const val LEGACY_ACTIVE_PORTFOLIO_FILENAME = "portfolio_active.json"
         private const val MANIFEST_FILENAME = "portfolios_manifest.json"
         const val DEFAULT_PORTFOLIO_ID = "default"

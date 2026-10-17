@@ -22,13 +22,24 @@ data class PortfolioMeta(
 )
 
 /**
- * Root JSON structure matching `portfolio_seed.json` and `portfolio_{id}.json`.
+ * Configurable SEBI market cap allocation targets for the portfolio.
+ */
+data class MarketCapMandate(
+    @Json(name = "largeCapTarget") val largeCapTarget: Double = 50.0,
+    @Json(name = "midCapTarget") val midCapTarget: Double = 25.0,
+    @Json(name = "smallCapTarget") val smallCapTarget: Double = 20.0,
+    @Json(name = "microCapTarget") val microCapTarget: Double = 5.0
+)
+
+/**
+ * Root JSON structure matching individual portfolio files (`portfolio_{id}.json`).
  */
 data class PortfolioData(
     @Json(name = "portfolioName") val portfolioName: String,
     @Json(name = "ownerName") val ownerName: String,
     @Json(name = "lastSyncedEpochMs") val lastSyncedEpochMs: Long,
-    @Json(name = "schemes") val schemes: List<MutualFundScheme>
+    @Json(name = "schemes") val schemes: List<MutualFundScheme>,
+    @Json(name = "marketCapMandate") val marketCapMandate: MarketCapMandate = MarketCapMandate()
 )
 
 /**
@@ -48,7 +59,8 @@ data class MutualFundScheme(
     @Json(name = "investedAmount") val investedAmount: Double,
     @Json(name = "fallbackNav") val fallbackNav: Double,
     @Json(name = "lastNavDate") val lastNavDate: String,
-    @Json(name = "holdings") val holdings: List<UnderlyingHolding>
+    @Json(name = "holdings") val holdings: List<UnderlyingHolding>,
+    @Json(name = "dayChange") val dayChange: Double = 0.0
 ) {
     val currentValue: Double
         get() = units * fallbackNav
@@ -195,7 +207,9 @@ data class PortfolioAnalyticsSummary(
     val marketCapBreakdown: List<AllocationSlice>,
     val topHoldings: List<AggregatedStockExposure>,
     val sectorBreakdown: List<SectorExposure>,
-    val highOverlapStocksCount: Int
+    val highOverlapStocksCount: Int,
+    val todayGain: Double? = null,
+    val todayGainPercent: Double? = null
 )
 
 /**

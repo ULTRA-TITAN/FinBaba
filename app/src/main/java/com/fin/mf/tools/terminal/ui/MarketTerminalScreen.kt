@@ -28,10 +28,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import com.fin.mf.data.PortfolioRepository
+import com.fin.mf.ui.components.MarketStatusTickerPill
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Straighten
@@ -88,7 +90,9 @@ fun MarketTerminalScreen(
     themeManager: VaultThemeManager = VaultThemeManager.getInstance(LocalContext.current)
 ) {
     val gradient = LocalVaultGradient.current
+    val context = LocalContext.current
     val uiState by terminalViewModel.uiState.collectAsState()
+    val isTickerEnabled = remember { PortfolioRepository(context).isMarketStatusTickerEnabled() }
     var isSearchExpanded by remember { mutableStateOf(false) }
     var showAppearanceSheet by rememberSaveable { mutableStateOf(false) }
 
@@ -117,7 +121,9 @@ fun MarketTerminalScreen(
                                     text = "Market Terminal",
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = TerminalSlatePrimary
+                                    color = TerminalSlatePrimary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Surface(
@@ -136,7 +142,9 @@ fun MarketTerminalScreen(
                             Text(
                                 text = "${uiState.activeQuote?.exchange ?: "GLOBAL"} • Real-Time Yahoo Feed",
                                 fontSize = 11.sp,
-                                color = TerminalSlateSecondary
+                                color = TerminalSlateSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     },
@@ -193,6 +201,13 @@ fun MarketTerminalScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Live Market Status & NSE/BSE Holiday Ticker Pill
+                if (isTickerEnabled) {
+                    item {
+                        MarketStatusTickerPill()
+                    }
+                }
+
                 // 1. Search Bar & Instant Autocomplete Dropdown
                 item {
                     Column(modifier = Modifier.fillMaxWidth()) {
@@ -479,7 +494,7 @@ fun MarketTerminalScreen(
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            items(TerminalTimeframe.entries) { tf ->
+                            items(items = TerminalTimeframe.entries, key = { it.name }) { tf ->
                                 val isSelected = tf == uiState.selectedTimeframe
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
@@ -555,6 +570,34 @@ fun MarketTerminalScreen(
                                     selectedLeadingIconColor = Color.White
                                 )
                             )
+
+                            Spacer(modifier = Modifier.weight(1f))
+
+                            Surface(
+                                onClick = { terminalViewModel.setFullscreenOpen(true) },
+                                shape = RoundedCornerShape(8.dp),
+                                color = gradient.startColor.copy(alpha = 0.12f),
+                                border = BorderStroke(1.dp, gradient.startColor.copy(alpha = 0.35f))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Fullscreen,
+                                        contentDescription = "Fullscreen Pro Analysis",
+                                        tint = gradient.startColor,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "PRO VIEW",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = gradient.startColor
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -663,7 +706,10 @@ fun MarketTerminalScreen(
                 item {
                     val quote = uiState.activeQuote
                     if (quote != null) {
-                        InstitutionalStatsCard(quote = quote)
+                        InstitutionalStatsCard(
+                            quote = quote,
+                            fundamentals = uiState.stockFundamentals
+                        )
                     }
                 }
             }
@@ -674,6 +720,16 @@ fun MarketTerminalScreen(
         AppearanceSettingsSheet(
             themeManager = themeManager,
             onDismiss = { showAppearanceSheet = false }
+        )
+    }
+
+    if (uiState.isFullscreenOpen && uiState.activeQuote != null) {
+        TerminalFullscreenDialog(
+            quote = uiState.activeQuote!!,
+            selectedTimeframe = uiState.selectedTimeframe,
+            onTimeframeSelected = { terminalViewModel.selectTimeframe(it) },
+            benchmarkPoints = uiState.benchmarkPoints,
+            onDismiss = { terminalViewModel.setFullscreenOpen(false) }
         )
     }
 }

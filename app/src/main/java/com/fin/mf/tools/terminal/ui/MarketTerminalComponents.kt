@@ -227,66 +227,6 @@ internal fun HeroQuoteCard(
     }
 }
 
-@Composable
-internal fun InstitutionalStatsCard(quote: TerminalAssetQuote) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = TerminalSurface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, TerminalSlateBorder),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(18.dp)) {
-            Text(
-                text = "Trading & Valuation Metrics",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = TerminalSlatePrimary
-            )
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Row(modifier = Modifier.fillMaxWidth()) {
-                StatCell(
-                    modifier = Modifier.weight(1f),
-                    label = "Prev Close",
-                    value = formatAssetPrice(quote.previousClose, quote.currency)
-                )
-                StatCell(
-                    modifier = Modifier.weight(1f),
-                    label = "Open",
-                    value = formatAssetPrice(quote.open, quote.currency)
-                )
-                StatCell(
-                    modifier = Modifier.weight(1f),
-                    label = "Volume",
-                    value = formatCompactVolume(quote.volume)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            HorizontalDivider(color = TerminalSlateBorder.copy(alpha = 0.6f))
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(modifier = Modifier.fillMaxWidth()) {
-                StatCell(
-                    modifier = Modifier.weight(1f),
-                    label = "Day High",
-                    value = formatAssetPrice(quote.dayHigh, quote.currency)
-                )
-                StatCell(
-                    modifier = Modifier.weight(1f),
-                    label = "Day Low",
-                    value = formatAssetPrice(quote.dayLow, quote.currency)
-                )
-                StatCell(
-                    modifier = Modifier.weight(1f),
-                    label = "Exchange",
-                    value = quote.exchange
-                )
-            }
-        }
-    }
-}
 
 @Composable
 internal fun RangeMeter(

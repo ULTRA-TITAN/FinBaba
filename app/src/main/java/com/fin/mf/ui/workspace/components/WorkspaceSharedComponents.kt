@@ -1,5 +1,6 @@
 package com.fin.mf.ui.workspace.components
 
+import com.fin.mf.ui.components.bounceClick
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -87,7 +88,9 @@ fun WsElevatedCard(
     content: @Composable () -> Unit
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .bounceClick(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = WsSurfaceWhite),
         border = androidx.compose.foundation.BorderStroke(1.dp, WsSlateBorder),
