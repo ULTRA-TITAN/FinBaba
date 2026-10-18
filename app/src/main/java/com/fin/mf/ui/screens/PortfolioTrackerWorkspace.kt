@@ -91,7 +91,9 @@ import com.fin.mf.ui.workspace.components.WsSlateTextSecondary
 import com.fin.mf.ui.workspace.components.WsSurfaceWhite
 import com.fin.mf.ui.workspace.dialogs.AmfiAddSchemeModal
 import com.fin.mf.ui.workspace.dialogs.CsvManagerModal
+import com.fin.mf.ui.workspace.dialogs.ReconciliationPreviewSheet
 import com.fin.mf.ui.workspace.dialogs.SettingsModalDialog
+import com.fin.mf.ui.workspace.dialogs.UniversalDataManagementDialog
 import com.fin.mf.ui.workspace.tabs.WorkspaceMfHunterTab
 import com.fin.mf.ui.workspace.tabs.WorkspaceOverviewTab
 import com.fin.mf.ui.workspace.tabs.WorkspacePortfolioTab
@@ -131,6 +133,7 @@ fun PortfolioTrackerWorkspace(
     onNavigateBackToHub: () -> Unit
 ) {
     val gradient = LocalVaultGradient.current
+    val context = LocalContext.current
     val uiState by portfolioViewModel.uiState.collectAsState()
 
     var activeTab by rememberSaveable(initialTabIndex) {
@@ -507,11 +510,47 @@ fun PortfolioTrackerWorkspace(
         )
     }
 
-    // CSV Manager Dialog
+    // Universal Data & Audit Management Hub (Import & Export Engine)
     if (showCsvDialog) {
-        CsvManagerModal(
-            portfolioViewModel = portfolioViewModel,
-            onDismiss = { showCsvDialog = false }
+        val currentPortfolio = uiState.portfolioData
+        val currentAnalytics = uiState.analytics
+        if (currentPortfolio != null && currentAnalytics != null) {
+            UniversalDataManagementDialog(
+                portfolioData = currentPortfolio,
+                analytics = currentAnalytics,
+                healthScore = 85,
+                onDismissRequest = { showCsvDialog = false },
+                onImportDocumentUri = { uri ->
+                    runCatching {
+                        context.contentResolver.openInputStream(uri)?.use { stream ->
+                            val filename = uri.lastPathSegment ?: "statement.xlsx"
+                            portfolioViewModel.processSpreadsheetImport(stream, filename)
+                        }
+                    }
+                    showCsvDialog = false
+                },
+                onImportRawCsvText = { rawText ->
+                    portfolioViewModel.importPortfolioFromCsv(rawText)
+                    showCsvDialog = false
+                }
+            )
+        } else {
+            CsvManagerModal(
+                portfolioViewModel = portfolioViewModel,
+                onDismiss = { showCsvDialog = false }
+            )
+        }
+    }
+
+    // Intelligent AMFI Scheme Reconciliation Preview Bottom Sheet
+    uiState.reconciliationItems?.let { items ->
+        ReconciliationPreviewSheet(
+            initialItems = items,
+            amfiDictionary = uiState.amfiDictionary,
+            onDismiss = { portfolioViewModel.dismissReconciliation() },
+            onCommitToVault = { schemes, mode ->
+                portfolioViewModel.commitReconciledHoldings(schemes, mode)
+            }
         )
     }
 

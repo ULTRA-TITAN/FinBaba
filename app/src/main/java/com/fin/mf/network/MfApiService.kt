@@ -30,6 +30,13 @@ interface MfApiService {
     ): Response<List<MfSearchDto>>
 
     /**
+     * Fetches the complete master list of all AMFI mutual fund schemes for offline fuzzy reconciliation.
+     * Endpoint: `https://api.mfapi.in/mf`
+     */
+    @GET("mf")
+    suspend fun getAllSchemes(): Response<List<MfSearchDto>>
+
+    /**
      * Fetches scheme metadata and full NAV history for a given AMFI scheme code.
      * The latest published NAV is always at index 0 of `response.body()?.data`.
      */

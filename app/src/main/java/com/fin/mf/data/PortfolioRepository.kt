@@ -7,6 +7,7 @@ import com.fin.mf.data.engine.PortfolioCsvParser
 import com.fin.mf.network.MfApiService
 import com.fin.mf.network.NetworkClient
 import com.squareup.moshi.JsonAdapter
+import com.squareup.moshi.Types
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -627,6 +628,96 @@ class PortfolioRepository(
             fresh
         }
         updatedPortfolio
+    }
+
+    @Volatile
+    private var cachedAmfiDictionary: List<Pair<Int, String>>? = null
+
+    /**
+     * Retrieves the master AMFI scheme dictionary (schemeCode to schemeName) for fuzzy reconciliation.
+     * Caches in memory and on disk.
+     */
+    suspend fun getAmfiSchemeDictionary(): List<Pair<Int, String>> = withContext(Dispatchers.IO) {
+        cachedAmfiDictionary?.let { return@withContext it }
+
+        val cacheFile = File(appContext.cacheDir, "amfi_dictionary_cache.json")
+        if (cacheFile.exists()) {
+            runCatching {
+                val listType = Types.newParameterizedType(List::class.java, MfSearchDto::class.java)
+                val adapter = NetworkClient.moshi.adapter<List<MfSearchDto>>(listType)
+                val dtos = adapter.fromJson(cacheFile.readText())
+                if (!dtos.isNullOrEmpty()) {
+                    val dict = dtos.map { it.schemeCode to it.schemeName }
+                    cachedAmfiDictionary = dict
+                    return@withContext dict
+                }
+            }
+        }
+
+        // Fetch from network
+        val networkDict = runCatching {
+            val response = apiService.getAllSchemes()
+            if (response.isSuccessful) {
+                val dtos = response.body().orEmpty()
+                if (dtos.isNotEmpty()) {
+                    runCatching {
+                        val listType = Types.newParameterizedType(List::class.java, MfSearchDto::class.java)
+                        val adapter = NetworkClient.moshi.adapter<List<MfSearchDto>>(listType)
+                        cacheFile.writeText(adapter.toJson(dtos))
+                    }
+                    dtos.map { it.schemeCode to it.schemeName }
+                } else null
+            } else null
+        }.getOrNull()
+
+        if (networkDict != null && networkDict.isNotEmpty()) {
+            cachedAmfiDictionary = networkDict
+            return@withContext networkDict
+        }
+
+        // Fallback: seed with active portfolio schemes
+        val fallback = fileMutex.withLock { readActiveOrDefaultLocked().schemes.map { it.schemeCode to it.schemeName } }
+        fallback
+    }
+
+    /**
+     * Commits reconciled mutual fund positions into the active portfolio, either merging
+     * with existing holdings or replacing the entire portfolio vault.
+     */
+    suspend fun commitReconciledPortfolio(
+        schemesToCommit: List<MutualFundScheme>,
+        mode: com.fin.mf.ui.workspace.dialogs.VaultImportMode
+    ): PortfolioData = withContext(Dispatchers.IO) {
+        fileMutex.withLock {
+            val current = readActiveOrDefaultLocked()
+            val finalSchemes = when (mode) {
+                com.fin.mf.ui.workspace.dialogs.VaultImportMode.REPLACE_ENTIRE_VAULT -> {
+                    schemesToCommit
+                }
+                com.fin.mf.ui.workspace.dialogs.VaultImportMode.MERGE_WITH_ACTIVE_VAULT -> {
+                    val existingMap = current.schemes.associateBy { it.schemeCode }.toMutableMap()
+                    for (newScheme in schemesToCommit) {
+                        val existing = existingMap[newScheme.schemeCode]
+                        if (existing != null) {
+                            existingMap[newScheme.schemeCode] = existing.copy(
+                                units = existing.units + newScheme.units,
+                                investedAmount = existing.investedAmount + newScheme.investedAmount
+                            )
+                        } else {
+                            existingMap[newScheme.schemeCode] = newScheme
+                        }
+                    }
+                    existingMap.values.toList()
+                }
+            }
+
+            val updatedPortfolio = current.copy(
+                schemes = finalSchemes,
+                lastSyncedEpochMs = System.currentTimeMillis()
+            )
+            writePortfolioToDiskLocked(updatedPortfolio)
+            updatedPortfolio
+        }
     }
 
     /**

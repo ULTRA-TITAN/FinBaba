@@ -1,8 +1,11 @@
 package com.fin.mf.ui
 
 import android.app.Application
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.fin.mf.core.export.MediaStoreExportManager
 import com.fin.mf.data.ChartTimeframe
 import com.fin.mf.data.FundComparisonItem
 import com.fin.mf.data.MarketCapMandate
@@ -13,6 +16,12 @@ import com.fin.mf.data.NavSyncReport
 import com.fin.mf.data.PortfolioAnalyticsSummary
 import com.fin.mf.data.PortfolioData
 import com.fin.mf.data.PortfolioRepository
+import com.fin.mf.data.engine.AmfiFuzzyReconciler
+import com.fin.mf.data.engine.BrokerFormatNormalizer
+import com.fin.mf.data.engine.ReconciledSchemeItem
+import com.fin.mf.data.engine.UniversalSpreadsheetReader
+import com.fin.mf.ui.workspace.dialogs.VaultImportMode
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +29,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.InputStream
 
 /**
  * Legacy timeframe selector kept for backward-compatibility.
@@ -65,7 +76,10 @@ data class PortfolioUiState(
     val inspectedExternalScheme: MutualFundScheme? = null,
     val portfolioManifest: com.fin.mf.data.PortfolioManifest? = null,
     val isFloatingFabEnabled: Boolean = false,
-    val isMarketStatusTickerEnabled: Boolean = true
+    val isMarketStatusTickerEnabled: Boolean = true,
+    val reconciliationItems: List<ReconciledSchemeItem>? = null,
+    val amfiDictionary: List<Pair<Int, String>> = emptyList(),
+    val isReconciling: Boolean = false
 ) {
     /**
      * Dynamically filtered and sorted schemes based on the user's search query and asset class filter.
@@ -538,12 +552,53 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    private val exportManager = MediaStoreExportManager()
+
     /**
-     * Returns serialized CSV content for user export.
+     * Returns serialized CSV content for user export (clipboard/preview).
      */
     fun exportPortfolioCsv(): String {
         val currentPortfolio = _uiState.value.portfolioData ?: return "SchemeCode,SchemeName,Units,InvestedAmount\n"
         return repository.exportPortfolioCsv(currentPortfolio)
+    }
+
+    /**
+     * Exports the 4-tab institutional OpenXML .xlsx audit workbook into user's Downloads/FinBaba directory.
+     */
+    fun exportPortfolioExcel(context: Context): Result<Uri> {
+        val portfolio = _uiState.value.portfolioData ?: return Result.failure(IllegalStateException("Portfolio empty"))
+        val analytics = _uiState.value.analytics ?: repository.computeAnalytics(portfolio)
+        return exportManager.exportExcelFile(context, portfolio, analytics).onSuccess {
+            postStatusBanner("Exported Excel workbook to Downloads/FinBaba")
+        }.onFailure { error ->
+            postStatusBanner("Excel export failed: ${error.localizedMessage}")
+        }
+    }
+
+    /**
+     * Exports the standard portfolio CSV file via MediaStore into user's Downloads/FinBaba directory.
+     */
+    fun exportPortfolioCsvFile(context: Context): Result<Uri> {
+        val portfolio = _uiState.value.portfolioData ?: return Result.failure(IllegalStateException("Portfolio empty"))
+        return exportManager.exportCsvFile(context, portfolio).onSuccess {
+            postStatusBanner("Exported CSV file to Downloads/FinBaba")
+        }.onFailure { error ->
+            postStatusBanner("CSV export failed: ${error.localizedMessage}")
+        }
+    }
+
+    /**
+     * Launches a system chooser to share or open the exported file.
+     */
+    fun shareExportedFile(context: Context, uri: Uri, mimeType: String) {
+        exportManager.dispatchShareOrOpenChooser(context, uri, mimeType)
+    }
+
+    /**
+     * Opens the exported file with an external app (Excel, Sheets, etc.).
+     */
+    fun openExportedFile(context: Context, uri: Uri, mimeType: String) {
+        exportManager.dispatchViewChooser(context, uri, mimeType)
     }
 
     /**
@@ -571,6 +626,77 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
                 postStatusBanner("Import failed: ${error.localizedMessage}")
             }
         }
+    }
+
+    /**
+     * Streams and parses an Excel (.xlsx), CSV, or TSV file, extracts broker holdings,
+     * and performs AMFI token-set fuzzy reconciliation.
+     */
+    fun processSpreadsheetImport(inputStream: InputStream, filename: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isReconciling = true) }
+            runCatching {
+                val rows = withContext(Dispatchers.IO) {
+                    UniversalSpreadsheetReader.readSpreadsheetRows(inputStream, filename)
+                }
+                val records = withContext(Dispatchers.Default) {
+                    BrokerFormatNormalizer.normalizeRows(rows)
+                }
+                if (records.isEmpty()) {
+                    throw IllegalStateException("No valid mutual fund holding records found in $filename")
+                }
+                val dict = repository.getAmfiSchemeDictionary()
+                val reconciled = withContext(Dispatchers.Default) {
+                    AmfiFuzzyReconciler.reconcileAll(records, dict)
+                }
+                Pair(reconciled, dict)
+            }.onSuccess { (reconciled, dict) ->
+                _uiState.update {
+                    it.copy(
+                        isReconciling = false,
+                        reconciliationItems = reconciled,
+                        amfiDictionary = dict
+                    )
+                }
+            }.onFailure { error ->
+                _uiState.update { it.copy(isReconciling = false) }
+                postStatusBanner("Spreadsheet parsing failed: ${error.localizedMessage}")
+            }
+        }
+    }
+
+    /**
+     * Commits reconciled schemes into the active portfolio with the specified merge strategy.
+     */
+    fun commitReconciledHoldings(schemes: List<MutualFundScheme>, mode: VaultImportMode) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, reconciliationItems = null) }
+            runCatching {
+                val updatedPortfolio = repository.commitReconciledPortfolio(schemes, mode)
+                val analytics = repository.computeAnalytics(updatedPortfolio)
+                Pair(updatedPortfolio, analytics)
+            }.onSuccess { (updatedPortfolio, analytics) ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        portfolioData = updatedPortfolio,
+                        analytics = analytics,
+                        selectedSchemeCode = updatedPortfolio.schemes.firstOrNull()?.schemeCode
+                    )
+                }
+                postStatusBanner("Successfully reconciled and imported ${schemes.size} funds!")
+            }.onFailure { error ->
+                _uiState.update { it.copy(isLoading = false) }
+                postStatusBanner("Import commit failed: ${error.localizedMessage}")
+            }
+        }
+    }
+
+    /**
+     * Dismisses the active reconciliation preview sheet.
+     */
+    fun dismissReconciliation() {
+        _uiState.update { it.copy(reconciliationItems = null) }
     }
 
     /**
