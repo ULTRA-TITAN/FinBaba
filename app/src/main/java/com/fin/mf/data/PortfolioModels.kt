@@ -222,3 +222,11 @@ data class NavSyncReport(
     val timestampEpochMs: Long,
     val errorMessages: List<String>
 )
+
+/**
+ * Progress indicator emitted during spreadsheet parsing and AMFI reconciliation.
+ */
+data class ReconciliationProgress(
+    val stageText: String,
+    val progressFraction: Float
+)

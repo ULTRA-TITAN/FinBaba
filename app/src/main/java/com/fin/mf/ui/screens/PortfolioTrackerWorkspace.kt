@@ -405,7 +405,9 @@ fun PortfolioTrackerWorkspace(
                             },
                             onDeleteScheme = { schemeToDelete = it },
                             onAddSchemeClick = { showAmfiAddDialog = true },
-                            onRefresh = { portfolioViewModel.syncAllLiveNavs() }
+                            onRefresh = { portfolioViewModel.syncAllLiveNavs() },
+                            onResumeDraft = { portfolioViewModel.resumeReconciliationDraft() },
+                            onDiscardDraft = { portfolioViewModel.discardReconciliationDraft() }
                         )
                     }
                     WorkspaceTab.XRAY -> {
@@ -538,12 +540,19 @@ fun PortfolioTrackerWorkspace(
         }
     }
 
+    // Asynchronous Ingestion & AMFI Reconciliation Modal Progress HUD
+    uiState.reconciliationProgress?.let { progress ->
+        com.fin.mf.ui.workspace.dialogs.ReconciliationProgressDialog(progress = progress)
+    }
+
     // Intelligent AMFI Scheme Reconciliation Preview Bottom Sheet
-    uiState.reconciliationItems?.let { items ->
+    if (uiState.isReconciliationSheetVisible && uiState.reconciliationItems != null) {
         ReconciliationPreviewSheet(
-            initialItems = items,
+            initialItems = uiState.reconciliationItems!!,
             amfiDictionary = uiState.amfiDictionary,
-            onDismiss = { portfolioViewModel.dismissReconciliation() },
+            onDismiss = { editedList ->
+                portfolioViewModel.dismissReconciliation(editedList)
+            },
             onCommitToVault = { schemes, mode ->
                 portfolioViewModel.commitReconciledHoldings(schemes, mode)
             }

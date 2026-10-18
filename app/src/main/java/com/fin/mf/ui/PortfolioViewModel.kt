@@ -78,7 +78,10 @@ data class PortfolioUiState(
     val portfolioManifest: com.fin.mf.data.PortfolioManifest? = null,
     val isFloatingFabEnabled: Boolean = false,
     val isMarketStatusTickerEnabled: Boolean = true,
+    val reconciliationProgress: com.fin.mf.data.ReconciliationProgress? = null,
     val reconciliationItems: List<ReconciledSchemeItem>? = null,
+    val cachedReconciliationDraft: List<ReconciledSchemeItem>? = null,
+    val isReconciliationSheetVisible: Boolean = false,
     val amfiDictionary: List<Pair<Int, String>> = emptyList(),
     val isReconciling: Boolean = false
 ) {
@@ -636,7 +639,15 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
      */
     fun processSpreadsheetImport(uri: Uri, contentResolver: ContentResolver, filename: String) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isReconciling = true) }
+            _uiState.update {
+                it.copy(
+                    isReconciling = true,
+                    reconciliationProgress = com.fin.mf.data.ReconciliationProgress(
+                        stageText = "Reading spreadsheet bytes...",
+                        progressFraction = 0.20f
+                    )
+                )
+            }
             runCatching {
                 val bytes = withContext(Dispatchers.IO) {
                     contentResolver.openInputStream(uri)?.use { it.readBytes() }
@@ -647,12 +658,20 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
                 _uiState.update {
                     it.copy(
                         isReconciling = false,
+                        reconciliationProgress = null,
                         reconciliationItems = reconciled,
+                        cachedReconciliationDraft = reconciled,
+                        isReconciliationSheetVisible = true,
                         amfiDictionary = dict
                     )
                 }
             }.onFailure { error ->
-                _uiState.update { it.copy(isReconciling = false) }
+                _uiState.update {
+                    it.copy(
+                        isReconciling = false,
+                        reconciliationProgress = null
+                    )
+                }
                 postStatusBanner("Spreadsheet parsing failed: ${error.localizedMessage}")
             }
         }
@@ -663,19 +682,35 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
      */
     fun processSpreadsheetImport(bytes: ByteArray, filename: String) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isReconciling = true) }
+            _uiState.update {
+                it.copy(
+                    isReconciling = true,
+                    reconciliationProgress = com.fin.mf.data.ReconciliationProgress(
+                        stageText = "Reading spreadsheet bytes...",
+                        progressFraction = 0.20f
+                    )
+                )
+            }
             runCatching {
                 executeReconciliationPipeline(bytes, filename)
             }.onSuccess { (reconciled, dict) ->
                 _uiState.update {
                     it.copy(
                         isReconciling = false,
+                        reconciliationProgress = null,
                         reconciliationItems = reconciled,
+                        cachedReconciliationDraft = reconciled,
+                        isReconciliationSheetVisible = true,
                         amfiDictionary = dict
                     )
                 }
             }.onFailure { error ->
-                _uiState.update { it.copy(isReconciling = false) }
+                _uiState.update {
+                    it.copy(
+                        isReconciling = false,
+                        reconciliationProgress = null
+                    )
+                }
                 postStatusBanner("Spreadsheet parsing failed: ${error.localizedMessage}")
             }
         }
@@ -694,6 +729,14 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
         bytes: ByteArray,
         filename: String
     ): Pair<List<ReconciledSchemeItem>, List<Pair<Int, String>>> {
+        _uiState.update {
+            it.copy(
+                reconciliationProgress = com.fin.mf.data.ReconciliationProgress(
+                    stageText = "Filtering broker data rows...",
+                    progressFraction = 0.50f
+                )
+            )
+        }
         val rows = withContext(Dispatchers.Default) {
             UniversalSpreadsheetReader.readSpreadsheetRowsFromBytes(bytes, filename)
         }
@@ -703,10 +746,27 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
         if (records.isEmpty()) {
             throw IllegalStateException("No valid mutual fund holding records found in $filename")
         }
+        _uiState.update {
+            it.copy(
+                reconciliationProgress = com.fin.mf.data.ReconciliationProgress(
+                    stageText = "Reconciling with AMFI registry...",
+                    progressFraction = 0.80f
+                )
+            )
+        }
         val dict = repository.getAmfiSchemeDictionary()
         val reconciled = withContext(Dispatchers.Default) {
             AmfiFuzzyReconciler.reconcileAll(records, dict)
         }
+        _uiState.update {
+            it.copy(
+                reconciliationProgress = com.fin.mf.data.ReconciliationProgress(
+                    stageText = "Preparing confirmation preview...",
+                    progressFraction = 1.0f
+                )
+            )
+        }
+        delay(150L) // Visual smoothing for 100% completion
         return Pair(reconciled, dict)
     }
 
@@ -715,7 +775,14 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
      */
     fun commitReconciledHoldings(schemes: List<MutualFundScheme>, mode: VaultImportMode) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, reconciliationItems = null) }
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    reconciliationItems = null,
+                    cachedReconciliationDraft = null,
+                    isReconciliationSheetVisible = false
+                )
+            }
             runCatching {
                 val updatedPortfolio = repository.commitReconciledPortfolio(schemes, mode)
                 val analytics = repository.computeAnalytics(updatedPortfolio)
@@ -738,10 +805,45 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     /**
-     * Dismisses the active reconciliation preview sheet.
+     * Dismisses the active reconciliation preview sheet, safely persisting the draft in ViewModel.
      */
-    fun dismissReconciliation() {
-        _uiState.update { it.copy(reconciliationItems = null) }
+    fun dismissReconciliation(currentItems: List<ReconciledSchemeItem>? = null) {
+        _uiState.update {
+            it.copy(
+                reconciliationItems = null,
+                isReconciliationSheetVisible = false,
+                cachedReconciliationDraft = currentItems ?: it.reconciliationItems ?: it.cachedReconciliationDraft
+            )
+        }
+    }
+
+    /**
+     * Resumes reviewing the cached reconciliation draft without re-reading or re-parsing the file.
+     */
+    fun resumeReconciliationDraft() {
+        val draft = _uiState.value.cachedReconciliationDraft
+        if (!draft.isNullOrEmpty()) {
+            _uiState.update {
+                it.copy(
+                    reconciliationItems = draft,
+                    isReconciliationSheetVisible = true
+                )
+            }
+        }
+    }
+
+    /**
+     * Discards the cached reconciliation draft.
+     */
+    fun discardReconciliationDraft() {
+        _uiState.update {
+            it.copy(
+                reconciliationItems = null,
+                cachedReconciliationDraft = null,
+                isReconciliationSheetVisible = false
+            )
+        }
+        postStatusBanner("Discarded spreadsheet draft.")
     }
 
     /**

@@ -4,8 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.DashPathEffect
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
@@ -13,9 +13,9 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import androidx.core.content.FileProvider
+import com.fin.mf.core.export.MediaStoreExportManager
 import com.fin.mf.data.AggregatedStockExposure
 import com.fin.mf.data.AllocationSlice
-import com.fin.mf.core.export.MediaStoreExportManager
 import com.fin.mf.data.MutualFundScheme
 import com.fin.mf.data.PortfolioAnalyticsSummary
 import com.fin.mf.data.PortfolioData
@@ -31,58 +31,59 @@ import java.util.Locale
 import java.util.TimeZone
 import java.util.concurrent.Executors
 import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.pow
 
 /**
- * Institutional 2-Page A4 PDF Audit Generator built exclusively on Android's native
- * [PdfDocument] and [Canvas] APIs with zero third-party PDF dependencies.
+ * Wealth-Management Grade Institutional Multi-Page PDF Audit Report Engine.
+ * Built purely on Android's native [PdfDocument] and [Canvas] APIs with zero external dependencies.
  *
- * - PageDimensions: Standard ISO A4 at 72 DPI (`595 x 842` points) with `36pt` margins.
- * - Page 1: Institutional Header, Executive Health Scorecard, Core Metrics Grid,
- *           SEBI Market-Cap Alignment Table, and Top 8 Sector Concentration Bar Gauges.
- * - Page 2: Duplicate Stock Overlap Matrix (Top 10 cross-held stocks), Complete
- *           Mutual Fund Scheme Register, and Statutory SEBI Regulatory Disclaimers.
+ * Architecture:
+ * - Dynamic Pagination Engine with coordinate cursor (`cursorY`) and `ensureSpace(height)`.
+ * - Zero text collisions or cramped layouts across arbitrary numbers of portfolio holdings.
+ * - PAGE 1: Executive Briefing, Radial Health Scorecard Gauge, SEBI Market Cap Alignment & Top 8 Sectors.
+ * - PAGE 2+: High Duplicate Overlap Alert Table (3+ funds), Full Portfolio Scheme Register with
+ *   tabular numerals, alternating rows, right-aligned monetary values, and SEBI regulatory disclaimers.
+ * - Saves reports to `context.cacheDir/reports/` and dispatches via [FileProvider] with permanent
+ *   storage export to `MediaStore.Downloads/FinBaba`.
  */
 class PortfolioAuditPdfGenerator(
     private val mediaStoreExportManager: MediaStoreExportManager = MediaStoreExportManager()
 ) {
 
     companion object {
-        // A4 Page Geometry (72 DPI)
-        private const val PAGE_WIDTH = 595
-        private const val PAGE_HEIGHT = 842
-        private const val MARGIN = 36f
-        private const val CONTENT_LEFT = MARGIN
-        private const val CONTENT_RIGHT = PAGE_WIDTH - MARGIN // 559f
-        private const val CONTENT_WIDTH = CONTENT_RIGHT - CONTENT_LEFT // 523f
+        // Standard ISO A4 Page Geometry (72 DPI)
+        const val PAGE_WIDTH = 595
+        const val PAGE_HEIGHT = 842
+        const val MARGIN = 36f
+        const val CONTENT_LEFT = MARGIN
+        const val CONTENT_RIGHT = PAGE_WIDTH - MARGIN // 559f
+        const val CONTENT_WIDTH = CONTENT_RIGHT - CONTENT_LEFT // 523f
 
         // Institutional Color Palette
-        private val COLOR_DEEP_SLATE = Color.parseColor("#0F172A")
-        private val COLOR_PRIMARY_NAVY = Color.parseColor("#1E3A8A")
-        private val COLOR_ACCENT_BLUE = Color.parseColor("#2563EB")
-        private val COLOR_PROFIT_EMERALD = Color.parseColor("#059669")
-        private val COLOR_PROFIT_BG = Color.parseColor("#ECFDF5")
-        private val COLOR_LOSS_CRIMSON = Color.parseColor("#DC2626")
-        private val COLOR_LOSS_BG = Color.parseColor("#FEF2F2")
-        private val COLOR_WARNING_AMBER = Color.parseColor("#D97706")
-        private val COLOR_WARNING_BG = Color.parseColor("#FFFBEB")
-        private val COLOR_MUTED_SLATE = Color.parseColor("#64748B")
-        private val COLOR_BORDER_GRAY = Color.parseColor("#E2E8F0")
-        private val COLOR_SURFACE_CARD = Color.parseColor("#F8FAFC")
-        private val COLOR_ZEBRA_ROW = Color.parseColor("#F1F5F9")
-        private val COLOR_TOTAL_ROW = Color.parseColor("#E2E8F0")
-        private val COLOR_TRACK_BG = Color.parseColor("#E2E8F0")
-        private val COLOR_WATERMARK = Color.argb(11, 30, 58, 138)
+        val COLOR_DEEP_NAVY = Color.parseColor("#1E3A8A")
+        val COLOR_SLATE_TEXT_PRIMARY = Color.parseColor("#0F172A")
+        val COLOR_SLATE_TEXT_MUTED = Color.parseColor("#64748B")
+        val COLOR_SLATE_BORDER = Color.parseColor("#E2E8F0")
+        val COLOR_SURFACE_CARD = Color.parseColor("#F8FAFC")
+        val COLOR_ZEBRA_ROW = Color.parseColor("#F8FAFC")
+        val COLOR_TOTAL_ROW = Color.parseColor("#E2E8F0")
 
-        private const val DRIFT_TOLERANCE_PCT = 2.0
+        val COLOR_PROFIT_EMERALD = Color.parseColor("#059669")
+        val COLOR_PROFIT_BG = Color.parseColor("#ECFDF5")
+        val COLOR_LOSS_CRIMSON = Color.parseColor("#DC2626")
+        val COLOR_LOSS_BG = Color.parseColor("#FEF2F2")
+        val COLOR_WARNING_AMBER = Color.parseColor("#D97706")
+        val COLOR_WARNING_BG = Color.parseColor("#FFFBEB")
+        val COLOR_ACCENT_BLUE = Color.parseColor("#2563EB")
+
         private const val FILE_PROVIDER_SUFFIX = ".fileprovider"
 
         private val defaultInstance by lazy { PortfolioAuditPdfGenerator() }
 
         /**
-         * Static backward-compatible delegation for screens like XRayTab.
+         * Backward-compatible static delegation method.
          */
         fun generateAndSharePdf(
             context: Context,
@@ -106,16 +107,16 @@ class PortfolioAuditPdfGenerator(
     private val ioExecutor = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    // Typefaces
-    private val typefaceRegular = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
-    private val typefaceMedium = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-    private val typefaceBold = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
-    private val typefaceItalic = Typeface.create(Typeface.SANS_SERIF, Typeface.ITALIC)
+    // Standard Typefaces
+    private val typefaceSans = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
+    private val typefaceSansBold = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
+    private val typefaceSansMedium = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+    private val typefaceMonospace = Typeface.create(Typeface.MONOSPACE, Typeface.NORMAL)
+    private val typefaceMonospaceBold = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
 
     /**
-     * Generates the 2-Page Executive A4 PDF Report, saves it to both `context.cacheDir`
-     * (for immediate sharing via [FileProvider]) and `MediaStore.Downloads`
-     * (for permanent storage), and triggers the Android system share sheet.
+     * Generates the multi-page institutional PDF audit, saves it to `context.cacheDir/reports/`
+     * and `MediaStore.Downloads`, and launches the Android system share sheet.
      */
     fun generateAndSharePdf(
         context: Context,
@@ -134,13 +135,14 @@ class PortfolioAuditPdfGenerator(
                     timeZone = TimeZone.getTimeZone("Asia/Kolkata")
                 }.format(Date())
 
-                val fileName = "FinBaba_XRay_Report_${sanitizedName}_${timestamp}.pdf"
+                val fileName = "FinBaba_Audit_Report_${sanitizedName}_${timestamp}.pdf"
 
-                // 1. Save to context.cacheDir/exports for instant FileProvider sharing
-                val cacheExportDir = File(appContext.cacheDir, "exports").apply {
+                // 1. Save directly to context.cacheDir/reports/ for FileProvider sharing
+                val reportsDir = File(appContext.cacheDir, "reports").apply {
                     if (!exists()) mkdirs()
                 }
-                val cachedPdfFile = File(cacheExportDir, fileName)
+                val cachedPdfFile = File(reportsDir, fileName)
+
                 FileOutputStream(cachedPdfFile).use { fos ->
                     BufferedOutputStream(fos).use { bos ->
                         renderDocumentToStream(
@@ -152,7 +154,7 @@ class PortfolioAuditPdfGenerator(
                     }
                 }
 
-                // 2. Save permanent copy to MediaStore.Downloads (application/pdf)
+                // 2. Save permanent archival copy to MediaStore.Downloads/FinBaba
                 val downloadsResult = mediaStoreExportManager.exportPdfFile(
                     context = appContext,
                     portfolioName = portfolioData.portfolioName
@@ -162,13 +164,13 @@ class PortfolioAuditPdfGenerator(
                     }
                 }
 
-                // Resolve shareable FileProvider URI
+                // 3. Resolve shareable FileProvider URI with explicit grant permissions
                 val authority = "${appContext.packageName}$FILE_PROVIDER_SUFFIX"
                 val shareUri: Uri = try {
                     FileProvider.getUriForFile(appContext, authority, cachedPdfFile)
                 } catch (_: Throwable) {
-                    // Fallback to MediaStore URI if FileProvider authority is not registered
-                    downloadsResult.getOrNull() ?: Uri.fromFile(cachedPdfFile)
+                    downloadsResult.getOrNull()
+                        ?: throw IllegalStateException("Unable to resolve shareable content URI for audit PDF.")
                 }
 
                 mainHandler.post {
@@ -177,14 +179,22 @@ class PortfolioAuditPdfGenerator(
                 }
             } catch (t: Throwable) {
                 mainHandler.post {
-                    onError?.invoke(t)
+                    if (onError != null) {
+                        onError.invoke(t)
+                    } else {
+                        android.widget.Toast.makeText(
+                            appContext,
+                            "PDF Export failed: ${t.localizedMessage ?: "Unknown error"}",
+                            android.widget.Toast.LENGTH_LONG
+                        ).show()
+                    }
                 }
             }
         }
     }
 
     /**
-     * Synchronous helper that renders the complete 2-page PDF into any [OutputStream].
+     * Renders the complete multi-page document into any [OutputStream] using the Dynamic Pagination Engine.
      */
     fun renderDocumentToStream(
         portfolioData: PortfolioData,
@@ -193,1559 +203,1083 @@ class PortfolioAuditPdfGenerator(
         outputStream: OutputStream
     ) {
         val pdfDocument = PdfDocument()
+        var session: DynamicPdfSession? = null
         try {
-            // Render Page 1: Executive Audit, Health Score & Asset Allocation
-            val page1Info = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, 1).create()
-            val page1 = pdfDocument.startPage(page1Info)
-            drawPage1(
-                canvas = page1.canvas,
-                portfolio = portfolioData,
-                analytics = analytics,
-                healthScore = healthScore.coerceIn(0, 100)
+            val totalPages = estimateTotalPages(portfolioData, analytics)
+            session = DynamicPdfSession(
+                pdfDocument = pdfDocument,
+                portfolioName = portfolioData.portfolioName,
+                totalPages = totalPages
             )
-            pdfDocument.finishPage(page1)
 
-            // Render Page 2: Duplicate Overlap, Scheme Breakdown & Regulatory Footers
-            val page2Info = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, 2).create()
-            val page2 = pdfDocument.startPage(page2Info)
-            drawPage2(
-                canvas = page2.canvas,
-                portfolio = portfolioData,
-                analytics = analytics
-            )
-            pdfDocument.finishPage(page2)
+            // ================================================================
+            // PAGE 1: EXECUTIVE BRIEFING & DIAGNOSTICS
+            // ================================================================
+            session.startNewPage(isFirst = true)
+            renderExecutiveBriefingPage(session, portfolioData, analytics, healthScore)
 
+            // ================================================================
+            // PAGE 2 (AND BEYOND): COMPREHENSIVE HOLDINGS & OVERLAP MATRIX
+            // ================================================================
+            session.startNewPage(isFirst = false)
+            renderHoldingsAndOverlapPages(session, portfolioData, analytics)
+
+            session.finish()
             pdfDocument.writeTo(outputStream)
             outputStream.flush()
+        } catch (t: Throwable) {
+            session?.abort()
+            throw t
         } finally {
-            pdfDocument.close()
+            runCatching { pdfDocument.close() }
         }
     }
 
     // ========================================================================
-    // PAGE 1: EXECUTIVE AUDIT, HEALTH SCORE & ASSET ALLOCATION
+    // DYNAMIC PAGINATION ENGINE
     // ========================================================================
 
-    private fun drawPage1(
-        canvas: Canvas,
+    private inner class DynamicPdfSession(
+        val pdfDocument: PdfDocument,
+        val portfolioName: String,
+        val totalPages: Int
+    ) {
+        var pageNumber = 0
+            private set
+        var currentPage: PdfDocument.Page? = null
+            private set
+        var canvas: Canvas? = null
+            private set
+        var cursorY: Float = MARGIN
+        private var isFinished = false
+
+        fun startNewPage(isFirst: Boolean) {
+            if (isFinished) return
+            currentPage?.let { prev ->
+                drawPageFooter(canvas!!, pageNumber, totalPages)
+                pdfDocument.finishPage(prev)
+            }
+
+            pageNumber++
+            val pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
+            val newPage = pdfDocument.startPage(pageInfo)
+            currentPage = newPage
+            canvas = newPage.canvas
+
+            drawPageBackground(canvas!!)
+
+            if (isFirst) {
+                cursorY = MARGIN
+            } else {
+                cursorY = drawRunningHeader(canvas!!, portfolioName, pageNumber, totalPages)
+            }
+        }
+
+        fun ensureSpace(requiredHeight: Float, onPageBreak: (() -> Unit)? = null) {
+            val maxUsableY = PAGE_HEIGHT - MARGIN - 28f // 28pt reserved for footer
+            if (cursorY + requiredHeight > maxUsableY) {
+                startNewPage(isFirst = false)
+                onPageBreak?.invoke()
+            }
+        }
+
+        fun finish() {
+            if (isFinished) return
+            currentPage?.let { page ->
+                drawPageFooter(canvas!!, pageNumber, totalPages)
+                pdfDocument.finishPage(page)
+            }
+            currentPage = null
+            canvas = null
+            isFinished = true
+        }
+
+        fun abort() {
+            if (isFinished) return
+            currentPage?.let { page ->
+                runCatching { pdfDocument.finishPage(page) }
+            }
+            currentPage = null
+            canvas = null
+            isFinished = true
+        }
+    }
+
+    // ========================================================================
+    // PAGE 1: EXECUTIVE BRIEFING & DIAGNOSTICS
+    // ========================================================================
+
+    private fun renderExecutiveBriefingPage(
+        session: DynamicPdfSession,
         portfolio: PortfolioData,
         analytics: PortfolioAnalyticsSummary,
         healthScore: Int
     ) {
-        drawPageBackgroundAndWatermark(canvas)
+        val canvas = session.canvas!!
 
-        var cursorY = MARGIN
+        // 1. Institutional Header Banner
+        session.cursorY = drawInstitutionalHeader(canvas, portfolio, session.cursorY)
 
-        // 1. Institutional Header Banner (y = 36..94)
-        cursorY = drawInstitutionalHeader(
-            canvas = canvas,
-            portfolio = portfolio,
-            startY = cursorY,
-            subtitle = "INSTITUTIONAL X-RAY AUDIT & MANDATE REPORT"
-        )
+        session.cursorY += 10f
 
-        cursorY += 12f
+        // 2. Valuation Summary Cards (3 Columns across 523pt)
+        session.cursorY = drawValuationCards(canvas, analytics, session.cursorY)
 
-        // 2. Executive Health Scorecard (y = 106..192)
-        cursorY = drawExecutiveHealthScorecard(
-            canvas = canvas,
-            portfolio = portfolio,
-            analytics = analytics,
-            healthScore = healthScore,
-            startY = cursorY
-        )
+        session.cursorY += 12f
 
-        cursorY += 14f
+        // 3. Health Scorecard & Diagnostics (Radial Gauge + Deduction Items)
+        session.cursorY = drawHealthScorecardAndDeductions(canvas, analytics, healthScore, session.cursorY)
 
-        // 3. Core Metrics Grid (5 Cards) (y = 206..298)
-        cursorY = drawCoreMetricsGrid(
-            canvas = canvas,
-            portfolio = portfolio,
-            analytics = analytics,
-            startY = cursorY
-        )
+        session.cursorY += 12f
 
-        cursorY += 16f
+        // 4. SEBI Market Cap Alignment Table (Large, Mid, Small, Micro/Cash)
+        session.cursorY = drawSebiAlignmentTable(canvas, portfolio, analytics, session.cursorY)
 
-        // 4. SEBI Market Cap Alignment Table (y = 314..470)
-        cursorY = drawSebiMarketCapTable(
-            canvas = canvas,
-            portfolio = portfolio,
-            analytics = analytics,
-            startY = cursorY
-        )
+        session.cursorY += 12f
 
-        cursorY += 16f
-
-        // 5. Top 8 Sector Concentration Horizontal Bar Gauges (y = 486..772)
-        drawSectorConcentrationGauges(
-            canvas = canvas,
-            analytics = analytics,
-            startY = cursorY
-        )
-
-        // 6. Page 1 Footer
-        drawPageFooter(
-            canvas = canvas,
-            portfolio = portfolio,
-            pageNumber = 1,
-            totalPages = 2
-        )
+        // 5. Top 8 Sector Allocation Matrix with Horizontal Progress Bars
+        session.cursorY = drawSectorAllocationMatrix(canvas, analytics, session.cursorY)
     }
 
-    private fun drawInstitutionalHeader(
-        canvas: Canvas,
+    // ========================================================================
+    // PAGE 2+: COMPREHENSIVE HOLDINGS & OVERLAP MATRIX
+    // ========================================================================
+
+    private fun renderHoldingsAndOverlapPages(
+        session: DynamicPdfSession,
         portfolio: PortfolioData,
-        startY: Float,
-        subtitle: String
-    ): Float {
-        val bannerHeight = 58f
-        val bannerRect = RectF(CONTENT_LEFT, startY, CONTENT_RIGHT, startY + bannerHeight)
+        analytics: PortfolioAnalyticsSummary
+    ) {
+        // 1. High Duplicate Overlap Alert Table (Stocks held in 3+ funds, or top overlapping)
+        val highOverlapStocks = analytics.topHoldings.filter { it.heldInSchemesCount >= 3 }
+            .ifEmpty { analytics.topHoldings.filter { it.heldInSchemesCount >= 2 }.take(6) }
 
-        val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_DEEP_SLATE
-            style = Paint.Style.FILL
+        if (highOverlapStocks.isNotEmpty()) {
+            drawDuplicateOverlapSection(session, highOverlapStocks)
+            session.cursorY += 14f
         }
-        canvas.drawRoundRect(bannerRect, 8f, 8f, bgPaint)
 
-        // Left Accent Bar inside Header
-        val accentPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_ACCENT_BLUE
-            style = Paint.Style.FILL
-        }
-        canvas.drawRoundRect(
-            RectF(CONTENT_LEFT, startY, CONTENT_LEFT + 6f, startY + bannerHeight),
-            8f,
-            8f,
-            accentPaint
-        )
+        // 2. Full Portfolio Mutual Fund Scheme Register
+        drawSchemeRegisterSection(session, portfolio, analytics)
 
-        // Brand & Subtitle
-        val brandPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            typeface = typefaceBold
-            textSize = 13f
-            letterSpacing = 0.04f
-        }
-        canvas.drawText("FINBABA", CONTENT_LEFT + 18f, startY + 21f, brandPaint)
+        session.cursorY += 14f
 
-        val badgePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#93C5FD")
-            typeface = typefaceMedium
-            textSize = 8.5f
-            letterSpacing = 0.06f
-        }
-        canvas.drawText(subtitle, CONTENT_LEFT + 82f, startY + 20.5f, badgePaint)
-
-        // Vault Name & Owner
-        val vaultPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            typeface = typefaceBold
-            textSize = 11f
-        }
-        val vaultLine = "Vault: ${ellipsize(portfolio.portfolioName, 34)}  •  Owner: ${ellipsize(portfolio.ownerName, 26)}"
-        canvas.drawText(vaultLine, CONTENT_LEFT + 18f, startY + 39f, vaultPaint)
-
-        val subMetaPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#CBD5E1")
-            typeface = typefaceRegular
-            textSize = 8f
-        }
-        val amfiTimestamp = formatIstTimestamp(portfolio.lastSyncedEpochMs)
-        canvas.drawText(
-            "AMFI NAV Valuation Timestamp: $amfiTimestamp",
-            CONTENT_LEFT + 18f,
-            startY + 51f,
-            subMetaPaint
-        )
-
-        // Right-aligned Institutional Watermark Stamp inside Banner
-        val stampPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#38BDF8")
-            typeface = typefaceBold
-            textSize = 8.5f
-            textAlign = Paint.Align.RIGHT
-        }
-        canvas.drawText("SEBI CATEGORIZATION COMPLIANT", CONTENT_RIGHT - 14f, startY + 22f, stampPaint)
-
-        val schemeCountPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#E2E8F0")
-            typeface = typefaceRegular
-            textSize = 8.5f
-            textAlign = Paint.Align.RIGHT
-        }
-        canvas.drawText(
-            "${portfolio.schemes.size} Active Schemes Audited",
-            CONTENT_RIGHT - 14f,
-            startY + 38f,
-            schemeCountPaint
-        )
-
-        return startY + bannerHeight
+        // 3. Statutory SEBI Regulatory Disclaimer
+        drawStatutoryDisclaimer(session)
     }
 
-    private fun drawExecutiveHealthScorecard(
-        canvas: Canvas,
-        portfolio: PortfolioData,
-        analytics: PortfolioAnalyticsSummary,
-        healthScore: Int,
-        startY: Float
-    ): Float {
-        val cardHeight = 84f
-        val cardRect = RectF(CONTENT_LEFT, startY, CONTENT_RIGHT, startY + cardHeight)
+    // ========================================================================
+    // DRAWING PRIMITIVES & COMPONENTS
+    // ========================================================================
 
-        val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_SURFACE_CARD
+    private fun drawPageBackground(canvas: Canvas) {
+        val bgPaint = Paint().apply {
+            color = Color.WHITE
             style = Paint.Style.FILL
         }
-        val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_BORDER_GRAY
-            style = Paint.Style.STROKE
-            strokeWidth = 1f
+        canvas.drawRect(0f, 0f, PAGE_WIDTH.toFloat(), PAGE_HEIGHT.toFloat(), bgPaint)
+    }
+
+    private fun drawInstitutionalHeader(canvas: Canvas, portfolio: PortfolioData, startY: Float): Float {
+        var y = startY
+
+        val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_DEEP_NAVY
+            textSize = 14.5f
+            typeface = typefaceSansBold
         }
-        canvas.drawRoundRect(cardRect, 8f, 8f, fillPaint)
-        canvas.drawRoundRect(cardRect, 8f, 8f, strokePaint)
+        canvas.drawText("FINBABA INSTITUTIONAL WEALTH AUDIT", CONTENT_LEFT, y + 14f, titlePaint)
 
-        // Score Color & Rating
-        val scoreColor = when {
-            healthScore >= 75 -> COLOR_PROFIT_EMERALD
-            healthScore >= 50 -> COLOR_WARNING_AMBER
-            else -> COLOR_LOSS_CRIMSON
+        val dateStr = SimpleDateFormat("dd MMM yyyy • HH:mm 'IST'", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("Asia/Kolkata")
+        }.format(Date())
+
+        val datePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_SLATE_TEXT_MUTED
+            textSize = 9f
+            typeface = typefaceSans
+            textAlign = Paint.Align.RIGHT
         }
-        val healthLabel = when {
-            healthScore >= 80 -> "INSTITUTIONAL GRADE"
-            healthScore >= 65 -> "WELL CONSTRUCTED"
-            healthScore >= 50 -> "MODERATE DRIFT"
-            else -> "REBALANCE REQUIRED"
-        }
+        canvas.drawText(dateStr, CONTENT_RIGHT, y + 14f, datePaint)
 
-        // Circular Gauge on Left
-        val centerX = CONTENT_LEFT + 44f
-        val centerY = startY + cardHeight / 2f
-        val radius = 27f
+        y += 24f
 
-        val trackRingPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_BORDER_GRAY
-            style = Paint.Style.STROKE
-            strokeWidth = 5.5f
-        }
-        canvas.drawCircle(centerX, centerY, radius, trackRingPaint)
-
-        val progressRingPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = scoreColor
-            style = Paint.Style.STROKE
-            strokeWidth = 5.5f
-            strokeCap = Paint.Cap.ROUND
-        }
-        val arcRect = RectF(centerX - radius, centerY - radius, centerX + radius, centerY + radius)
-        val sweepAngle = (healthScore / 100f) * 360f
-        canvas.drawArc(arcRect, -90f, sweepAngle, false, progressRingPaint)
-
-        val scoreNumPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_DEEP_SLATE
-            typeface = typefaceBold
-            textSize = 15f
-            textAlign = Paint.Align.CENTER
-        }
-        canvas.drawText("$healthScore", centerX, centerY + 3f, scoreNumPaint)
-
-        val scoreOutPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_MUTED_SLATE
-            typeface = typefaceRegular
-            textSize = 7f
-            textAlign = Paint.Align.CENTER
-        }
-        canvas.drawText("/ 100", centerX, centerY + 13f, scoreOutPaint)
-
-        // Column 1 Text: Health Score Details
-        val col1X = CONTENT_LEFT + 84f
-        val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_MUTED_SLATE
-            typeface = typefaceBold
-            textSize = 7.5f
-            letterSpacing = 0.05f
-        }
-        canvas.drawText("EXECUTIVE HEALTH SCORE", col1X, startY + 23f, labelPaint)
-
-        val ratingPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = scoreColor
-            typeface = typefaceBold
-            textSize = 11f
-        }
-        canvas.drawText(healthLabel, col1X, startY + 40f, ratingPaint)
-
-        val subNotePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_MUTED_SLATE
-            typeface = typefaceRegular
-            textSize = 8f
-        }
-        canvas.drawText("Composite Mandate & Overlap Index", col1X, startY + 55f, subNotePaint)
-        canvas.drawText("Audit Benchmark: NIFTY 500 TRI", col1X, startY + 68f, subNotePaint)
-
-        // Vertical Divider 1
-        val divPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_BORDER_GRAY
-            strokeWidth = 1f
-        }
-        val div1X = CONTENT_LEFT + 235f
-        canvas.drawLine(div1X, startY + 12f, div1X, startY + cardHeight - 12f, divPaint)
-
-        // Column 2: Diversification Rating
-        val col2X = div1X + 14f
-        val distinctStocks = analytics.topHoldings.size
-        val top5Weight = analytics.topHoldings
-            .sortedByDescending { it.portfolioWeightPercent }
-            .take(5)
-            .sumOf { it.portfolioWeightPercent }
-
-        val diversificationRating = when {
-            distinctStocks >= 45 && top5Weight < 35.0 -> "Optimal Multi-Cap Spread"
-            distinctStocks >= 25 && top5Weight < 45.0 -> "Balanced Concentration"
-            distinctStocks >= 12 -> "High Conviction / Focused"
-            else -> "Concentrated Exposure"
-        }
-
-        canvas.drawText("DIVERSIFICATION RATING", col2X, startY + 23f, labelPaint)
-        val divValuePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_PRIMARY_NAVY
-            typeface = typefaceBold
+        val subtitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_SLATE_TEXT_PRIMARY
             textSize = 10.5f
+            typeface = typefaceSansMedium
         }
-        canvas.drawText(diversificationRating, col2X, startY + 40f, divValuePaint)
-        canvas.drawText(
-            "Underlying Equities: $distinctStocks Stocks across ${analytics.sectorBreakdown.size} Sectors",
-            col2X,
-            startY + 55f,
-            subNotePaint
-        )
-        canvas.drawText(
-            "Top-5 Stock Concentration: ${formatPct(top5Weight)}",
-            col2X,
-            startY + 68f,
-            subNotePaint
-        )
+        canvas.drawText("PORTFOLIO: ${portfolio.portfolioName.uppercase()}", CONTENT_LEFT, y + 10f, subtitlePaint)
 
-        // Vertical Divider 2
-        val div2X = CONTENT_LEFT + 392f
-        canvas.drawLine(div2X, startY + 12f, div2X, startY + cardHeight - 12f, divPaint)
-
-        // Column 3: Annual Fee Drag
-        val col3X = div2X + 14f
-        canvas.drawText("ANNUAL TER FEE DRAG", col3X, startY + 23f, labelPaint)
-
-        val feePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_LOSS_CRIMSON
-            typeface = typefaceBold
-            textSize = 12f
+        val auditBadgePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_PROFIT_EMERALD
+            textSize = 8.5f
+            typeface = typefaceSansBold
+            textAlign = Paint.Align.RIGHT
         }
-        canvas.drawText(
-            "${formatInr(analytics.annualFeeDragRupees)} / yr",
-            col3X,
-            startY + 40f,
-            feePaint
+        canvas.drawText("AUDIT GRADE: VERIFIED • LOOK-THROUGH ACTIVE", CONTENT_RIGHT, y + 10f, auditBadgePaint)
+
+        y += 18f
+
+        // Hairline divider
+        val linePaint = Paint().apply {
+            color = COLOR_SLATE_BORDER
+            strokeWidth = 1f
+        }
+        canvas.drawLine(CONTENT_LEFT, y, CONTENT_RIGHT, y, linePaint)
+
+        return y + 6f
+    }
+
+    private fun drawValuationCards(canvas: Canvas, analytics: PortfolioAnalyticsSummary, startY: Float): Float {
+        val cardHeight = 50f
+        val gap = 10f
+        val cardWidth = (CONTENT_WIDTH - 2 * gap) / 3f
+
+        val netGain = analytics.totalGain
+        val returnPct = analytics.totalReturnPercent
+        val isProfit = netGain >= 0
+
+        // Card 1: Total Portfolio Value
+        drawMetricCard(
+            canvas = canvas,
+            x = CONTENT_LEFT,
+            y = startY,
+            width = cardWidth,
+            height = cardHeight,
+            label = "NET PORTFOLIO VALUE",
+            valueText = formatRupees(analytics.totalCurrentValue),
+            valueColor = COLOR_SLATE_TEXT_PRIMARY
         )
-        canvas.drawText(
-            "Blended Portfolio TER: ${formatPct(analytics.weightedExpenseRatio)}",
-            col3X,
-            startY + 55f,
-            subNotePaint
+
+        // Card 2: Total Invested Capital
+        drawMetricCard(
+            canvas = canvas,
+            x = CONTENT_LEFT + cardWidth + gap,
+            y = startY,
+            width = cardWidth,
+            height = cardHeight,
+            label = "INVESTED CAPITAL",
+            valueText = formatRupees(analytics.totalInvested),
+            valueColor = COLOR_SLATE_TEXT_PRIMARY
         )
-        val tenYrDrag = analytics.annualFeeDragRupees * 10.0
-        canvas.drawText(
-            "10-Yr Linear Cost: ${formatInrCompact(tenYrDrag)}",
-            col3X,
-            startY + 68f,
-            subNotePaint
+
+        // Card 3: Net P&L
+        val gainSign = if (isProfit) "+" else ""
+        val returnSign = if (returnPct >= 0) "+" else ""
+        val gainStr = "$gainSign${formatRupees(netGain)} ($returnSign${String.format(Locale.US, "%.2f", returnPct)}%)"
+        drawMetricCard(
+            canvas = canvas,
+            x = CONTENT_LEFT + 2 * (cardWidth + gap),
+            y = startY,
+            width = cardWidth,
+            height = cardHeight,
+            label = "NET UNREALIZED RETURN",
+            valueText = gainStr,
+            valueColor = if (isProfit) COLOR_PROFIT_EMERALD else COLOR_LOSS_CRIMSON,
+            badgeBgColor = if (isProfit) COLOR_PROFIT_BG else COLOR_LOSS_BG
         )
 
         return startY + cardHeight
     }
 
-    private fun drawCoreMetricsGrid(
+    private fun drawMetricCard(
         canvas: Canvas,
-        portfolio: PortfolioData,
-        analytics: PortfolioAnalyticsSummary,
-        startY: Float
-    ): Float {
-        drawSectionTitle(canvas, "CORE VALUATION & RETURN TELEMETRY", startY)
-        val gridTop = startY + 18f
-        val cardHeight = 68f
-        val gap = 6f
-        val cardWidth = (CONTENT_WIDTH - (gap * 4f)) / 5f
+        x: Float,
+        y: Float,
+        width: Float,
+        height: Float,
+        label: String,
+        valueText: String,
+        valueColor: Int,
+        badgeBgColor: Int = COLOR_SURFACE_CARD
+    ) {
+        val rect = RectF(x, y, x + width, y + height)
 
-        val estimatedCagr = computeEstimatedPortfolioCagr(portfolio, analytics)
-        val isPositiveGain = analytics.totalGain >= 0.0
-        val gainColor = if (isPositiveGain) COLOR_PROFIT_EMERALD else COLOR_LOSS_CRIMSON
-        val gainPrefix = if (isPositiveGain) "+" else ""
-
-        val cards = listOf(
-            MetricCardSpec(
-                title = "NET WORTH",
-                primaryValue = formatInrCompact(analytics.totalCurrentValue),
-                secondaryValue = formatInr(analytics.totalCurrentValue),
-                accentColor = COLOR_PRIMARY_NAVY
-            ),
-            MetricCardSpec(
-                title = "TOTAL INVESTED",
-                primaryValue = formatInrCompact(analytics.totalInvested),
-                secondaryValue = formatInr(analytics.totalInvested),
-                accentColor = COLOR_DEEP_SLATE
-            ),
-            MetricCardSpec(
-                title = "CAPITAL GAIN",
-                primaryValue = "$gainPrefix${formatInrCompact(analytics.totalGain)}",
-                secondaryValue = "$gainPrefix${formatPct(analytics.totalReturnPercent)} Abs",
-                accentColor = gainColor
-            ),
-            MetricCardSpec(
-                title = "BLENDED TER",
-                primaryValue = formatPct(analytics.weightedExpenseRatio),
-                secondaryValue = "Drag: ${formatInrCompact(analytics.annualFeeDragRupees)}/yr",
-                accentColor = COLOR_WARNING_AMBER
-            ),
-            MetricCardSpec(
-                title = "ESTIMATED CAGR",
-                primaryValue = "${if (estimatedCagr >= 0) "+" else ""}${formatPct(estimatedCagr)}",
-                secondaryValue = "Annualized XIRR Est.",
-                accentColor = if (estimatedCagr >= 0) COLOR_PROFIT_EMERALD else COLOR_LOSS_CRIMSON
-            )
-        )
-
-        val cardBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
+        val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = badgeBgColor
             style = Paint.Style.FILL
         }
-        val cardBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_BORDER_GRAY
+        canvas.drawRoundRect(rect, 8f, 8f, bgPaint)
+
+        val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_SLATE_BORDER
             style = Paint.Style.STROKE
             strokeWidth = 1f
         }
-        val headerStripePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.FILL
-        }
-        val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_MUTED_SLATE
-            typeface = typefaceBold
-            textSize = 7f
-            letterSpacing = 0.04f
-        }
-        val primaryPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            typeface = typefaceBold
-            textSize = 11.5f
-        }
-        val secondaryPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_MUTED_SLATE
-            typeface = typefaceMedium
+        canvas.drawRoundRect(rect, 8f, 8f, borderPaint)
+
+        val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_SLATE_TEXT_MUTED
             textSize = 7.5f
+            typeface = typefaceSansMedium
         }
+        canvas.drawText(label, x + 10f, y + 16f, labelPaint)
 
-        cards.forEachIndexed { idx, spec ->
-            val left = CONTENT_LEFT + idx * (cardWidth + gap)
-            val right = left + cardWidth
-            val rect = RectF(left, gridTop, right, gridTop + cardHeight)
-
-            canvas.drawRoundRect(rect, 6f, 6f, cardBgPaint)
-            canvas.drawRoundRect(rect, 6f, 6f, cardBorderPaint)
-
-            headerStripePaint.color = spec.accentColor
-            canvas.drawRoundRect(
-                RectF(left, gridTop, right, gridTop + 3.5f),
-                6f,
-                6f,
-                headerStripePaint
-            )
-
-            canvas.drawText(spec.title, left + 8f, gridTop + 18f, titlePaint)
-
-            primaryPaint.color = spec.accentColor
-            canvas.drawText(
-                ellipsize(spec.primaryValue, 16),
-                left + 8f,
-                gridTop + 38f,
-                primaryPaint
-            )
-
-            canvas.drawText(
-                ellipsize(spec.secondaryValue, 20),
-                left + 8f,
-                gridTop + 55f,
-                secondaryPaint
-            )
+        val valPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = valueColor
+            textSize = if (valueText.length > 20) 10.5f else 12f
+            typeface = typefaceMonospaceBold
         }
-
-        return gridTop + cardHeight
+        canvas.drawText(valueText, x + 10f, y + 36f, valPaint)
     }
 
-    private fun drawSebiMarketCapTable(
-        canvas: Canvas,
-        portfolio: PortfolioData,
-        analytics: PortfolioAnalyticsSummary,
-        startY: Float
-    ): Float {
-        drawSectionTitle(canvas, "SEBI MARKET-CAP MANDATE & REBALANCING TABLE", startY)
-
-        var y = startY + 18f
-        val rowHeight = 22f
-
-        // Column X Anchors
-        val colTierX = CONTENT_LEFT + 10f
-        val colValRightX = CONTENT_LEFT + 185f
-        val colActualRightX = CONTENT_LEFT + 250f
-        val colTargetRightX = CONTENT_LEFT + 318f
-        val colDriftRightX = CONTENT_LEFT + 380f
-        val colBadgeCenterX = CONTENT_LEFT + 425f
-        val colActionRightX = CONTENT_RIGHT - 10f
-
-        // Header Row
-        val headerRect = RectF(CONTENT_LEFT, y, CONTENT_RIGHT, y + rowHeight)
-        val headerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_PRIMARY_NAVY
-            style = Paint.Style.FILL
-        }
-        canvas.drawRoundRect(headerRect, 4f, 4f, headerPaint)
-
-        val thLeftPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            typeface = typefaceBold
-            textSize = 8f
-            textAlign = Paint.Align.LEFT
-        }
-        val thRightPaint = Paint(thLeftPaint).apply { textAlign = Paint.Align.RIGHT }
-        val thCenterPaint = Paint(thLeftPaint).apply { textAlign = Paint.Align.CENTER }
-
-        val textYOffset = 14.5f
-        canvas.drawText("SEBI Market Cap Tier", colTierX, y + textYOffset, thLeftPaint)
-        canvas.drawText("Actual Value (₹)", colValRightX, y + textYOffset, thRightPaint)
-        canvas.drawText("Actual %", colActualRightX, y + textYOffset, thRightPaint)
-        canvas.drawText("Target %", colTargetRightX, y + textYOffset, thRightPaint)
-        canvas.drawText("Drift %", colDriftRightX, y + textYOffset, thRightPaint)
-        canvas.drawText("Status", colBadgeCenterX, y + textYOffset, thCenterPaint)
-        canvas.drawText("Rebalance Action", colActionRightX, y + textYOffset, thRightPaint)
-
-        y += rowHeight
-
-        val mandate = portfolio.marketCapMandate
-        val rows = listOf(
-            Triple("Large Cap (Top 100)", matchSlice(analytics.marketCapBreakdown, "Large"), mandate.largeCapTarget),
-            Triple("Mid Cap (101–250)", matchSlice(analytics.marketCapBreakdown, "Mid"), mandate.midCapTarget),
-            Triple("Small Cap (251–500)", matchSlice(analytics.marketCapBreakdown, "Small"), mandate.smallCapTarget),
-            Triple(
-                "Micro Cap, Debt & Cash",
-                matchMicroAndCashSlice(analytics.marketCapBreakdown, analytics.totalCurrentValue),
-                mandate.microCapTarget
-            )
-        )
-
-        val cellLeftPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_DEEP_SLATE
-            typeface = typefaceMedium
-            textSize = 8.2f
-            textAlign = Paint.Align.LEFT
-        }
-        val cellRightPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_DEEP_SLATE
-            typeface = typefaceRegular
-            textSize = 8.2f
-            textAlign = Paint.Align.RIGHT
-        }
-        val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_BORDER_GRAY
-            style = Paint.Style.STROKE
-            strokeWidth = 0.8f
-        }
-
-        var sumActualVal = 0.0
-        var sumActualPct = 0.0
-        var sumTargetPct = 0.0
-
-        rows.forEachIndexed { idx, (tierLabel, slice, targetPct) ->
-            val rowRect = RectF(CONTENT_LEFT, y, CONTENT_RIGHT, y + rowHeight)
-            if (idx % 2 == 1) {
-                val zebraPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = COLOR_ZEBRA_ROW
-                    style = Paint.Style.FILL
-                }
-                canvas.drawRect(rowRect, zebraPaint)
-            }
-            canvas.drawRect(rowRect, borderPaint)
-
-            val actualVal = slice.rupeeValue
-            val actualPct = if (slice.weightPercent > 0.0 || analytics.totalCurrentValue <= 0.0) {
-                slice.weightPercent
-            } else {
-                (actualVal / analytics.totalCurrentValue) * 100.0
-            }
-
-            val driftPct = actualPct - targetPct
-            val targetRupees = (targetPct / 100.0) * analytics.totalCurrentValue
-            val deltaRupees = targetRupees - actualVal
-
-            sumActualVal += actualVal
-            sumActualPct += actualPct
-            sumTargetPct += targetPct
-
-            canvas.drawText(tierLabel, colTierX, y + textYOffset, cellLeftPaint)
-            canvas.drawText(formatInr(actualVal), colValRightX, y + textYOffset, cellRightPaint)
-            canvas.drawText(formatPct(actualPct), colActualRightX, y + textYOffset, cellRightPaint)
-            canvas.drawText(formatPct(targetPct), colTargetRightX, y + textYOffset, cellRightPaint)
-
-            val driftSign = if (driftPct > 0) "+" else ""
-            val driftPaint = Paint(cellRightPaint).apply {
-                typeface = typefaceBold
-                color = when {
-                    abs(driftPct) <= DRIFT_TOLERANCE_PCT -> COLOR_PROFIT_EMERALD
-                    driftPct > 0 -> COLOR_WARNING_AMBER
-                    else -> COLOR_LOSS_CRIMSON
-                }
-            }
-            canvas.drawText("$driftSign${formatPct(driftPct)}", colDriftRightX, y + textYOffset, driftPaint)
-
-            // Status Pill Badge
-            val (badgeText, badgeFg, badgeBg) = when {
-                driftPct > DRIFT_TOLERANCE_PCT -> Triple("OVERWEIGHT", COLOR_WARNING_AMBER, COLOR_WARNING_BG)
-                driftPct < -DRIFT_TOLERANCE_PCT -> Triple("UNDERWEIGHT", COLOR_LOSS_CRIMSON, COLOR_LOSS_BG)
-                else -> Triple("IN-LINE", COLOR_PROFIT_EMERALD, COLOR_PROFIT_BG)
-            }
-            drawPillBadge(
-                canvas = canvas,
-                centerX = colBadgeCenterX,
-                centerY = y + rowHeight / 2f,
-                text = badgeText,
-                textColor = badgeFg,
-                bgColor = badgeBg
-            )
-
-            // Rebalance Action Text
-            val actionPaint = Paint(cellRightPaint).apply {
-                typeface = typefaceBold
-                color = when {
-                    abs(driftPct) <= DRIFT_TOLERANCE_PCT -> COLOR_MUTED_SLATE
-                    deltaRupees > 0 -> COLOR_PROFIT_EMERALD
-                    else -> COLOR_LOSS_CRIMSON
-                }
-            }
-            val actionText = when {
-                abs(driftPct) <= DRIFT_TOLERANCE_PCT -> "Hold / No Action"
-                deltaRupees > 0 -> "Buy +${formatInrCompact(deltaRupees)}"
-                else -> "Trim -${formatInrCompact(abs(deltaRupees))}"
-            }
-            canvas.drawText(actionText, colActionRightX, y + textYOffset, actionPaint)
-
-            y += rowHeight
-        }
-
-        // Totals Row
-        val totalRect = RectF(CONTENT_LEFT, y, CONTENT_RIGHT, y + rowHeight)
-        val totalBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_TOTAL_ROW
-            style = Paint.Style.FILL
-        }
-        canvas.drawRect(totalRect, totalBgPaint)
-        canvas.drawRect(totalRect, borderPaint)
-
-        val totalLeftPaint = Paint(cellLeftPaint).apply { typeface = typefaceBold }
-        val totalRightPaint = Paint(cellRightPaint).apply { typeface = typefaceBold }
-
-        canvas.drawText("TOTAL PORTFOLIO MANDATE", colTierX, y + textYOffset, totalLeftPaint)
-        canvas.drawText(formatInr(sumActualVal), colValRightX, y + textYOffset, totalRightPaint)
-        canvas.drawText(formatPct(sumActualPct), colActualRightX, y + textYOffset, totalRightPaint)
-        canvas.drawText(formatPct(sumTargetPct), colTargetRightX, y + textYOffset, totalRightPaint)
-        canvas.drawText("0.00%", colDriftRightX, y + textYOffset, totalRightPaint)
-        canvas.drawText("Net Zero Rebalance", colActionRightX, y + textYOffset, totalRightPaint)
-
-        return y + rowHeight
-    }
-
-    private fun drawSectorConcentrationGauges(
+    private fun drawHealthScorecardAndDeductions(
         canvas: Canvas,
         analytics: PortfolioAnalyticsSummary,
+        healthScore: Int,
         startY: Float
     ): Float {
-        drawSectionTitle(canvas, "TOP 8 SECTOR CONCENTRATION HORIZONTAL BAR GAUGES", startY)
-
-        val cardTop = startY + 18f
-        val cardBottom = 774f
-        val cardRect = RectF(CONTENT_LEFT, cardTop, CONTENT_RIGHT, cardBottom)
-
-        val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_SURFACE_CARD
-            style = Paint.Style.FILL
-        }
-        val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_BORDER_GRAY
-            style = Paint.Style.STROKE
-            strokeWidth = 1f
-        }
-        canvas.drawRoundRect(cardRect, 8f, 8f, bgPaint)
-        canvas.drawRoundRect(cardRect, 8f, 8f, borderPaint)
-
-        val topSectors = analytics.sectorBreakdown
-            .sortedByDescending { it.portfolioWeightPercent }
-            .take(8)
-
-        if (topSectors.isEmpty()) {
-            val emptyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = COLOR_MUTED_SLATE
-                typeface = typefaceItalic
-                textSize = 9.5f
-                textAlign = Paint.Align.CENTER
-            }
-            canvas.drawText(
-                "No underlying sector look-through data available for this portfolio.",
-                CONTENT_LEFT + CONTENT_WIDTH / 2f,
-                cardTop + 120f,
-                emptyPaint
-            )
-            return cardBottom
-        }
-
-        val maxSectorWeight = max(topSectors.maxOf { it.portfolioWeightPercent }, 25.0)
-        val rowPitch = 30f
-        var rowY = cardTop + 16f
-
-        val sectorNamePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_DEEP_SLATE
-            typeface = typefaceBold
-            textSize = 8.5f
-        }
-        val stockCountPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_MUTED_SLATE
-            typeface = typefaceRegular
-            textSize = 7.5f
-        }
-        val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_TRACK_BG
-            style = Paint.Style.FILL
-        }
-        val barFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.FILL
-        }
-        val valueRightPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_DEEP_SLATE
-            typeface = typefaceBold
-            textSize = 8.5f
-            textAlign = Paint.Align.RIGHT
-        }
-
-        val barLeft = CONTENT_LEFT + 170f
-        val barMaxRight = CONTENT_LEFT + 405f
-        val barMaxWidth = barMaxRight - barLeft
-
-        topSectors.forEachIndexed { idx, sector ->
-            val rankLabel = "${idx + 1}. ${ellipsize(sector.sectorName, 24)}"
-            canvas.drawText(rankLabel, CONTENT_LEFT + 12f, rowY + 9f, sectorNamePaint)
-            canvas.drawText(
-                "${sector.stockCount} stocks",
-                CONTENT_LEFT + 24f,
-                rowY + 19.5f,
-                stockCountPaint
-            )
-
-            // Horizontal Bar Track
-            val barTop = rowY + 4f
-            val barBottom = rowY + 16f
-            val trackRect = RectF(barLeft, barTop, barMaxRight, barBottom)
-            canvas.drawRoundRect(trackRect, 6f, 6f, trackPaint)
-
-            // Proportional Fill
-            val fillRatio = (sector.portfolioWeightPercent / maxSectorWeight).toFloat().coerceIn(0.02f, 1f)
-            val fillRight = barLeft + (barMaxWidth * fillRatio)
-            barFillPaint.color = when {
-                sector.portfolioWeightPercent >= 30.0 -> COLOR_WARNING_AMBER
-                idx == 0 -> COLOR_PRIMARY_NAVY
-                idx < 3 -> COLOR_ACCENT_BLUE
-                else -> Color.parseColor("#3B82F6")
-            }
-            canvas.drawRoundRect(RectF(barLeft, barTop, fillRight, barBottom), 6f, 6f, barFillPaint)
-
-            // Percentage & INR Value on Right
-            val metricText = "${formatInrCompact(sector.totalRupeeValue)}  (${formatPct(sector.portfolioWeightPercent)})"
-            canvas.drawText(metricText, CONTENT_RIGHT - 12f, rowY + 13f, valueRightPaint)
-
-            rowY += rowPitch
-        }
-
-        return cardBottom
-    }
-
-    // ========================================================================
-    // PAGE 2: DUPLICATE OVERLAP, SCHEME BREAKDOWN & REGULATORY FOOTERS
-    // ========================================================================
-
-    private fun drawPage2(
-        canvas: Canvas,
-        portfolio: PortfolioData,
-        analytics: PortfolioAnalyticsSummary
-    ) {
-        drawPageBackgroundAndWatermark(canvas)
-
-        var cursorY = MARGIN
-
-        // 1. Continuation Header (y = 36..82)
-        cursorY = drawPage2MiniHeader(canvas, portfolio, cursorY)
-
-        cursorY += 14f
-
-        // 2. Duplicate Overlap Matrix: Top 10 Most Overlapped Stocks (y = 96..352)
-        cursorY = drawDuplicateOverlapMatrix(
-            canvas = canvas,
-            analytics = analytics,
-            startY = cursorY
-        )
-
-        cursorY += 14f
-
-        // 3. Complete Scheme Table (y = 366..700)
-        drawCompleteSchemeTable(
-            canvas = canvas,
-            portfolio = portfolio,
-            analytics = analytics,
-            startY = cursorY,
-            maxBottomY = 702f
-        )
-
-        // 4. Statutory SEBI Disclaimers & Footer (y = 710..806)
-        drawStatutorySebiDisclaimers(
-            canvas = canvas,
-            portfolio = portfolio,
-            startY = 710f
-        )
-
-        drawPageFooter(
-            canvas = canvas,
-            portfolio = portfolio,
-            pageNumber = 2,
-            totalPages = 2
-        )
-    }
-
-    private fun drawPage2MiniHeader(
-        canvas: Canvas,
-        portfolio: PortfolioData,
-        startY: Float
-    ): Float {
-        val height = 42f
-        val rect = RectF(CONTENT_LEFT, startY, CONTENT_RIGHT, startY + height)
-        val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_DEEP_SLATE
-            style = Paint.Style.FILL
-        }
-        canvas.drawRoundRect(rect, 6f, 6f, bgPaint)
-
-        val leftPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            typeface = typefaceBold
-            textSize = 10.5f
-        }
-        canvas.drawText(
-            "FINBABA X-RAY AUDIT  •  OVERLAP MATRIX & SCHEME REGISTER",
-            CONTENT_LEFT + 14f,
-            startY + 18f,
-            leftPaint
-        )
-
-        val subPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#93C5FD")
-            typeface = typefaceRegular
-            textSize = 8f
-        }
-        canvas.drawText(
-            "Vault: ${ellipsize(portfolio.portfolioName, 35)} (${ellipsize(portfolio.ownerName, 25)})",
-            CONTENT_LEFT + 14f,
-            startY + 32f,
-            subPaint
-        )
-
-        val rightPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#CBD5E1")
-            typeface = typefaceMedium
-            textSize = 8f
-            textAlign = Paint.Align.RIGHT
-        }
-        canvas.drawText(
-            "Audit Date: ${formatIstTimestamp(portfolio.lastSyncedEpochMs)}",
-            CONTENT_RIGHT - 14f,
-            startY + 25f,
-            rightPaint
-        )
-
-        return startY + height
-    }
-
-    private fun drawDuplicateOverlapMatrix(
-        canvas: Canvas,
-        analytics: PortfolioAnalyticsSummary,
-        startY: Float
-    ): Float {
-        drawSectionTitle(
-            canvas,
-            "DUPLICATE STOCK OVERLAP MATRIX (TOP 10 CROSS-HELD EQUITIES)",
-            startY
-        )
-
-        var y = startY + 16f
-        val headerHeight = 20f
-        val rowHeight = 21f
-
-        // Sort by number of schemes holding the stock descending, then rupee exposure descending
-        val overlappedHoldings = analytics.topHoldings
-            .sortedWith(
-                compareByDescending<AggregatedStockExposure> { it.schemeContributions.size }
-                    .thenByDescending { it.totalRupeeExposure }
-            )
-            .take(10)
-
-        // Column X Anchors
-        val colRankX = CONTENT_LEFT + 8f
-        val colCompanyX = CONTENT_LEFT + 28f
-        val colSectorX = CONTENT_LEFT + 162f
-        val colExposureRightX = CONTENT_LEFT + 292f
-        val colWeightRightX = CONTENT_LEFT + 342f
-        val colFundCountCenterX = CONTENT_LEFT + 372f
-        val colSchemesX = CONTENT_LEFT + 394f
-
-        // Header Row
-        val headerRect = RectF(CONTENT_LEFT, y, CONTENT_RIGHT, y + headerHeight)
-        val headerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_PRIMARY_NAVY
-            style = Paint.Style.FILL
-        }
-        canvas.drawRoundRect(headerRect, 4f, 4f, headerPaint)
-
-        val thLeft = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            typeface = typefaceBold
-            textSize = 7.5f
-            textAlign = Paint.Align.LEFT
-        }
-        val thRight = Paint(thLeft).apply { textAlign = Paint.Align.RIGHT }
-        val thCenter = Paint(thLeft).apply { textAlign = Paint.Align.CENTER }
-
-        val thOffset = 13.5f
-        canvas.drawText("#", colRankX, y + thOffset, thLeft)
-        canvas.drawText("Stock & Ticker", colCompanyX, y + thOffset, thLeft)
-        canvas.drawText("Sector / Cap", colSectorX, y + thOffset, thLeft)
-        canvas.drawText("Exposure (₹)", colExposureRightX, y + thOffset, thRight)
-        canvas.drawText("Weight", colWeightRightX, y + thOffset, thRight)
-        canvas.drawText("Funds", colFundCountCenterX, y + thOffset, thCenter)
-        canvas.drawText("Contributing Mutual Fund Schemes", colSchemesX, y + thOffset, thLeft)
-
-        y += headerHeight
-
-        val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_BORDER_GRAY
-            style = Paint.Style.STROKE
-            strokeWidth = 0.7f
-        }
-        val cellBoldPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_DEEP_SLATE
-            typeface = typefaceBold
-            textSize = 7.8f
-        }
-        val cellRegPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_MUTED_SLATE
-            typeface = typefaceRegular
-            textSize = 7.3f
-        }
-        val cellRightPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_DEEP_SLATE
-            typeface = typefaceMedium
-            textSize = 7.8f
-            textAlign = Paint.Align.RIGHT
-        }
-
-        if (overlappedHoldings.isEmpty()) {
-            val emptyRect = RectF(CONTENT_LEFT, y, CONTENT_RIGHT, y + 40f)
-            canvas.drawRect(emptyRect, borderPaint)
-            canvas.drawText(
-                "No underlying stock holdings available for overlap calculation.",
-                CONTENT_LEFT + 14f,
-                y + 24f,
-                cellRegPaint
-            )
-            return y + 40f
-        }
-
-        overlappedHoldings.forEachIndexed { idx, stock ->
-            val rowRect = RectF(CONTENT_LEFT, y, CONTENT_RIGHT, y + rowHeight)
-            if (idx % 2 == 1) {
-                val zebraPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = COLOR_ZEBRA_ROW
-                    style = Paint.Style.FILL
-                }
-                canvas.drawRect(rowRect, zebraPaint)
-            }
-            canvas.drawRect(rowRect, borderPaint)
-
-            val textY = y + 13.5f
-            canvas.drawText("${idx + 1}", colRankX, textY, cellRegPaint)
-
-            val stockTitle = "${ellipsize(stock.companyName, 18)} (${ellipsize(stock.ticker, 8)})"
-            canvas.drawText(stockTitle, colCompanyX, textY, cellBoldPaint)
-
-            val sectorCap = "${ellipsize(stock.sector, 14)} • ${ellipsize(stock.marketCapBucket, 6)}"
-            canvas.drawText(sectorCap, colSectorX, textY, cellRegPaint)
-
-            canvas.drawText(
-                formatInr(stock.totalRupeeExposure),
-                colExposureRightX,
-                textY,
-                cellRightPaint
-            )
-            canvas.drawText(
-                formatPct(stock.portfolioWeightPercent),
-                colWeightRightX,
-                textY,
-                cellRightPaint
-            )
-
-            val fundCount = stock.schemeContributions.size
-            val badgeBg = if (fundCount >= 3) COLOR_WARNING_BG else COLOR_PROFIT_BG
-            val badgeFg = if (fundCount >= 3) COLOR_WARNING_AMBER else COLOR_PRIMARY_NAVY
-            drawPillBadge(
-                canvas = canvas,
-                centerX = colFundCountCenterX,
-                centerY = y + rowHeight / 2f,
-                text = "${fundCount}F",
-                textColor = badgeFg,
-                bgColor = badgeBg
-            )
-
-            val schemesSummary = stock.schemeContributions
-                .sortedByDescending { it.rupeeContribution }
-                .joinToString(", ") { contrib ->
-                    "${abbreviateSchemeName(contrib.schemeName)} (${formatPct(contrib.weightInSchemePercent)})"
-                }
-            canvas.drawText(
-                ellipsize(schemesSummary, 34),
-                colSchemesX,
-                textY,
-                cellRegPaint
-            )
-
-            y += rowHeight
-        }
-
-        return y
-    }
-
-    private fun drawCompleteSchemeTable(
-        canvas: Canvas,
-        portfolio: PortfolioData,
-        analytics: PortfolioAnalyticsSummary,
-        startY: Float,
-        maxBottomY: Float
-    ): Float {
-        drawSectionTitle(canvas, "COMPLETE MUTUAL FUND SCHEME REGISTER", startY)
-
-        var y = startY + 16f
-        val headerHeight = 20f
-        val totalRowHeight = 21f
-
-        val sortedSchemes = portfolio.schemes.sortedByDescending { it.currentValue }
-        val availableBodyHeight = (maxBottomY - y - headerHeight - totalRowHeight).coerceAtLeast(60f)
-
-        // Dynamically scale row height so schemes fit cleanly without overflowing Page 2
-        val rawSchemeCount = max(sortedSchemes.size, 1)
-        val idealRowHeight = (availableBodyHeight / rawSchemeCount).coerceIn(15.5f, 21f)
-        val maxVisibleRows = (availableBodyHeight / idealRowHeight).toInt().coerceAtLeast(1)
-
-        val displaySchemes = if (sortedSchemes.size > maxVisibleRows) {
-            sortedSchemes.take(maxVisibleRows - 1)
-        } else {
-            sortedSchemes
-        }
-        val hiddenSchemes = if (sortedSchemes.size > displaySchemes.size) {
-            sortedSchemes.drop(displaySchemes.size)
-        } else {
-            emptyList()
-        }
-
-        // Column X Anchors
-        val colNameX = CONTENT_LEFT + 8f
-        val colCatX = CONTENT_LEFT + 196f
-        val colUnitsRightX = CONTENT_LEFT + 305f
-        val colBuyNavRightX = CONTENT_LEFT + 365f
-        val colCurNavRightX = CONTENT_LEFT + 425f
-        val colValRightX = CONTENT_LEFT + 498f
-        val colRetRightX = CONTENT_RIGHT - 8f
-
-        // Table Header
-        val headerRect = RectF(CONTENT_LEFT, y, CONTENT_RIGHT, y + headerHeight)
-        val headerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_PRIMARY_NAVY
-            style = Paint.Style.FILL
-        }
-        canvas.drawRoundRect(headerRect, 4f, 4f, headerPaint)
-
-        val thLeft = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            typeface = typefaceBold
-            textSize = 7.5f
-            textAlign = Paint.Align.LEFT
-        }
-        val thRight = Paint(thLeft).apply { textAlign = Paint.Align.RIGHT }
-
-        val thOffset = 13.5f
-        canvas.drawText("Scheme Name", colNameX, y + thOffset, thLeft)
-        canvas.drawText("Category", colCatX, y + thOffset, thLeft)
-        canvas.drawText("Units", colUnitsRightX, y + thOffset, thRight)
-        canvas.drawText("Avg NAV", colBuyNavRightX, y + thOffset, thRight)
-        canvas.drawText("Cur NAV", colCurNavRightX, y + thOffset, thRight)
-        canvas.drawText("Valuation (₹)", colValRightX, y + thOffset, thRight)
-        canvas.drawText("Return %", colRetRightX, y + thOffset, thRight)
-
-        y += headerHeight
-
-        val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_BORDER_GRAY
-            style = Paint.Style.STROKE
-            strokeWidth = 0.7f
-        }
-        val namePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_DEEP_SLATE
-            typeface = typefaceBold
-            textSize = 7.6f
-        }
-        val catPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_MUTED_SLATE
-            typeface = typefaceRegular
-            textSize = 7.3f
-        }
-        val numPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_DEEP_SLATE
-            typeface = typefaceRegular
-            textSize = 7.5f
-            textAlign = Paint.Align.RIGHT
-        }
-
-        displaySchemes.forEachIndexed { idx, scheme ->
-            val rowRect = RectF(CONTENT_LEFT, y, CONTENT_RIGHT, y + idealRowHeight)
-            if (idx % 2 == 1) {
-                val zebraPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = COLOR_ZEBRA_ROW
-                    style = Paint.Style.FILL
-                }
-                canvas.drawRect(rowRect, zebraPaint)
-            }
-            canvas.drawRect(rowRect, borderPaint)
-
-            val textY = y + (idealRowHeight * 0.66f)
-            canvas.drawText(ellipsize(scheme.schemeName, 36), colNameX, textY, namePaint)
-            canvas.drawText(ellipsize(scheme.category, 16), colCatX, textY, catPaint)
-            canvas.drawText(formatDecimal(scheme.units, 2), colUnitsRightX, textY, numPaint)
-            canvas.drawText(formatDecimal(scheme.averageBuyNav, 2), colBuyNavRightX, textY, numPaint)
-            canvas.drawText(formatDecimal(scheme.fallbackNav, 2), colCurNavRightX, textY, numPaint)
-            canvas.drawText(formatInr(scheme.currentValue), colValRightX, textY, numPaint)
-
-            val retPaint = Paint(numPaint).apply {
-                typeface = typefaceBold
-                color = if (scheme.absoluteReturnPercent >= 0.0) COLOR_PROFIT_EMERALD else COLOR_LOSS_CRIMSON
-            }
-            val sign = if (scheme.absoluteReturnPercent > 0.0) "+" else ""
-            canvas.drawText("$sign${formatPct(scheme.absoluteReturnPercent)}", colRetRightX, textY, retPaint)
-
-            y += idealRowHeight
-        }
-
-        // Consolidated overflow row if portfolio has more than maxVisibleRows schemes
-        if (hiddenSchemes.isNotEmpty()) {
-            val overflowVal = hiddenSchemes.sumOf { it.currentValue }
-            val overflowInv = hiddenSchemes.sumOf { it.investedAmount }
-            val overflowRet = if (overflowInv > 0.0) ((overflowVal - overflowInv) / overflowInv) * 100.0 else 0.0
-
-            val rowRect = RectF(CONTENT_LEFT, y, CONTENT_RIGHT, y + idealRowHeight)
-            canvas.drawRect(rowRect, borderPaint)
-            val textY = y + (idealRowHeight * 0.66f)
-
-            canvas.drawText(
-                "+ ${hiddenSchemes.size} Additional Schemes Consolidated",
-                colNameX,
-                textY,
-                catPaint
-            )
-            canvas.drawText("Multi-Category", colCatX, textY, catPaint)
-            canvas.drawText("—", colUnitsRightX, textY, numPaint)
-            canvas.drawText("—", colBuyNavRightX, textY, numPaint)
-            canvas.drawText("—", colCurNavRightX, textY, numPaint)
-            canvas.drawText(formatInr(overflowVal), colValRightX, textY, numPaint)
-            canvas.drawText(formatPct(overflowRet), colRetRightX, textY, numPaint)
-
-            y += idealRowHeight
-        }
-
-        // Totals Row
-        val totalRect = RectF(CONTENT_LEFT, y, CONTENT_RIGHT, y + totalRowHeight)
-        val totalBg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_TOTAL_ROW
-            style = Paint.Style.FILL
-        }
-        canvas.drawRect(totalRect, totalBg)
-        canvas.drawRect(totalRect, borderPaint)
-
-        val totalTextY = y + 14f
-        val totalLeftPaint = Paint(namePaint).apply { textSize = 8f }
-        val totalRightPaint = Paint(numPaint).apply {
-            typeface = typefaceBold
-            textSize = 8f
-        }
-        canvas.drawText(
-            "TOTAL PORTFOLIO (${sortedSchemes.size} Active Schemes)",
-            colNameX,
-            totalTextY,
-            totalLeftPaint
-        )
-        canvas.drawText(
-            "Invested: ${formatInrCompact(analytics.totalInvested)}",
-            colCurNavRightX,
-            totalTextY,
-            totalRightPaint
-        )
-        canvas.drawText(
-            formatInr(analytics.totalCurrentValue),
-            colValRightX,
-            totalTextY,
-            totalRightPaint
-        )
-
-        val totalRetPaint = Paint(totalRightPaint).apply {
-            color = if (analytics.totalReturnPercent >= 0.0) COLOR_PROFIT_EMERALD else COLOR_LOSS_CRIMSON
-        }
-        val totalSign = if (analytics.totalReturnPercent > 0.0) "+" else ""
-        canvas.drawText(
-            "$totalSign${formatPct(analytics.totalReturnPercent)}",
-            colRetRightX,
-            totalTextY,
-            totalRetPaint
-        )
-
-        return y + totalRowHeight
-    }
-
-    private fun drawStatutorySebiDisclaimers(
-        canvas: Canvas,
-        portfolio: PortfolioData,
-        startY: Float
-    ) {
-        val boxHeight = 68f
+        val boxHeight = 115f
         val rect = RectF(CONTENT_LEFT, startY, CONTENT_RIGHT, startY + boxHeight)
 
         val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = COLOR_SURFACE_CARD
             style = Paint.Style.FILL
         }
+        canvas.drawRoundRect(rect, 10f, 10f, bgPaint)
+
         val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_BORDER_GRAY
+            color = COLOR_SLATE_BORDER
             style = Paint.Style.STROKE
             strokeWidth = 1f
-            pathEffect = DashPathEffect(floatArrayOf(4f, 3f), 0f)
         }
-        canvas.drawRoundRect(rect, 6f, 6f, bgPaint)
-        canvas.drawRoundRect(rect, 6f, 6f, borderPaint)
+        canvas.drawRoundRect(rect, 10f, 10f, borderPaint)
+
+        // --- Radial Gauge on Left (Center: CONTENT_LEFT + 70f, startY + 57f) ---
+        val cx = CONTENT_LEFT + 70f
+        val cy = startY + 54f
+        val radius = 34f
+
+        val gaugeTrackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_SLATE_BORDER
+            style = Paint.Style.STROKE
+            strokeWidth = 6.5f
+            strokeCap = Paint.Cap.ROUND
+        }
+        canvas.drawCircle(cx, cy, radius, gaugeTrackPaint)
+
+        val scoreColor = when {
+            healthScore >= 75 -> COLOR_PROFIT_EMERALD
+            healthScore >= 50 -> COLOR_WARNING_AMBER
+            else -> COLOR_LOSS_CRIMSON
+        }
+
+        val gaugeProgressPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = scoreColor
+            style = Paint.Style.STROKE
+            strokeWidth = 6.5f
+            strokeCap = Paint.Cap.ROUND
+        }
+        val arcRect = RectF(cx - radius, cy - radius, cx + radius, cy + radius)
+        val sweepAngle = (healthScore / 100f) * 360f
+        canvas.drawArc(arcRect, -90f, sweepAngle, false, gaugeProgressPaint)
+
+        val scoreNumPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_SLATE_TEXT_PRIMARY
+            textSize = 17f
+            typeface = typefaceSansBold
+            textAlign = Paint.Align.CENTER
+        }
+        canvas.drawText("$healthScore", cx, cy + 4f, scoreNumPaint)
+
+        val scoreSubPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_SLATE_TEXT_MUTED
+            textSize = 7.5f
+            typeface = typefaceSans
+            textAlign = Paint.Align.CENTER
+        }
+        canvas.drawText("HEALTH SCORE", cx, cy + 16f, scoreSubPaint)
+
+        val gradeText = when {
+            healthScore >= 80 -> "GRADE: INSTITUTIONAL EXCELLENCE"
+            healthScore >= 65 -> "GRADE: MODERATE CONCENTRATION"
+            else -> "GRADE: HIGH OVERLAP / REBALANCE REQUIRED"
+        }
+        val gradePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = scoreColor
+            textSize = 6.5f
+            typeface = typefaceSansBold
+            textAlign = Paint.Align.CENTER
+        }
+        canvas.drawText(gradeText, cx, startY + boxHeight - 10f, gradePaint)
+
+        // --- Diagnostics & Deductions List on Right ---
+        val rightX = CONTENT_LEFT + 150f
+        val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_DEEP_NAVY
+            textSize = 9.5f
+            typeface = typefaceSansBold
+        }
+        canvas.drawText("HEALTH SCORECARD AUDIT & DEDUCTION MATRIX", rightX, startY + 18f, titlePaint)
+
+        val topOverlap = analytics.highOverlapStocksCount
+        val top5Pct = analytics.topHoldings.take(5).sumOf { it.portfolioWeightPercent }
+        val ter = analytics.weightedExpenseRatio
+        val feeDrag = analytics.annualFeeDragRupees
+
+        val items = listOf(
+            Triple(
+                "Multi-Fund Stock Overlap",
+                "$topOverlap cross-held companies detected",
+                if (topOverlap > 5) "-${min(12, topOverlap * 2)} pts (Overlap Drag)" else "Optimal (< 5 duplicates)"
+            ),
+            Triple(
+                "Top-5 Stock Concentration",
+                "Top 5 stocks represent ${String.format(Locale.US, "%.1f", top5Pct)}% equity",
+                if (top5Pct > 35.0) "-6 pts (High Single-Stock Exposure)" else "Healthy Diversification"
+            ),
+            Triple(
+                "Annual Fee Drag (TER)",
+                "Weighted TER: ${String.format(Locale.US, "%.2f", ter)}% per annum",
+                "Est. Fee Drag: ${formatRupees(feeDrag)}/yr"
+            )
+        )
+
+        var rowY = startY + 36f
+        for ((title, detail, status) in items) {
+            val bulletPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = COLOR_ACCENT_BLUE
+                style = Paint.Style.FILL
+            }
+            canvas.drawCircle(rightX + 4f, rowY - 3f, 2.5f, bulletPaint)
+
+            val itemTitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = COLOR_SLATE_TEXT_PRIMARY
+                textSize = 8.5f
+                typeface = typefaceSansBold
+            }
+            canvas.drawText(title, rightX + 12f, rowY, itemTitlePaint)
+
+            val detailPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = COLOR_SLATE_TEXT_MUTED
+                textSize = 8f
+                typeface = typefaceSans
+            }
+            canvas.drawText("• $detail", rightX + 130f, rowY, detailPaint)
+
+            val statusPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = if (status.startsWith("-")) COLOR_LOSS_CRIMSON else COLOR_PROFIT_EMERALD
+                textSize = 8f
+                typeface = typefaceSansBold
+                textAlign = Paint.Align.RIGHT
+            }
+            canvas.drawText(status, CONTENT_RIGHT - 14f, rowY, statusPaint)
+
+            rowY += 23f
+        }
+
+        return startY + boxHeight
+    }
+
+    private fun drawSebiAlignmentTable(
+        canvas: Canvas,
+        portfolio: PortfolioData,
+        analytics: PortfolioAnalyticsSummary,
+        startY: Float
+    ): Float {
+        var y = startY
 
         val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_PRIMARY_NAVY
-            typeface = typefaceBold
+            color = COLOR_SLATE_TEXT_PRIMARY
+            textSize = 10.5f
+            typeface = typefaceSansBold
+        }
+        canvas.drawText(" USER MARKET CAP ALLOCATION MANDATE VS ACTUAL", CONTENT_LEFT, y + 10f, titlePaint)
+        y += 18f
+
+        // Table Header
+        val headerHeight = 18f
+        val headerRect = RectF(CONTENT_LEFT, y, CONTENT_RIGHT, y + headerHeight)
+        val headerBgPaint = Paint().apply { color = COLOR_DEEP_NAVY }
+        canvas.drawRoundRect(headerRect, 4f, 4f, headerBgPaint)
+
+        val headerTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
             textSize = 7.5f
-            letterSpacing = 0.04f
+            typeface = typefaceSansBold
         }
-        canvas.drawText(
-            "STATUTORY SEBI & AMFI REGULATORY DISCLOSURES",
-            CONTENT_LEFT + 10f,
-            startY + 14f,
-            titlePaint
+
+        canvas.drawText("Market Cap Segment", CONTENT_LEFT + 8f, y + 12f, headerTextPaint)
+        headerTextPaint.textAlign = Paint.Align.RIGHT
+        canvas.drawText("Target Mandate", CONTENT_LEFT + 200f, y + 12f, headerTextPaint)
+        canvas.drawText("Actual Look-Through", CONTENT_LEFT + 310f, y + 12f, headerTextPaint)
+        canvas.drawText("Variance / Drift", CONTENT_LEFT + 410f, y + 12f, headerTextPaint)
+        headerTextPaint.textAlign = Paint.Align.LEFT
+        canvas.drawText("Mandate Status", CONTENT_LEFT + 430f, y + 12f, headerTextPaint)
+
+        y += headerHeight
+
+        val mandate = portfolio.marketCapMandate
+        val actualMap = analytics.marketCapBreakdown.associate { it.label to it.weightPercent }
+
+        val rows = listOf(
+            Triple("Large Cap Equity", mandate.largeCapTarget, actualMap["Large Cap"] ?: 0.0),
+            Triple("Mid Cap Equity", mandate.midCapTarget, actualMap["Mid Cap"] ?: 0.0),
+            Triple("Small Cap Equity", mandate.smallCapTarget, actualMap["Small Cap"] ?: 0.0),
+            Triple("Micro Cap / Cash / Debt", mandate.microCapTarget, (actualMap["Micro Cap"] ?: 0.0) + (actualMap["Cash / Others"] ?: 0.0))
         )
 
-        val bodyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_MUTED_SLATE
-            typeface = typefaceRegular
-            textSize = 6.8f
+        val rowHeight = 19f
+        var isOdd = false
+
+        for ((segment, target, actual) in rows) {
+            val drift = actual - target
+            val isCompliant = abs(drift) <= 2.5
+
+            val rowBg = Paint().apply {
+                color = if (isOdd) COLOR_ZEBRA_ROW else Color.WHITE
+            }
+            canvas.drawRect(CONTENT_LEFT, y, CONTENT_RIGHT, y + rowHeight, rowBg)
+
+            val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = COLOR_SLATE_TEXT_PRIMARY
+                textSize = 8f
+                typeface = typefaceSansMedium
+            }
+            canvas.drawText(segment, CONTENT_LEFT + 8f, y + 13f, textPaint)
+
+            val numPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = COLOR_SLATE_TEXT_PRIMARY
+                textSize = 8.5f
+                typeface = typefaceMonospace
+                textAlign = Paint.Align.RIGHT
+            }
+            canvas.drawText("${String.format(Locale.US, "%.1f", target)}%", CONTENT_LEFT + 200f, y + 13f, numPaint)
+            canvas.drawText("${String.format(Locale.US, "%.1f", actual)}%", CONTENT_LEFT + 310f, y + 13f, numPaint)
+
+            val driftSign = if (drift >= 0) "+" else ""
+            val driftColor = when {
+                isCompliant -> COLOR_PROFIT_EMERALD
+                drift > 0 -> COLOR_WARNING_AMBER
+                else -> COLOR_LOSS_CRIMSON
+            }
+            numPaint.color = driftColor
+            canvas.drawText("$driftSign${String.format(Locale.US, "%.1f", drift)}%", CONTENT_LEFT + 410f, y + 13f, numPaint)
+
+            val statusText = when {
+                isCompliant -> "COMPLIANT (Within ±2.5%)"
+                drift > 0 -> "+${String.format(Locale.US, "%.1f", drift)}% OVERWEIGHT"
+                else -> "${String.format(Locale.US, "%.1f", drift)}% UNDERWEIGHT"
+            }
+            val statusPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = driftColor
+                textSize = 7.5f
+                typeface = typefaceSansBold
+            }
+            canvas.drawText(statusText, CONTENT_LEFT + 430f, y + 13f, statusPaint)
+
+            // Hairline separator
+            val sepPaint = Paint().apply {
+                color = COLOR_SLATE_BORDER
+                strokeWidth = 0.5f
+            }
+            canvas.drawLine(CONTENT_LEFT, y + rowHeight, CONTENT_RIGHT, y + rowHeight, sepPaint)
+
+            y += rowHeight
+            isOdd = !isOdd
         }
 
-        val lines = listOf(
-            "1. Mutual Fund investments are subject to market risks. Please read all scheme-related documents (SID/SAI/KIM) carefully before investing.",
-            "2. Look-through stock and sector exposures are computed from the latest monthly AMFI portfolio disclosures and NAVs as of ${formatIstTimestamp(portfolio.lastSyncedEpochMs)}.",
-            "3. Market-cap classifications strictly follow the SEBI Circular (SEBI/HO/IMD/DF3/CIR/P/2017/114): Large Cap (1st-100th), Mid Cap (101st-250th), Small Cap (251st+).",
-            "4. Suggested rebalancing adjustments are algorithmic drift calculations against user-configured mandate targets and do not constitute personalized investment advice."
-        )
-
-        var lineY = startY + 26f
-        lines.forEach { line ->
-            canvas.drawText(line, CONTENT_LEFT + 10f, lineY, bodyPaint)
-            lineY += 10.5f
-        }
+        return y
     }
 
-    // ========================================================================
-    // SHARED DRAWING PRIMITIVES & FORMATTING HELPERS
-    // ========================================================================
-
-    private fun drawPageBackgroundAndWatermark(canvas: Canvas) {
-        canvas.drawColor(Color.WHITE)
-
-        // Diagonal Institutional Watermark
-        canvas.save()
-        canvas.rotate(-32f, PAGE_WIDTH / 2f, PAGE_HEIGHT / 2f)
-        val watermarkPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_WATERMARK
-            typeface = typefaceBold
-            textSize = 54f
-            textAlign = Paint.Align.CENTER
-            letterSpacing = 0.08f
-        }
-        canvas.drawText("FINBABA INSTITUTIONAL X-RAY", PAGE_WIDTH / 2f, PAGE_HEIGHT / 2f, watermarkPaint)
-        canvas.restore()
-    }
-
-    private fun drawSectionTitle(canvas: Canvas, title: String, startY: Float) {
-        val barPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_PRIMARY_NAVY
-            style = Paint.Style.FILL
-        }
-        canvas.drawRoundRect(
-            RectF(CONTENT_LEFT, startY, CONTENT_LEFT + 4f, startY + 12f),
-            2f,
-            2f,
-            barPaint
-        )
-
-        val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_DEEP_SLATE
-            typeface = typefaceBold
-            textSize = 9.2f
-            letterSpacing = 0.04f
-        }
-        canvas.drawText(title, CONTENT_LEFT + 10f, startY + 10f, textPaint)
-    }
-
-    private fun drawPillBadge(
+    private fun drawSectorAllocationMatrix(
         canvas: Canvas,
-        centerX: Float,
-        centerY: Float,
-        text: String,
-        textColor: Int,
-        bgColor: Int
-    ) {
-        val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = textColor
-            typeface = typefaceBold
-            textSize = 6.8f
-            textAlign = Paint.Align.CENTER
-        }
-        val textWidth = textPaint.measureText(text)
-        val padH = 6f
-        val halfW = (textWidth / 2f) + padH
-        val halfH = 6.5f
+        analytics: PortfolioAnalyticsSummary,
+        startY: Float
+    ): Float {
+        var y = startY
 
-        val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = bgColor
-            style = Paint.Style.FILL
+        val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_SLATE_TEXT_PRIMARY
+            textSize = 10.5f
+            typeface = typefaceSansBold
         }
-        val pillRect = RectF(centerX - halfW, centerY - halfH, centerX + halfW, centerY + halfH)
-        canvas.drawRoundRect(pillRect, 6f, 6f, bgPaint)
-        canvas.drawText(text, centerX, centerY + 2.4f, textPaint)
+        canvas.drawText("TOP 8 SECTOR EXPOSURE MATRIX", CONTENT_LEFT, y + 10f, titlePaint)
+        y += 18f
+
+        val top8Sectors = analytics.sectorBreakdown.take(8)
+        val colWidth = (CONTENT_WIDTH - 15f) / 2f
+        val rowHeight = 27f
+
+        val maxWeight = top8Sectors.maxOfOrNull { it.portfolioWeightPercent }?.coerceAtLeast(1.0) ?: 1.0
+
+        for (i in top8Sectors.indices) {
+            val sector = top8Sectors[i]
+            val colIndex = i % 2
+            val rowIndex = i / 2
+
+            val cellX = CONTENT_LEFT + colIndex * (colWidth + 15f)
+            val cellY = y + rowIndex * rowHeight
+
+            val namePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = COLOR_SLATE_TEXT_PRIMARY
+                textSize = 8f
+                typeface = typefaceSansMedium
+            }
+            val safeName = if (sector.sectorName.length > 24) sector.sectorName.take(22) + "…" else sector.sectorName
+            canvas.drawText(safeName, cellX, cellY + 8f, namePaint)
+
+            val pctStr = "${String.format(Locale.US, "%.1f", sector.portfolioWeightPercent)}%"
+            val pctPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = COLOR_ACCENT_BLUE
+                textSize = 8.5f
+                typeface = typefaceMonospaceBold
+                textAlign = Paint.Align.RIGHT
+            }
+            canvas.drawText(pctStr, cellX + colWidth, cellY + 8f, pctPaint)
+
+            // Progress Bar Track
+            val trackY = cellY + 12f
+            val trackH = 4f
+            val trackPaint = Paint().apply {
+                color = COLOR_SLATE_BORDER
+            }
+            canvas.drawRoundRect(RectF(cellX, trackY, cellX + colWidth, trackY + trackH), 2f, 2f, trackPaint)
+
+            val fillWidth = ((sector.portfolioWeightPercent / maxWeight) * colWidth).toFloat().coerceIn(3f, colWidth)
+            val fillPaint = Paint().apply {
+                color = COLOR_ACCENT_BLUE
+            }
+            canvas.drawRoundRect(RectF(cellX, trackY, cellX + fillWidth, trackY + trackH), 2f, 2f, fillPaint)
+        }
+
+        val totalRows = ceil(top8Sectors.size / 2.0).toInt()
+        return y + totalRows * rowHeight
     }
 
-    private fun drawPageFooter(
-        canvas: Canvas,
-        portfolio: PortfolioData,
-        pageNumber: Int,
-        totalPages: Int
+    private fun drawDuplicateOverlapSection(
+        session: DynamicPdfSession,
+        stocks: List<AggregatedStockExposure>
     ) {
-        val lineY = 788f
-        val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_BORDER_GRAY
-            strokeWidth = 1f
-        }
-        canvas.drawLine(CONTENT_LEFT, lineY, CONTENT_RIGHT, lineY, linePaint)
+        session.ensureSpace(52f)
+        var canvas = session.canvas!!
+        var y = session.cursorY
 
-        val footerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = COLOR_MUTED_SLATE
-            typeface = typefaceRegular
-            textSize = 7.5f
+        val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_SLATE_TEXT_PRIMARY
+            textSize = 10.5f
+            typeface = typefaceSansBold
         }
-        val generatedNow = formatIstTimestamp(System.currentTimeMillis())
-        canvas.drawText(
-            "Generated by FinBaba Institutional Engine (com.fin.mf)  •  Printed: $generatedNow",
-            CONTENT_LEFT,
-            lineY + 14f,
-            footerPaint
-        )
+        canvas.drawText("HIGH DUPLICATE STOCK OVERLAP (HELD IN 3+ MUTUAL FUNDS)", CONTENT_LEFT, y + 10f, titlePaint)
 
-        val pagePaint = Paint(footerPaint).apply {
-            typeface = typefaceBold
-            color = COLOR_DEEP_SLATE
-            textAlign = Paint.Align.RIGHT
+        val subPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_SLATE_TEXT_MUTED
+            textSize = 8f
+            typeface = typefaceSans
         }
-        canvas.drawText(
-            "Vault: ${ellipsize(portfolio.portfolioName, 20)}  |  Page $pageNumber of $totalPages",
-            CONTENT_RIGHT,
-            lineY + 14f,
-            pagePaint
-        )
+        canvas.drawText("Companies held concurrently across multiple schemes causing unhedged concentration.", CONTENT_LEFT, y + 22f, subPaint)
+
+        y += 30f
+
+        fun drawOverlapHeader(targetCanvas: Canvas, targetY: Float) {
+            val headerRect = RectF(CONTENT_LEFT, targetY, CONTENT_RIGHT, targetY + 18f)
+            targetCanvas.drawRoundRect(headerRect, 4f, 4f, Paint().apply { color = COLOR_DEEP_NAVY })
+
+            val headerTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.WHITE
+                textSize = 7.5f
+                typeface = typefaceSansBold
+            }
+
+            targetCanvas.drawText("Company Constituent", CONTENT_LEFT + 8f, targetY + 12f, headerTextPaint)
+            targetCanvas.drawText("Sector", CONTENT_LEFT + 155f, targetY + 12f, headerTextPaint)
+            targetCanvas.drawText("Cap Bucket", CONTENT_LEFT + 250f, targetY + 12f, headerTextPaint)
+            targetCanvas.drawText("Held In", CONTENT_LEFT + 320f, targetY + 12f, headerTextPaint)
+            headerTextPaint.textAlign = Paint.Align.RIGHT
+            targetCanvas.drawText("Portfolio Wt %", CONTENT_LEFT + 420f, targetY + 12f, headerTextPaint)
+            targetCanvas.drawText("Total Exposure", CONTENT_RIGHT - 8f, targetY + 12f, headerTextPaint)
+        }
+
+        drawOverlapHeader(canvas, y)
+        y += 18f
+        var isOdd = false
+
+        for (stock in stocks) {
+            session.cursorY = y
+            session.ensureSpace(19f) {
+                drawOverlapHeader(session.canvas!!, session.cursorY)
+                session.cursorY += 18f
+            }
+            y = session.cursorY
+            val currentCanvas = session.canvas!!
+
+            val rowBg = Paint().apply { color = if (isOdd) COLOR_ZEBRA_ROW else Color.WHITE }
+            currentCanvas.drawRect(CONTENT_LEFT, y, CONTENT_RIGHT, y + 19f, rowBg)
+
+            val namePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = COLOR_SLATE_TEXT_PRIMARY
+                textSize = 8f
+                typeface = typefaceSansBold
+            }
+            val safeName = if (stock.companyName.length > 22) stock.companyName.take(20) + "…" else stock.companyName
+            currentCanvas.drawText(safeName, CONTENT_LEFT + 8f, y + 13f, namePaint)
+
+            val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = COLOR_SLATE_TEXT_MUTED
+                textSize = 7.5f
+                typeface = typefaceSans
+            }
+            val safeSector = if (stock.sector.length > 18) stock.sector.take(16) + "…" else stock.sector
+            currentCanvas.drawText(safeSector, CONTENT_LEFT + 155f, y + 13f, textPaint)
+            currentCanvas.drawText(stock.marketCapBucket, CONTENT_LEFT + 250f, y + 13f, textPaint)
+
+            val chipPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = COLOR_WARNING_AMBER
+                textSize = 8f
+                typeface = typefaceSansBold
+            }
+            currentCanvas.drawText("${stock.heldInSchemesCount} Funds", CONTENT_LEFT + 320f, y + 13f, chipPaint)
+
+            val numPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = COLOR_SLATE_TEXT_PRIMARY
+                textSize = 8.5f
+                typeface = typefaceMonospaceBold
+                textAlign = Paint.Align.RIGHT
+            }
+            currentCanvas.drawText("${String.format(Locale.US, "%.2f", stock.portfolioWeightPercent)}%", CONTENT_LEFT + 420f, y + 13f, numPaint)
+            currentCanvas.drawText(formatRupees(stock.totalRupeeExposure), CONTENT_RIGHT - 8f, y + 13f, numPaint)
+
+            val sepPaint = Paint().apply {
+                color = COLOR_SLATE_BORDER
+                strokeWidth = 0.5f
+            }
+            currentCanvas.drawLine(CONTENT_LEFT, y + 19f, CONTENT_RIGHT, y + 19f, sepPaint)
+
+            y += 19f
+            isOdd = !isOdd
+        }
+
+        session.cursorY = y
     }
 
-    private fun launchPdfShareSheet(
-        context: Context,
-        pdfUri: Uri,
-        portfolioName: String
-    ) {
-        val viewIntent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(pdfUri, MediaStoreExportManager.MIME_TYPE_PDF)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-
-        val sendIntent = Intent(Intent.ACTION_SEND).apply {
-            type = MediaStoreExportManager.MIME_TYPE_PDF
-            putExtra(Intent.EXTRA_STREAM, pdfUri)
-            putExtra(
-                Intent.EXTRA_SUBJECT,
-                "FinBaba Executive Portfolio Audit — $portfolioName"
-            )
-            putExtra(
-                Intent.EXTRA_TEXT,
-                "Attached is the 2-Page FinBaba Institutional X-Ray Audit Report for $portfolioName."
-            )
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-
-        val chooserIntent = Intent.createChooser(
-            sendIntent,
-            "Share or Open FinBaba PDF Audit"
-        ).apply {
-            putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(viewIntent))
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-
-        context.startActivity(chooserIntent)
-    }
-
-    private fun computeEstimatedPortfolioCagr(
+    private fun drawSchemeRegisterSection(
+        session: DynamicPdfSession,
         portfolio: PortfolioData,
         analytics: PortfolioAnalyticsSummary
-    ): Double {
-        if (analytics.totalInvested <= 0.0 || analytics.totalCurrentValue <= 0.0) {
-            return 0.0
+    ) {
+        session.ensureSpace(60f)
+        val canvas = session.canvas!!
+        var y = session.cursorY
+
+        val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_SLATE_TEXT_PRIMARY
+            textSize = 10.5f
+            typeface = typefaceSansBold
         }
-        // Estimate effective holding horizon from NAV appreciation ratio & scheme dispersion
-        val totalMultiple = (analytics.totalCurrentValue / analytics.totalInvested).coerceAtLeast(0.1)
-        val impliedYears = 2.5 // Standard institutional 30-month blended holding horizon fallback
-        val cagr = (totalMultiple.pow(1.0 / impliedYears) - 1.0) * 100.0
-        return if (cagr.isFinite()) cagr.coerceIn(-95.0, 150.0) else analytics.totalReturnPercent
-    }
+        canvas.drawText("COMPLETE MUTUAL FUND SCHEME REGISTER", CONTENT_LEFT, y + 10f, titlePaint)
 
-    private fun matchSlice(
-        slices: List<AllocationSlice>,
-        keyword: String
-    ): AllocationSlice {
-        val matched = slices.filter { it.label.contains(keyword, ignoreCase = true) }
-        if (matched.isEmpty()) return AllocationSlice(keyword, 0.0, 0.0)
-        return AllocationSlice(
-            label = keyword,
-            rupeeValue = matched.sumOf { it.rupeeValue },
-            weightPercent = matched.sumOf { it.weightPercent }
-        )
-    }
-
-    private fun matchMicroAndCashSlice(
-        slices: List<AllocationSlice>,
-        totalPortfolioValue: Double
-    ): AllocationSlice {
-        val matched = slices.filter { slice ->
-            slice.label.contains("Micro", ignoreCase = true) ||
-                slice.label.contains("Cash", ignoreCase = true) ||
-                slice.label.contains("Debt", ignoreCase = true) ||
-                slice.label.contains("TREPS", ignoreCase = true) ||
-                slice.label.contains("Other", ignoreCase = true)
+        val subPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_SLATE_TEXT_MUTED
+            textSize = 8f
+            typeface = typefaceSans
         }
-        if (matched.isNotEmpty()) {
-            return AllocationSlice(
-                label = "Micro Cap & Cash",
-                rupeeValue = matched.sumOf { it.rupeeValue },
-                weightPercent = matched.sumOf { it.weightPercent }
-            )
+        canvas.drawText("Granular scheme positions, acquisition prices, current valuations, and net performance.", CONTENT_LEFT, y + 22f, subPaint)
+
+        y += 30f
+
+        fun drawRegisterHeader(targetCanvas: Canvas, targetY: Float) {
+            val headerRect = RectF(CONTENT_LEFT, targetY, CONTENT_RIGHT, targetY + 18f)
+            targetCanvas.drawRoundRect(headerRect, 4f, 4f, Paint().apply { color = COLOR_DEEP_NAVY })
+
+            val hp = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.WHITE
+                textSize = 7.5f
+                typeface = typefaceSansBold
+            }
+
+            targetCanvas.drawText("Scheme Name", CONTENT_LEFT + 6f, targetY + 12f, hp)
+            targetCanvas.drawText("Category", CONTENT_LEFT + 145f, targetY + 12f, hp)
+            hp.textAlign = Paint.Align.RIGHT
+            targetCanvas.drawText("Units", CONTENT_LEFT + 258f, targetY + 12f, hp)
+            targetCanvas.drawText("Avg Buy", CONTENT_LEFT + 308f, targetY + 12f, hp)
+            targetCanvas.drawText("Live NAV", CONTENT_LEFT + 358f, targetY + 12f, hp)
+            targetCanvas.drawText("Current Val", CONTENT_LEFT + 428f, targetY + 12f, hp)
+            targetCanvas.drawText("Wt %", CONTENT_LEFT + 462f, targetY + 12f, hp)
+            targetCanvas.drawText("Gain / Loss", CONTENT_RIGHT - 6f, targetY + 12f, hp)
         }
 
-        val accountedRupees = slices.filter {
-            it.label.contains("Large", ignoreCase = true) ||
-                it.label.contains("Mid", ignoreCase = true) ||
-                it.label.contains("Small", ignoreCase = true)
-        }.sumOf { it.rupeeValue }
+        drawRegisterHeader(canvas, y)
+        y += 18f
 
-        val residualRupees = (totalPortfolioValue - accountedRupees).coerceAtLeast(0.0)
-        val residualWeight = if (totalPortfolioValue > 0.0) {
-            (residualRupees / totalPortfolioValue) * 100.0
-        } else {
-            0.0
+        val schemes = portfolio.schemes
+        var isOdd = false
+        val totalPortfolioVal = analytics.totalCurrentValue.coerceAtLeast(1.0)
+
+        for (scheme in schemes) {
+            session.cursorY = y
+            session.ensureSpace(21f) {
+                drawRegisterHeader(session.canvas!!, session.cursorY)
+                session.cursorY += 18f
+            }
+            y = session.cursorY
+            val currentCanvas = session.canvas!!
+
+            val rowBg = Paint().apply { color = if (isOdd) COLOR_ZEBRA_ROW else Color.WHITE }
+            currentCanvas.drawRect(CONTENT_LEFT, y, CONTENT_RIGHT, y + 21f, rowBg)
+
+            val namePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = COLOR_SLATE_TEXT_PRIMARY
+                textSize = 7.8f
+                typeface = typefaceSansBold
+            }
+            val safeSchemeName = if (scheme.schemeName.length > 25) scheme.schemeName.take(23) + "…" else scheme.schemeName
+            currentCanvas.drawText(safeSchemeName, CONTENT_LEFT + 6f, y + 14f, namePaint)
+
+            val catPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = COLOR_SLATE_TEXT_MUTED
+                textSize = 7f
+                typeface = typefaceSans
+            }
+            val safeCat = if (scheme.category.length > 15) scheme.category.take(13) + "…" else scheme.category
+            currentCanvas.drawText(safeCat, CONTENT_LEFT + 145f, y + 14f, catPaint)
+
+            val numPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = COLOR_SLATE_TEXT_PRIMARY
+                textSize = 8f
+                typeface = typefaceMonospace
+                textAlign = Paint.Align.RIGHT
+            }
+            currentCanvas.drawText(String.format(Locale.US, "%.2f", scheme.units), CONTENT_LEFT + 258f, y + 14f, numPaint)
+            currentCanvas.drawText(String.format(Locale.US, "%.1f", scheme.averageBuyNav), CONTENT_LEFT + 308f, y + 14f, numPaint)
+            currentCanvas.drawText(String.format(Locale.US, "%.1f", scheme.fallbackNav), CONTENT_LEFT + 358f, y + 14f, numPaint)
+
+            numPaint.typeface = typefaceMonospaceBold
+            currentCanvas.drawText(formatRupees(scheme.currentValue), CONTENT_LEFT + 428f, y + 14f, numPaint)
+
+            val weightPct = (scheme.currentValue / totalPortfolioVal) * 100.0
+            numPaint.typeface = typefaceMonospace
+            currentCanvas.drawText("${String.format(Locale.US, "%.1f", weightPct)}%", CONTENT_LEFT + 462f, y + 14f, numPaint)
+
+            val gain = scheme.absoluteGain
+            val isGainPositive = gain >= 0
+            val gainSign = if (isGainPositive) "+" else ""
+            val gainColor = if (isGainPositive) COLOR_PROFIT_EMERALD else COLOR_LOSS_CRIMSON
+
+            val gainPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = gainColor
+                textSize = 7.8f
+                typeface = typefaceMonospaceBold
+                textAlign = Paint.Align.RIGHT
+            }
+            currentCanvas.drawText("$gainSign${formatRupees(gain)}", CONTENT_RIGHT - 6f, y + 14f, gainPaint)
+
+            val sepPaint = Paint().apply {
+                color = COLOR_SLATE_BORDER
+                strokeWidth = 0.5f
+            }
+            currentCanvas.drawLine(CONTENT_LEFT, y + 21f, CONTENT_RIGHT, y + 21f, sepPaint)
+
+            y += 21f
+            isOdd = !isOdd
         }
-        return AllocationSlice("Micro Cap & Cash", residualRupees, residualWeight)
+
+        // Totals Summary Row
+        session.cursorY = y
+        session.ensureSpace(22f)
+        y = session.cursorY
+        val finalCanvas = session.canvas!!
+
+        val totRect = RectF(CONTENT_LEFT, y, CONTENT_RIGHT, y + 22f)
+        finalCanvas.drawRoundRect(totRect, 3f, 3f, Paint().apply { color = COLOR_TOTAL_ROW })
+
+        val totPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_DEEP_NAVY
+            textSize = 8.5f
+            typeface = typefaceSansBold
+        }
+        finalCanvas.drawText("TOTAL PORTFOLIO (${schemes.size} Schemes)", CONTENT_LEFT + 8f, y + 15f, totPaint)
+
+        val totNumPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_DEEP_NAVY
+            textSize = 9f
+            typeface = typefaceMonospaceBold
+            textAlign = Paint.Align.RIGHT
+        }
+        finalCanvas.drawText(formatRupees(analytics.totalCurrentValue), CONTENT_LEFT + 428f, y + 15f, totNumPaint)
+        finalCanvas.drawText("100.0%", CONTENT_LEFT + 462f, y + 15f, totNumPaint)
+
+        val totalGainSign = if (analytics.totalGain >= 0) "+" else ""
+        totNumPaint.color = if (analytics.totalGain >= 0) COLOR_PROFIT_EMERALD else COLOR_LOSS_CRIMSON
+        finalCanvas.drawText("$totalGainSign${formatRupees(analytics.totalGain)}", CONTENT_RIGHT - 6f, y + 15f, totNumPaint)
+
+        session.cursorY = y + 22f
     }
 
-    private fun formatInr(amount: Double): String {
-        val clean = if (amount.isFinite()) amount else 0.0
-        val sign = if (clean < 0) "-" else ""
-        val absVal = abs(clean)
-        val symbols = DecimalFormatSymbols(Locale.ENGLISH)
-        val formatter = DecimalFormat("##,##,##0.00", symbols)
-        return "$sign₹${formatter.format(absVal)}"
+    private fun drawStatutoryDisclaimer(session: DynamicPdfSession) {
+        session.ensureSpace(48f)
+        val canvas = session.canvas!!
+        val y = session.cursorY
+
+        val rect = RectF(CONTENT_LEFT, y, CONTENT_RIGHT, y + 46f)
+        val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_SURFACE_CARD
+            style = Paint.Style.FILL
+        }
+        canvas.drawRoundRect(rect, 6f, 6f, bgPaint)
+
+        val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_SLATE_BORDER
+            style = Paint.Style.STROKE
+            strokeWidth = 0.8f
+        }
+        canvas.drawRoundRect(rect, 6f, 6f, borderPaint)
+
+        val discTitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_DEEP_NAVY
+            textSize = 7f
+            typeface = typefaceSansBold
+        }
+        canvas.drawText("STATUTORY SEBI REGULATORY AUDIT & COMPLIANCE DISCLAIMER", CONTENT_LEFT + 10f, y + 14f, discTitlePaint)
+
+        val bodyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_SLATE_TEXT_MUTED
+            textSize = 6.2f
+            typeface = typefaceSans
+        }
+        val line1 = "Mutual fund investments are subject to market risks. Read all scheme-related documents carefully before investing."
+        val line2 = "Constituent look-through data is aggregated from monthly fund disclosures and AMFI NAV feeds. This document is for"
+        val line3 = "informational portfolio audit purposes only and does not constitute financial advice or investment recommendations."
+
+        canvas.drawText(line1, CONTENT_LEFT + 10f, y + 25f, bodyPaint)
+        canvas.drawText(line2, CONTENT_LEFT + 10f, y + 33f, bodyPaint)
+        canvas.drawText(line3, CONTENT_LEFT + 10f, y + 41f, bodyPaint)
+
+        session.cursorY = y + 46f
     }
 
-    private fun formatInrCompact(amount: Double): String {
-        val clean = if (amount.isFinite()) amount else 0.0
-        val sign = if (clean < 0) "-" else ""
-        val absVal = abs(clean)
-        return when {
-            absVal >= 1_00_00_000.0 -> String.format(Locale.US, "%s₹%.2f Cr", sign, absVal / 1_00_00_000.0)
-            absVal >= 1_00_000.0 -> String.format(Locale.US, "%s₹%.2f L", sign, absVal / 1_00_000.0)
-            absVal >= 1_000.0 -> String.format(Locale.US, "%s₹%.1f K", sign, absVal / 1_000.0)
-            else -> String.format(Locale.US, "%s₹%.0f", sign, absVal)
+    private fun drawRunningHeader(
+        canvas: Canvas,
+        portfolioName: String,
+        pageNumber: Int,
+        totalPages: Int
+    ): Float {
+        val y = MARGIN
+
+        val headerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_DEEP_NAVY
+            textSize = 8.5f
+            typeface = typefaceSansBold
+        }
+        canvas.drawText("FinBaba Institutional Portfolio Audit • ${portfolioName.uppercase()}", CONTENT_LEFT, y + 10f, headerPaint)
+
+        val pagePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_SLATE_TEXT_MUTED
+            textSize = 8.5f
+            typeface = typefaceSans
+            textAlign = Paint.Align.RIGHT
+        }
+        canvas.drawText("Page $pageNumber of $totalPages", CONTENT_RIGHT, y + 10f, pagePaint)
+
+        val linePaint = Paint().apply {
+            color = COLOR_SLATE_BORDER
+            strokeWidth = 0.8f
+        }
+        canvas.drawLine(CONTENT_LEFT, y + 16f, CONTENT_RIGHT, y + 16f, linePaint)
+
+        return y + 26f
+    }
+
+    private fun drawPageFooter(canvas: Canvas, pageNumber: Int, totalPages: Int) {
+        val footerY = PAGE_HEIGHT - MARGIN + 12f
+
+        val linePaint = Paint().apply {
+            color = COLOR_SLATE_BORDER
+            strokeWidth = 0.8f
+        }
+        canvas.drawLine(CONTENT_LEFT, footerY - 10f, CONTENT_RIGHT, footerY - 10f, linePaint)
+
+        val footerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_SLATE_TEXT_MUTED
+            textSize = 7.5f
+            typeface = typefaceSans
+        }
+        canvas.drawText("Page $pageNumber of $totalPages • Generated by FinBaba Terminal • Confidential Audit", CONTENT_LEFT, footerY, footerPaint)
+
+        val sysPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = COLOR_SLATE_TEXT_MUTED
+            textSize = 7.5f
+            typeface = typefaceSans
+            textAlign = Paint.Align.RIGHT
+        }
+        canvas.drawText("FINBABA WEALTH AUDIT v1.0", CONTENT_RIGHT, footerY, sysPaint)
+    }
+
+    // ========================================================================
+    // ESTIMATION & UTILITY HELPERS
+    // ========================================================================
+
+    internal fun estimateTotalPages(
+        portfolio: PortfolioData,
+        analytics: PortfolioAnalyticsSummary
+    ): Int {
+        var pages = 2 // Page 1: Executive Briefing, Page 2: Holdings start
+        var currentY = MARGIN + 26f // Running header on Page 2
+        val maxUsableY = PAGE_HEIGHT - MARGIN - 28f
+
+        fun simulateSpace(height: Float, breakAddition: Float = 0f) {
+            if (currentY + height > maxUsableY) {
+                pages++
+                currentY = MARGIN + 26f + breakAddition
+            }
+            currentY += height
+        }
+
+        val highOverlapStocks = analytics.topHoldings.filter { it.heldInSchemesCount >= 3 }
+            .ifEmpty { analytics.topHoldings.filter { it.heldInSchemesCount >= 2 }.take(6) }
+
+        if (highOverlapStocks.isNotEmpty()) {
+            simulateSpace(52f)
+            for (i in highOverlapStocks.indices) {
+                simulateSpace(19f, breakAddition = 18f)
+            }
+            currentY += 14f
+        }
+
+        simulateSpace(60f)
+        for (i in portfolio.schemes.indices) {
+            simulateSpace(21f, breakAddition = 18f)
+        }
+        simulateSpace(22f) // Totals row
+        currentY += 14f
+
+        simulateSpace(48f) // Statutory disclaimer
+
+        return pages
+    }
+
+    private fun formatRupees(amount: Double): String {
+        val symbols = DecimalFormatSymbols(Locale.US).apply {
+            groupingSeparator = ','
+            decimalSeparator = '.'
+        }
+        val isNegative = amount < 0
+        val absVal = abs(amount)
+        val formatted = DecimalFormat("#,##,##0.00", symbols).format(absVal)
+        val sign = if (isNegative) "-" else ""
+        return "${sign}₹$formatted"
+    }
+
+    private fun sanitizeFilename(name: String): String {
+        return name.replace("[^a-zA-Z0-9_-]".toRegex(), "_")
+    }
+
+    private fun launchPdfShareSheet(context: Context, shareUri: Uri, portfolioName: String) {
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            putExtra(Intent.EXTRA_STREAM, shareUri)
+            putExtra(Intent.EXTRA_SUBJECT, "FinBaba Institutional Portfolio Audit - $portfolioName")
+            putExtra(Intent.EXTRA_TEXT, "Here is the institutional executive audit report for '$portfolioName' generated via FinBaba.")
+            clipData = android.content.ClipData.newUri(context.contentResolver, "FinBaba Audit Report", shareUri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        val chooser = Intent.createChooser(shareIntent, "Share Institutional Audit PDF").apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        try {
+            context.startActivity(chooser)
+        } catch (_: Exception) {
+            // Graceful fallback if no activity handles chooser
         }
     }
-
-    private fun formatPct(pct: Double): String {
-        val clean = if (pct.isFinite()) pct else 0.0
-        return String.format(Locale.US, "%.2f%%", clean)
-    }
-
-    private fun formatDecimal(value: Double, decimals: Int): String {
-        val clean = if (value.isFinite()) value else 0.0
-        return String.format(Locale.US, "%.${decimals}f", clean)
-    }
-
-    private fun formatIstTimestamp(epochMs: Long): String {
-        val sdf = SimpleDateFormat("dd MMM yyyy, hh:mm a 'IST'", Locale.ENGLISH)
-        sdf.timeZone = TimeZone.getTimeZone("Asia/Kolkata")
-        val target = if (epochMs > 0L) epochMs else System.currentTimeMillis()
-        return sdf.format(Date(target))
-    }
-
-    private fun abbreviateSchemeName(name: String): String {
-        val trimmed = name
-            .replace(Regex("(?i)\\bDirect\\s+Plan\\b"), "")
-            .replace(Regex("(?i)\\bRegular\\s+Plan\\b"), "")
-            .replace(Regex("(?i)\\bGrowth\\b"), "")
-            .replace(Regex("(?i)\\bFund\\b"), "Fd")
-            .replace(Regex("\\s+"), " ")
-            .trim()
-        return ellipsize(trimmed, 16)
-    }
-
-    private fun ellipsize(text: String, maxChars: Int): String {
-        if (text.length <= maxChars) return text
-        return text.take((maxChars - 1).coerceAtLeast(1)).trimEnd() + "…"
-    }
-
-    private fun sanitizeFilename(raw: String): String {
-        val cleaned = raw.trim()
-            .replace(Regex("[^a-zA-Z0-9_-]+"), "_")
-            .trim('_')
-        return cleaned.ifEmpty { "Vault" }
-    }
-
-    private data class MetricCardSpec(
-        val title: String,
-        val primaryValue: String,
-        val secondaryValue: String,
-        val accentColor: Int
-    )
 }

@@ -31,11 +31,12 @@ object UniversalSpreadsheetReader {
         val isXlsxByExt = lowerName.endsWith(".xlsx")
         val isXlsxByMagic = isZipArchive(ByteArrayInputStream(bytes))
 
-        return if (isXlsxByExt || isXlsxByMagic) {
+        val parsedRows = if (isXlsxByExt || isXlsxByMagic) {
             readXlsxFromBytes(bytes)
         } else {
             readCsvOrTsvStream(ByteArrayInputStream(bytes))
         }
+        return parsedRows.filter { row -> row.any { it.isNotBlank() } }
     }
 
     /**
@@ -228,16 +229,41 @@ object UniversalSpreadsheetReader {
     // 2. OPENXML (.XLSX) STREAMING PARSER (ZipInputStream + XmlPullParser)
     // =========================================================================
 
+    private val PORTFOLIO_SHEET_NAME_REGEX =
+        Regex("(?i).*(portfolio|investment|holding|mutual.*fund|\\bmf\\b|funds|positions|cas|statement).*")
+
+    private val EXCLUDED_SHEET_NAME_REGEX =
+        Regex("(?i).*(nifty|index|stock|equity|constituent|disclosure|master|scrip|bse|nse).*")
+
     private data class RawXlsxCell(
         val colIndex: Int,
         val cellType: String?,
         val rawValue: String
     )
 
+    private data class SheetDescriptor(
+        val name: String,
+        val path: String,
+        val bytes: ByteArray
+    )
+
+    private fun createXmlPullParser(): XmlPullParser {
+        return try {
+            val parser = android.util.Xml.newPullParser()
+            parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
+            parser
+        } catch (_: Throwable) {
+            val factory = org.xmlpull.v1.XmlPullParserFactory.newInstance()
+            factory.isNamespaceAware = false
+            factory.newPullParser()
+        }
+    }
+
     private fun readXlsxFromBytes(bytes: ByteArray): List<List<String>> {
         var sharedStringsBytes: ByteArray? = null
-        var sheetBytes: ByteArray? = null
-        var firstSheetBytes: ByteArray? = null
+        var workbookBytes: ByteArray? = null
+        var workbookRelsBytes: ByteArray? = null
+        val sheetEntries = LinkedHashMap<String, ByteArray>()
 
         // 1. Single scan through ZIP archive to buffer XML bytes in memory
         ZipInputStream(ByteArrayInputStream(bytes)).use { zipStream ->
@@ -248,13 +274,14 @@ object UniversalSpreadsheetReader {
                     entryName == "xl/sharedstrings.xml" -> {
                         sharedStringsBytes = zipStream.readBytes()
                     }
-                    entryName == "xl/worksheets/sheet1.xml" -> {
-                        sheetBytes = zipStream.readBytes()
+                    entryName == "xl/workbook.xml" -> {
+                        workbookBytes = zipStream.readBytes()
                     }
-                    entryName.startsWith("xl/worksheets/sheet") &&
-                        entryName.endsWith(".xml") &&
-                        firstSheetBytes == null -> {
-                        firstSheetBytes = zipStream.readBytes()
+                    entryName == "xl/_rels/workbook.xml.rels" -> {
+                        workbookRelsBytes = zipStream.readBytes()
+                    }
+                    entryName.startsWith("xl/worksheets/") && entryName.endsWith(".xml") -> {
+                        sheetEntries[entryName] = zipStream.readBytes()
                     }
                 }
                 zipStream.closeEntry()
@@ -262,7 +289,7 @@ object UniversalSpreadsheetReader {
             }
         }
 
-        val targetSheetBytes = sheetBytes ?: firstSheetBytes ?: return emptyList()
+        if (sheetEntries.isEmpty()) return emptyList()
 
         // 2. Parse shared strings if present
         val sharedStrings = ArrayList<String>()
@@ -270,11 +297,71 @@ object UniversalSpreadsheetReader {
             parseSharedStringsXml(ByteArrayInputStream(sharedStringsBytes), sharedStrings)
         }
 
-        // 3. Parse worksheet XML
-        val rawSheetRows = parseSheetXml(ByteArrayInputStream(targetSheetBytes))
+        // 3. Discover sheet names and associate with worksheet entries
+        val sheets = ArrayList<SheetDescriptor>()
+        if (workbookBytes != null && workbookRelsBytes != null) {
+            val sheetNamesByRid = parseWorkbookSheetNames(ByteArrayInputStream(workbookBytes))
+            val targetsByRid = parseWorkbookRels(ByteArrayInputStream(workbookRelsBytes))
+
+            for ((rid, sheetName) in sheetNamesByRid) {
+                val target = targetsByRid[rid] ?: continue
+                val normalizedTarget = if (target.startsWith("xl/")) target else "xl/${target.removePrefix("/")}"
+                val targetBytes = sheetEntries[normalizedTarget.lowercase(Locale.ROOT)]
+                if (targetBytes != null) {
+                    sheets.add(SheetDescriptor(name = sheetName, path = normalizedTarget, bytes = targetBytes))
+                }
+            }
+        }
+
+        // Fallback if workbook metadata is absent: map all worksheet entries directly
+        if (sheets.isEmpty()) {
+            for ((path, sheetBytes) in sheetEntries) {
+                sheets.add(SheetDescriptor(name = path, path = path, bytes = sheetBytes))
+            }
+        }
+
+        // 4. Intelligent Sheet Selection:
+        // Priority A: Sheets matching portfolio/investment keywords (and not constituent/stock lists)
+        val nameMatchedSheets = sheets.filter {
+            PORTFOLIO_SHEET_NAME_REGEX.matches(it.name) && !EXCLUDED_SHEET_NAME_REGEX.matches(it.name)
+        }
+
+        for (candidate in nameMatchedSheets) {
+            val rows = resolveSheetRows(candidate.bytes, sharedStrings)
+            if (rows.isNotEmpty() && BrokerFormatNormalizer.scoreRows(rows) > 0) {
+                return rows
+            }
+        }
+
+        // Priority B: Scan other non-excluded candidate sheets and pick the highest scoring sheet
+        val nonExcludedSheets = sheets.filter { !EXCLUDED_SHEET_NAME_REGEX.matches(it.name) }
+        var bestRows: List<List<String>> = emptyList()
+        var bestScore = -1
+
+        for (candidate in (if (nonExcludedSheets.isNotEmpty()) nonExcludedSheets else sheets)) {
+            val rows = resolveSheetRows(candidate.bytes, sharedStrings)
+            val score = BrokerFormatNormalizer.scoreRows(rows)
+            if (score > bestScore) {
+                bestScore = score
+                bestRows = rows
+            }
+        }
+
+        if (bestRows.isNotEmpty() && bestScore > 0) {
+            return bestRows
+        }
+
+        // Fallback: parse first available sheet
+        return resolveSheetRows(sheets.first().bytes, sharedStrings)
+    }
+
+    private fun resolveSheetRows(
+        sheetBytes: ByteArray,
+        sharedStrings: List<String>
+    ): List<List<String>> {
+        val rawSheetRows = parseSheetXml(ByteArrayInputStream(sheetBytes))
         if (rawSheetRows.isEmpty()) return emptyList()
 
-        // 4. Resolve shared string indices into final row vectors
         val resolvedRows = ArrayList<List<String>>(rawSheetRows.size)
         for (rawRow in rawSheetRows) {
             if (rawRow.isEmpty()) continue
@@ -302,8 +389,47 @@ object UniversalSpreadsheetReader {
                 resolvedRows.add(rowValues)
             }
         }
-
         return resolvedRows
+    }
+
+    private fun parseWorkbookSheetNames(stream: InputStream): Map<String, String> {
+        val map = LinkedHashMap<String, String>()
+        val parser = createXmlPullParser()
+        parser.setInput(stream, StandardCharsets.UTF_8.name())
+
+        var eventType = parser.eventType
+        while (eventType != XmlPullParser.END_DOCUMENT) {
+            if (eventType == XmlPullParser.START_TAG && parser.name == "sheet") {
+                val name = parser.getAttributeValue(null, "name")
+                val rId = parser.getAttributeValue("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id")
+                    ?: parser.getAttributeValue(null, "r:id")
+                    ?: parser.getAttributeValue(null, "id")
+                if (!name.isNullOrBlank() && !rId.isNullOrBlank()) {
+                    map[rId] = name
+                }
+            }
+            eventType = parser.next()
+        }
+        return map
+    }
+
+    private fun parseWorkbookRels(stream: InputStream): Map<String, String> {
+        val map = LinkedHashMap<String, String>()
+        val parser = createXmlPullParser()
+        parser.setInput(stream, StandardCharsets.UTF_8.name())
+
+        var eventType = parser.eventType
+        while (eventType != XmlPullParser.END_DOCUMENT) {
+            if (eventType == XmlPullParser.START_TAG && parser.name == "Relationship") {
+                val id = parser.getAttributeValue(null, "Id")
+                val target = parser.getAttributeValue(null, "Target")
+                if (!id.isNullOrBlank() && !target.isNullOrBlank()) {
+                    map[id] = target
+                }
+            }
+            eventType = parser.next()
+        }
+        return map
     }
 
     /**
@@ -314,8 +440,7 @@ object UniversalSpreadsheetReader {
         stream: InputStream,
         outStrings: MutableList<String>
     ) {
-        val parser = Xml.newPullParser()
-        parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
+        val parser = createXmlPullParser()
         parser.setInput(stream, StandardCharsets.UTF_8.name())
 
         var eventType = parser.eventType
@@ -362,8 +487,7 @@ object UniversalSpreadsheetReader {
      * `<v>` values, and `<is><t>` inline strings up to [MAX_ROWS].
      */
     private fun parseSheetXml(stream: InputStream): List<List<RawXlsxCell>> {
-        val parser = Xml.newPullParser()
-        parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
+        val parser = createXmlPullParser()
         parser.setInput(stream, StandardCharsets.UTF_8.name())
 
         val rows = ArrayList<List<RawXlsxCell>>()

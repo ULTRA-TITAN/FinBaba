@@ -146,7 +146,7 @@ enum class VaultImportMode {
 fun ReconciliationPreviewSheet(
     initialItems: List<ReconciledSchemeItem>,
     amfiDictionary: List<Pair<Int, String>>,
-    onDismiss: () -> Unit,
+    onDismiss: (List<ReconciledSchemeItem>) -> Unit,
     onCommitToVault: (schemes: List<MutualFundScheme>, mode: VaultImportMode) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -166,7 +166,7 @@ fun ReconciliationPreviewSheet(
     }
 
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { onDismiss(editableItems.toList()) },
         sheetState = sheetState,
         containerColor = Color.White,
         dragHandle = null,
@@ -184,7 +184,7 @@ fun ReconciliationPreviewSheet(
                 matchedCount = matchedCount,
                 reviewCount = reviewCount,
                 totalCount = editableItems.size,
-                onClose = onDismiss
+                onClose = { onDismiss(editableItems.toList()) }
             )
 
             // 2. Import Mode Selector ("Merge with Active Vault" vs "Replace Entire Vault")
@@ -236,11 +236,13 @@ fun ReconciliationPreviewSheet(
             BottomCommitBar(
                 validCount = validCommitItems.size,
                 totalInvested = validCommitItems.sumOf { it.investedAmount },
-                onCancel = onDismiss,
+                onCancel = { onDismiss(editableItems.toList()) },
                 onCommit = {
                     val convertedSchemes = validCommitItems.map { reconciled ->
                         val schemeName = reconciled.matchedSchemeName.orEmpty()
-                        val safeUnits = reconciled.units.coerceAtLeast(0.0001)
+                        val safeUnits = if (reconciled.units > 0.001) reconciled.units else {
+                            if (reconciled.investedAmount > 0.0) reconciled.investedAmount / 10.0 else 1.0
+                        }
                         val avgNav = if (reconciled.investedAmount > 0.0) {
                             reconciled.investedAmount / safeUnits
                         } else {

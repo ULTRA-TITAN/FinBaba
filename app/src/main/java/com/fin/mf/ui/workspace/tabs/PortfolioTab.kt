@@ -23,10 +23,13 @@ import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Balance
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,6 +37,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -76,21 +80,37 @@ fun WorkspacePortfolioTab(
     onSchemeSelected: (Int) -> Unit,
     onDeleteScheme: (MutualFundScheme) -> Unit,
     onAddSchemeClick: () -> Unit = {},
-    onRefresh: () -> Unit = {}
+    onRefresh: () -> Unit = {},
+    onResumeDraft: () -> Unit = {},
+    onDiscardDraft: () -> Unit = {}
 ) {
     val gradient = LocalVaultGradient.current
     val allSchemes = uiState.portfolioData?.schemes.orEmpty()
+    val hasDraft = !uiState.cachedReconciliationDraft.isNullOrEmpty()
 
     if (allSchemes.isEmpty()) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
-            contentAlignment = Alignment.Center
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            OnboardingTutorialCard(
-                onAddSchemeClick = onAddSchemeClick
-            )
+            if (hasDraft) {
+                DraftImportBanner(
+                    count = uiState.cachedReconciliationDraft!!.size,
+                    onResume = onResumeDraft,
+                    onDiscard = onDiscardDraft
+                )
+            }
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                OnboardingTutorialCard(
+                    onAddSchemeClick = onAddSchemeClick
+                )
+            }
         }
         return
     }
@@ -263,6 +283,16 @@ fun WorkspacePortfolioTab(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                if (hasDraft) {
+                    item(key = "reconciliation_draft_banner") {
+                        DraftImportBanner(
+                            count = uiState.cachedReconciliationDraft!!.size,
+                            onResume = onResumeDraft,
+                            onDiscard = onDiscardDraft
+                        )
+                    }
+                }
+
                 item {
                     // =========================================================================
                     // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
@@ -312,6 +342,96 @@ fun WorkspacePortfolioTab(
                         isMasked = uiState.isPrivacyMasked,
                         onClick = { onSchemeSelected(scheme.schemeCode) },
                         onDelete = { onDeleteScheme(scheme) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Slim, high-visibility banner rendered when an imported spreadsheet reconciliation draft is pending.
+ */
+@Composable
+private fun DraftImportBanner(
+    count: Int,
+    onResume: () -> Unit,
+    onDiscard: () -> Unit
+) {
+    Surface(
+        color = Color(0xFFEFF6FF),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, Color(0xFFBFDBFE)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFDBEAFE)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Description,
+                        contentDescription = null,
+                        tint = Color(0xFF2563EB),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text(
+                        text = "Draft Import Available",
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1E3A8A)
+                    )
+                    Text(
+                        text = "$count schemes ready for review",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF3B82F6)
+                    )
+                }
+            }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(
+                    onClick = onDiscard,
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "Discard",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFFDC2626)
+                    )
+                }
+                Button(
+                    onClick = onResume,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                    modifier = Modifier.bounceClick()
+                ) {
+                    Text(
+                        text = "Review",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                 }
             }
