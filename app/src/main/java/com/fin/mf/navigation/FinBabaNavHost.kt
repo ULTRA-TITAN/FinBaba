@@ -19,6 +19,7 @@ import com.fin.mf.tools.news.ui.NewsTerminalScreen
 import com.fin.mf.tools.terminal.ui.MarketTerminalScreen
 import com.fin.mf.ui.PortfolioViewModel
 import com.fin.mf.ui.screens.PortfolioTrackerWorkspace
+import com.fin.mf.ui.screens.StudioSettingsScreen
 import com.fin.mf.ui.screens.VaultHubScreen
 
 /**
@@ -29,6 +30,7 @@ object FinBabaDestinations {
     const val PORTFOLIO_TOOL_BASE_ROUTE = "tool_portfolio_tracker"
     const val MARKET_TERMINAL_ROUTE = "market_terminal"
     const val NEWS_TERMINAL_ROUTE = "news_terminal"
+    const val SETTINGS_ROUTE = "studio_settings"
     const val ARG_INITIAL_TAB = "initialTab"
     const val PORTFOLIO_TOOL_ROUTE_WITH_ARG =
         "$PORTFOLIO_TOOL_BASE_ROUTE?$ARG_INITIAL_TAB={$ARG_INITIAL_TAB}"
@@ -98,6 +100,11 @@ fun FinBabaNavHost(
                     navController.navigate(FinBabaDestinations.NEWS_TERMINAL_ROUTE) {
                         launchSingleTop = true
                     }
+                },
+                onOpenSettings = {
+                    navController.navigate(FinBabaDestinations.SETTINGS_ROUTE) {
+                        launchSingleTop = true
+                    }
                 }
             )
         }
@@ -118,6 +125,26 @@ fun FinBabaNavHost(
                 themeManager = themeManager,
                 initialTabIndex = initialTab,
                 onNavigateBackToHub = {
+                    if (!navController.popBackStack()) {
+                        navController.navigate(FinBabaDestinations.VAULT_HUB_ROUTE) {
+                            popUpTo(FinBabaDestinations.VAULT_HUB_ROUTE) { inclusive = true }
+                        }
+                    }
+                },
+                onOpenSettings = {
+                    navController.navigate(FinBabaDestinations.SETTINGS_ROUTE) {
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        // Dedicated Full-Screen Destination: Studio Settings & Appearance Suite
+        composable(route = FinBabaDestinations.SETTINGS_ROUTE) {
+            StudioSettingsScreen(
+                portfolioViewModel = portfolioViewModel,
+                themeManager = themeManager,
+                onNavigateBack = {
                     if (!navController.popBackStack()) {
                         navController.navigate(FinBabaDestinations.VAULT_HUB_ROUTE) {
                             popUpTo(FinBabaDestinations.VAULT_HUB_ROUTE) { inclusive = true }

@@ -98,6 +98,74 @@ object VaultThemePresets {
 val LocalVaultGradient = staticCompositionLocalOf { VaultThemePresets.COBALT_SKY }
 
 /**
+ * 4 Selectable bespoke credit card hardware finishes.
+ */
+enum class CardHardwareVariant(
+    val id: String,
+    val displayName: String,
+    val subtitle: String,
+    val startColor: Color,
+    val endColor: Color,
+    val accentColor: Color
+) {
+    TITANIUM_BLACK(
+        id = "titanium_black",
+        displayName = "Titanium Black",
+        subtitle = "Matte Carbon Slate // Brushed Silver",
+        startColor = Color(0xFF1E293B),
+        endColor = Color(0xFF0F172A),
+        accentColor = Color(0xFF94A3B8)
+    ),
+    NEO_GOLD(
+        id = "neo_gold",
+        displayName = "Neo Gold",
+        subtitle = "Rich Champagne Gold // Warm Specular",
+        startColor = Color(0xFFD97706),
+        endColor = Color(0xFF78350F),
+        accentColor = Color(0xFFFDE68A)
+    ),
+    CYBER_EMERALD(
+        id = "cyber_emerald",
+        displayName = "Cyber Emerald",
+        subtitle = "Deep Institutional Emerald // Neon Teal",
+        startColor = Color(0xFF065F46),
+        endColor = Color(0xFF022C22),
+        accentColor = Color(0xFF2DD4BF)
+    ),
+    ROYAL_SAPPHIRE(
+        id = "royal_sapphire",
+        displayName = "Royal Sapphire",
+        subtitle = "Classic Midnight Blue // Cobalt Sheen",
+        startColor = Color(0xFF1E40AF),
+        endColor = Color(0xFF0F172A),
+        accentColor = Color(0xFF60A5FA)
+    ),
+    RUBY_OBSIDIAN(
+        id = "ruby_obsidian",
+        displayName = "Ruby Obsidian",
+        subtitle = "Imperial Crimson Red // Obsidian Weave",
+        startColor = Color(0xFF881337),
+        endColor = Color(0xFF0F172A),
+        accentColor = Color(0xFFFB7185)
+    );
+
+    val brush: Brush
+        get() = Brush.linearGradient(listOf(startColor, endColor))
+
+    companion object {
+        val all: List<CardHardwareVariant> = entries.toList()
+
+        fun fromId(id: String?): CardHardwareVariant =
+            entries.find { it.id.equals(id, ignoreCase = true) } ?: TITANIUM_BLACK
+    }
+}
+
+/**
+ * App-wide static CompositionLocal holding the currently active card hardware variant.
+ */
+val LocalCardHardware = staticCompositionLocalOf { CardHardwareVariant.TITANIUM_BLACK }
+
+/**
  * Persistent theme coordinator storing the selected preset in SharedPreferences
  * and exposing a reactive StateFlow with instant disk write.
  */
@@ -106,6 +174,7 @@ class VaultThemeManager private constructor(context: Context) {
     companion object {
         private const val PREFS_NAME = "finbaba_prefs"
         private const val KEY_VAULT_THEME = "KEY_VAULT_THEME"
+        private const val KEY_CARD_HARDWARE = "KEY_CARD_HARDWARE"
 
         @Volatile
         private var instance: VaultThemeManager? = null
@@ -125,14 +194,24 @@ class VaultThemeManager private constructor(context: Context) {
     )
     val currentGradient: StateFlow<VaultGradient> = _currentGradient.asStateFlow()
 
+    private val _currentHardware = MutableStateFlow(
+        CardHardwareVariant.fromId(prefs.getString(KEY_CARD_HARDWARE, CardHardwareVariant.TITANIUM_BLACK.id))
+    )
+    val currentHardware: StateFlow<CardHardwareVariant> = _currentHardware.asStateFlow()
+
     fun setGradientPreset(preset: VaultGradient) {
         _currentGradient.value = preset
         prefs.edit().putString(KEY_VAULT_THEME, preset.id).apply()
     }
+
+    fun setCardHardwareVariant(variant: CardHardwareVariant) {
+        _currentHardware.value = variant
+        prefs.edit().putString(KEY_CARD_HARDWARE, variant.id).apply()
+    }
 }
 
 /**
- * Root composition provider binding LocalVaultGradient to the active theme flow.
+ * Root composition provider binding LocalVaultGradient and LocalCardHardware to the active theme flow.
  */
 @Composable
 fun VaultThemeProvider(
@@ -140,7 +219,12 @@ fun VaultThemeProvider(
     content: @Composable () -> Unit
 ) {
     val currentGradient by themeManager.currentGradient.collectAsState()
-    CompositionLocalProvider(LocalVaultGradient provides currentGradient) {
+    val currentHardware by themeManager.currentHardware.collectAsState()
+    CompositionLocalProvider(
+        LocalVaultGradient provides currentGradient,
+        LocalCardHardware provides currentHardware
+    ) {
         content()
     }
 }
+

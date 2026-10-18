@@ -51,26 +51,27 @@ class NewsRepository(
     private val memoryCompanyNewsCache = mutableMapOf<String, List<FinnhubArticle>>()
     private val memorySentimentCache = mutableMapOf<String, SentimentScore>()
 
-    init {
-        loadDiskCache()
-    }
+    private var isCacheLoaded = false
 
-    /**
-     * Loads disk cache into memory during initial repository startup.
-     */
-    private fun loadDiskCache() {
-        try {
-            if (cacheFile.exists()) {
-                val json = cacheFile.readText()
-                val cached = cachedNewsAdapter.fromJson(json)
-                if (cached != null) {
-                    memoryNewsCache.putAll(cached.articlesByCategory)
-                    memoryCompanyNewsCache.putAll(cached.companyArticles)
-                    memorySentimentCache.putAll(cached.sentimentMap)
+    private fun ensureDiskCacheLoaded() {
+        if (isCacheLoaded) return
+        synchronized(this) {
+            if (isCacheLoaded) return
+            try {
+                if (cacheFile.exists()) {
+                    val json = cacheFile.readText()
+                    val cached = cachedNewsAdapter.fromJson(json)
+                    if (cached != null) {
+                        memoryNewsCache.putAll(cached.articlesByCategory)
+                        memoryCompanyNewsCache.putAll(cached.companyArticles)
+                        memorySentimentCache.putAll(cached.sentimentMap)
+                    }
                 }
+            } catch (e: Exception) {
+                Log.e("NewsRepository", "Failed to load news_cache.json", e)
+            } finally {
+                isCacheLoaded = true
             }
-        } catch (e: Exception) {
-            Log.e("NewsRepository", "Failed to load news_cache.json", e)
         }
     }
 
@@ -99,6 +100,7 @@ class NewsRepository(
         category: String,
         forceRefresh: Boolean = false
     ): Result<List<FinnhubArticle>> = withContext(Dispatchers.IO) {
+        ensureDiskCacheLoaded()
         if (!forceRefresh && memoryNewsCache.containsKey(category) && !memoryNewsCache[category].isNullOrEmpty()) {
             return@withContext Result.success(memoryNewsCache[category]!!)
         }
@@ -165,6 +167,7 @@ class NewsRepository(
         tickers: List<String>,
         forceRefresh: Boolean = false
     ): Result<List<FinnhubArticle>> = withContext(Dispatchers.IO) {
+        ensureDiskCacheLoaded()
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
         val calendar = Calendar.getInstance()
         val toDate = sdf.format(calendar.time)
@@ -219,6 +222,7 @@ class NewsRepository(
      * Uses natural keyword analysis if the Finnhub news-sentiment endpoint is restricted on the free tier.
      */
     suspend fun fetchSentimentRadar(tickers: List<String>): Map<String, SentimentScore> = withContext(Dispatchers.IO) {
+        ensureDiskCacheLoaded()
         val sentimentMap = mutableMapOf<String, SentimentScore>()
 
         for (ticker in tickers.take(6)) {

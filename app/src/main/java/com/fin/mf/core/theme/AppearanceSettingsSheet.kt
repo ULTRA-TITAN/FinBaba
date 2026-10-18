@@ -46,6 +46,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -69,6 +72,7 @@ fun AppearanceSettingsSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val activeGradient = LocalVaultGradient.current
+    val haptic = LocalHapticFeedback.current
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -167,8 +171,35 @@ fun AppearanceSettingsSheet(
                     ThemePresetPill(
                         preset = preset,
                         isSelected = isSelected,
-                        onSelect = { themeManager.setGradientPreset(preset) }
+                        onSelect = {
+                            themeManager.setGradientPreset(preset)
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onDismiss()
+                        }
                     )
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Button(
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onDismiss()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = activeGradient.startColor),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                    ) {
+                        Text(
+                            text = "LAUNCH ENGINE (APPLY THEME)",
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 12.5.sp,
+                            color = Color.White
+                        )
+                    }
                 }
 
                 item {

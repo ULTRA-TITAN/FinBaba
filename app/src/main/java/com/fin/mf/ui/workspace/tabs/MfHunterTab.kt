@@ -1,7 +1,13 @@
 package com.fin.mf.ui.workspace.tabs
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,9 +40,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import com.fin.mf.ui.workspace.components.HairlineScrollProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -105,57 +114,74 @@ fun WorkspaceMfHunterTab(
     }
 
     val isSchemeInPortfolio = allSchemes.any { it.schemeCode == scheme.schemeCode }
+    val listState = rememberLazyListState()
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Universal Spacious Search bar in MF-Hunter with Smart Indexing & Filter Chips
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = WsSurfaceWhite),
-                border = androidx.compose.foundation.BorderStroke(1.dp, WsSlateBorder),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "MF-Hunter Scheme Finder",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = WsSlateTextPrimary
-                    )
-                    Text(
-                        text = "Search across Indian mutual funds with smart alias indexing",
-                        fontSize = 11.sp,
-                        color = WsSlateTextSecondary
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
+    Column(modifier = Modifier.fillMaxSize()) {
+        HairlineScrollProgressIndicator(listState = listState)
 
-                    OutlinedTextField(
-                        value = mfHunterSearchQuery,
-                        onValueChange = {
-                            mfHunterSearchQuery = it
-                            portfolioViewModel.searchAmfiSchemes(it)
-                        },
-                        placeholder = { Text("Search by fund name, AMC, alias (e.g. 'ppfas', 'quant small', 'hdfc')...", fontSize = 13.sp) },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = gradient.startColor) },
-                        trailingIcon = {
-                            if (mfHunterSearchQuery.isNotEmpty()) {
-                                IconButton(onClick = {
-                                    mfHunterSearchQuery = ""
-                                    portfolioViewModel.clearAmfiSearch()
-                                }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Clear")
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Universal Spacious Search bar in MF-Hunter with Smart Indexing & Filter Chips
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = WsSurfaceWhite),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, WsSlateBorder),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "MF-Hunter Scheme Finder",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = WsSlateTextPrimary
+                        )
+                        Text(
+                            text = "Search across Indian mutual funds with smart alias indexing",
+                            fontSize = 11.sp,
+                            color = WsSlateTextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        OutlinedTextField(
+                            value = mfHunterSearchQuery,
+                            onValueChange = {
+                                mfHunterSearchQuery = it
+                                portfolioViewModel.searchAmfiSchemes(it)
+                            },
+                            placeholder = { Text("Search by fund name, AMC, alias (e.g. 'ppfas', 'quant small', 'hdfc')...", fontSize = 13.sp) },
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = gradient.startColor) },
+                            trailingIcon = {
+                                if (mfHunterSearchQuery.isNotEmpty()) {
+                                    IconButton(onClick = {
+                                        mfHunterSearchQuery = ""
+                                        portfolioViewModel.clearAmfiSearch()
+                                    }) {
+                                        Icon(Icons.Default.Close, contentDescription = "Clear")
+                                    }
                                 }
-                            }
-                        },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            textStyle = TextStyle(
+                                fontSize = 13.sp,
+                                fontFamily = FontFamily.SansSerif,
+                                platformStyle = PlatformTextStyle(includeFontPadding = false),
+                                color = WsSlateTextPrimary
+                            ),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = gradient.startColor,
+                                unfocusedBorderColor = WsSlateBorder,
+                                cursorColor = gradient.startColor
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
 
                     Spacer(modifier = Modifier.height(8.dp))
 
@@ -168,15 +194,30 @@ fun WorkspaceMfHunterTab(
                     ) {
                         listOf("All", "Direct - Growth", "Large Cap", "Mid Cap", "Small Cap", "Debt").forEach { cat ->
                             val isSel = mfHunterFilter == cat
-                            FilterChip(
-                                selected = isSel,
+                            Surface(
                                 onClick = { mfHunterFilter = cat },
-                                label = { Text(cat, fontSize = 11.sp) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = gradient.startColor,
-                                    selectedLabelColor = Color.White
-                                )
-                            )
+                                shape = RoundedCornerShape(4.dp),
+                                color = if (isSel) gradient.startColor else Color(0xFFF8FAFC),
+                                border = BorderStroke(
+                                    width = 1.dp,
+                                    color = if (isSel) gradient.startColor else WsSlateBorder
+                                ),
+                                modifier = Modifier.height(28.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = cat.uppercase(),
+                                        fontSize = 9.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = FontFamily.Monospace,
+                                        letterSpacing = 0.8.sp,
+                                        color = if (isSel) Color.White else WsSlateTextSecondary
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -276,39 +317,54 @@ fun WorkspaceMfHunterTab(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 if (!isSchemeInPortfolio) {
-                    FilterChip(
-                        selected = true,
-                        onClick = {},
-                        label = {
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = SemanticFinanceColors.ProfitGreen,
+                        border = BorderStroke(1.dp, SemanticFinanceColors.ProfitGreen),
+                        modifier = Modifier.height(28.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text(
-                                text = "🔍 " + scheme.schemeName.take(22) + "...",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
+                                text = "🔍 " + scheme.schemeName.take(22).uppercase() + "...",
+                                fontSize = 9.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 0.8.sp,
+                                color = Color.White
                             )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = SemanticFinanceColors.ProfitGreen,
-                            selectedLabelColor = Color.White
-                        )
-                    )
+                        }
+                    }
                 }
 
                 allSchemes.forEach { itemScheme ->
                     val isSelected = isSchemeInPortfolio && itemScheme.schemeCode == scheme.schemeCode
-                    FilterChip(
-                        selected = isSelected,
+                    Surface(
                         onClick = { portfolioViewModel.selectSchemeForDeepDive(itemScheme.schemeCode) },
-                        label = {
+                        shape = RoundedCornerShape(4.dp),
+                        color = if (isSelected) gradient.startColor else Color(0xFFF8FAFC),
+                        border = BorderStroke(
+                            width = 1.dp,
+                            color = if (isSelected) gradient.startColor else WsSlateBorder
+                        ),
+                        modifier = Modifier.height(28.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text(
-                                text = itemScheme.schemeName.take(24) + "...",
-                                fontSize = 11.sp
+                                text = itemScheme.schemeName.take(24).uppercase() + "...",
+                                fontSize = 9.5.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 0.8.sp,
+                                color = if (isSelected) Color.White else WsSlateTextPrimary
                             )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = gradient.startColor,
-                            selectedLabelColor = Color.White
-                        )
-                    )
+                        }
+                    }
                 }
             }
         }
@@ -324,14 +380,17 @@ fun WorkspaceMfHunterTab(
                     ) {
                         Surface(
                             color = Color(0xFFEFF6FF),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(4.dp),
+                            border = BorderStroke(1.dp, Color(0xFFBFDBFE))
                         ) {
                             Text(
-                                text = "AMFI #${scheme.schemeCode} • ${scheme.category}",
-                                fontSize = 11.sp,
+                                text = "AMFI #${scheme.schemeCode} // ${scheme.category.uppercase()}",
+                                fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 0.8.sp,
                                 color = gradient.startColor,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                             )
                         }
 
@@ -683,6 +742,7 @@ fun WorkspaceMfHunterTab(
             }
         }
     }
+}
 
     // Edit Holding Dialog
     if (showEditModal) {

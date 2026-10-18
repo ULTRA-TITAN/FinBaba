@@ -437,8 +437,9 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
             return
         }
 
-        _uiState.update { it.copy(isAmfiSearching = true, amfiSearchError = null) }
         amfiSearchJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(260)
+            _uiState.update { it.copy(isAmfiSearching = true, amfiSearchError = null) }
             repository.searchSchemes(trimmed)
                 .onSuccess { results ->
                     _uiState.update {
@@ -571,7 +572,7 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
      */
     fun exportPortfolioExcel(context: Context): Result<Uri> {
         val portfolio = _uiState.value.portfolioData ?: return Result.failure(IllegalStateException("Portfolio empty"))
-        val analytics = _uiState.value.analytics ?: repository.computeAnalytics(portfolio)
+        val analytics = _uiState.value.analytics ?: repository.computeAnalyticsSync(portfolio)
         return exportManager.exportExcelFile(context, portfolio, analytics).onSuccess {
             postStatusBanner("Exported Excel workbook to Downloads/FinBaba")
         }.onFailure { error ->

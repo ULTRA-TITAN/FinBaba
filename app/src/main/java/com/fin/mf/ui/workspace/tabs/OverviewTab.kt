@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -47,6 +48,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -57,6 +60,8 @@ import com.fin.mf.data.MarketCapMandate
 import com.fin.mf.data.MutualFundScheme
 import com.fin.mf.data.PortfolioAnalyticsSummary
 import com.fin.mf.ui.PortfolioUiState
+import com.fin.mf.ui.workspace.components.HairlineScrollProgressIndicator
+import com.fin.mf.ui.workspace.components.LuxuryCreditCardHero
 import com.fin.mf.ui.workspace.components.OnboardingTutorialCard
 import com.fin.mf.ui.workspace.sheets.AssetSplitDetailSheet
 import com.fin.mf.ui.workspace.sheets.MarketCapDetailSheet
@@ -112,6 +117,7 @@ fun WorkspaceOverviewTab(
     }
 
     val pullRefreshState = rememberPullToRefreshState()
+    val listState = rememberLazyListState()
     var showMarketCapSheet by remember { mutableStateOf(false) }
     var showAssetSplitSheet by remember { mutableStateOf(false) }
     var showSectorSheet by remember { mutableStateOf(false) }
@@ -131,6 +137,7 @@ fun WorkspaceOverviewTab(
         }
     ) {
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -139,7 +146,9 @@ fun WorkspaceOverviewTab(
         item {
             NetWorthSnapshotCard(
                 analytics = analytics,
-                isMasked = isMasked
+                schemeCount = schemes.size,
+                isMasked = isMasked,
+                vaultName = uiState.portfolioData?.portfolioName ?: "PRIMARY WEALTH VAULT"
             )
         }
 
@@ -299,6 +308,11 @@ fun WorkspaceOverviewTab(
             )
         }
     }
+
+    HairlineScrollProgressIndicator(
+        listState = listState,
+        modifier = Modifier.align(Alignment.TopCenter)
+    )
 }
 
     if (showMarketCapSheet) {
@@ -329,236 +343,29 @@ fun WorkspaceOverviewTab(
 }
 
 /**
- * Card A: Net Worth Snapshot Card with inline INR badge, return pill, and metrics split.
+ * Card A: Bespoke Luxury Credit Card Hero with EMV chip, contactless waves,
+ * tabular monospaced valuation, holographic return pill, and cardholder metadata.
  */
 @Composable
 private fun NetWorthSnapshotCard(
     analytics: PortfolioAnalyticsSummary,
-    isMasked: Boolean
+    schemeCount: Int? = null,
+    isMasked: Boolean,
+    vaultName: String = "PRIMARY WEALTH VAULT"
 ) {
-    val gradient = LocalVaultGradient.current
-    val isPositive = analytics.totalGain >= 0
-    val returnColor = if (isPositive) Color(0xFF34D399) else Color(0xFFF87171)
-
-    // =========================================================================
-    // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
-    // =========================================================================
-    val netWorthHeader = "NET WORTH"
-    val investedLabel = "Invested Principal"
-    val capitalGainLabel = "Net Capital Gain"
-    // =========================================================================
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .bounceClick(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        border = androidx.compose.foundation.BorderStroke(1.dp, gradient.startColor.copy(alpha = 0.35f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .background(gradient.brush)
-                .padding(20.dp)
-        ) {
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Security,
-                            contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.95f),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = netWorthHeader,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.White.copy(alpha = 0.95f),
-                            letterSpacing = 1.2.sp
-                        )
-                    }
-
-                    val todayGain = analytics.todayGain
-                    val isDayGain = todayGain != null && todayGain >= 0.0
-                    val isDayLoss = todayGain != null && todayGain < 0.0
-
-                    val pillBg = when {
-                        todayGain != null && isDayGain -> Color(0xFF059669).copy(alpha = 0.25f)
-                        todayGain != null && isDayLoss -> Color(0xFFDC2626).copy(alpha = 0.25f)
-                        analytics.totalReturnPercent >= 0 -> Color(0xFF059669).copy(alpha = 0.25f)
-                        else -> Color(0xFFDC2626).copy(alpha = 0.25f)
-                    }
-                    val pillBorder = when {
-                        todayGain != null && isDayGain -> Color(0xFF34D399).copy(alpha = 0.45f)
-                        todayGain != null && isDayLoss -> Color(0xFFEF4444).copy(alpha = 0.45f)
-                        analytics.totalReturnPercent >= 0 -> Color(0xFF34D399).copy(alpha = 0.45f)
-                        else -> Color(0xFFEF4444).copy(alpha = 0.45f)
-                    }
-                    val pillContentColor = when {
-                        todayGain != null && isDayGain -> Color(0xFF34D399)
-                        todayGain != null && isDayLoss -> Color(0xFFF87171)
-                        analytics.totalReturnPercent >= 0 -> Color(0xFF34D399)
-                        else -> Color(0xFFF87171)
-                    }
-
-                    val badgeText = if (todayGain != null) {
-                        val sign = if (isDayGain) "+" else "-"
-                        "$sign${formatWsInr(kotlin.math.abs(todayGain), isMasked)} Today"
-                    } else {
-                        "${formatWsPercent(analytics.totalReturnPercent)} Return"
-                    }
-
-                    val badgeIcon = if (todayGain != null) {
-                        if (isDayGain) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown
-                    } else {
-                        if (analytics.totalReturnPercent >= 0) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown
-                    }
-
-                    Surface(
-                        color = pillBg,
-                        shape = RoundedCornerShape(12.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, pillBorder)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = badgeIcon,
-                                contentDescription = null,
-                                tint = pillContentColor,
-                                modifier = Modifier.size(12.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = badgeText,
-                                fontSize = 10.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = pillContentColor
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            text = formatWsInr(analytics.totalCurrentValue, isMasked),
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Surface(
-                            color = Color.White.copy(alpha = 0.20f),
-                            shape = RoundedCornerShape(4.dp),
-                            modifier = Modifier.padding(bottom = 6.dp)
-                        ) {
-                            Text(
-                                text = "INR",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color.White,
-                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
-
-                    Surface(
-                        color = Color.White.copy(alpha = 0.16f),
-                        shape = RoundedCornerShape(20.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.35f))
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = if (isPositive) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
-                                contentDescription = null,
-                                tint = returnColor,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "${formatWsPercent(analytics.totalReturnPercent)} Return",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Black,
-                                color = Color.White
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Surface(
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color.White.copy(alpha = 0.12f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.20f))
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Text(
-                                text = investedLabel,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.White.copy(alpha = 0.8f)
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = formatWsInr(analytics.totalInvested, isMasked),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color.White
-                            )
-                        }
-                    }
-
-                    Surface(
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color.White.copy(alpha = 0.12f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.20f))
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Text(
-                                text = capitalGainLabel,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.White.copy(alpha = 0.8f)
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = formatWsInr(analytics.totalGain, isMasked, showPlus = true),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = if (isPositive) Color(0xFF34D399) else Color(0xFFF87171)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+    LuxuryCreditCardHero(
+        title = "EXECUTIVE VAULT",
+        vaultName = vaultName,
+        currentValue = analytics.totalCurrentValue,
+        investedValue = analytics.totalInvested,
+        gainValue = analytics.totalGain,
+        returnPercent = analytics.totalReturnPercent,
+        todayGain = analytics.todayGain,
+        schemeCount = schemeCount,
+        isMasked = isMasked
+    )
 }
+
 
 /**
  * Card B: SEBI Market Cap Exposure Card with target mandate, progress bar, 4-tier grid, and Edit Mandate sheet.
@@ -818,7 +625,7 @@ private fun MarketCapTierCell(
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(6.dp),
         color = Color(0xFFF8FAFC),
         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
     ) {
@@ -847,16 +654,24 @@ private fun MarketCapTierCell(
 
             Text(
                 text = String.format(Locale.US, "%.1f%%", weightPct),
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Black,
-                color = WsSlateTextPrimary
+                style = TextStyle(
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Black,
+                    fontFamily = FontFamily.SansSerif,
+                    fontFeatureSettings = "tnum",
+                    color = WsSlateTextPrimary
+                )
             )
 
             Text(
                 text = formatWsInr(rupeeVal, isMasked),
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Medium,
-                color = WsSlateTextSecondary,
+                style = TextStyle(
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Medium,
+                    fontFamily = FontFamily.SansSerif,
+                    fontFeatureSettings = "tnum",
+                    color = WsSlateTextSecondary
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -869,12 +684,22 @@ private fun MarketCapTierCell(
                     statusChip.contains("Under", ignoreCase = true) -> Color(0xFFFEF2F2)
                     else -> Color(0xFFECFDF5)
                 },
-                shape = RoundedCornerShape(4.dp)
+                shape = RoundedCornerShape(4.dp),
+                border = androidx.compose.foundation.BorderStroke(
+                    0.5.dp,
+                    when {
+                        statusChip.contains("Over", ignoreCase = true) -> Color(0xFFFDE68A)
+                        statusChip.contains("Under", ignoreCase = true) -> Color(0xFFFECACA)
+                        else -> Color(0xFFA7F3D0)
+                    }
+                )
             ) {
                 Text(
-                    text = statusChip,
-                    fontSize = 9.sp,
+                    text = statusChip.uppercase(),
+                    fontSize = 8.5.sp,
                     fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace,
+                    letterSpacing = 0.5.sp,
                     color = when {
                         statusChip.contains("Over", ignoreCase = true) -> Color(0xFFD97706)
                         statusChip.contains("Under", ignoreCase = true) -> Color(0xFFDC2626)

@@ -881,7 +881,11 @@ class PortfolioRepository(
      * Sector Exposure, Asset Class & Market-Cap Breakdown, and Weighted Expense Ratio Drag).
      * Delegated directly to [PortfolioAnalyticsEngine].
      */
-    fun computeAnalytics(portfolio: PortfolioData): PortfolioAnalyticsSummary {
+    suspend fun computeAnalytics(portfolio: PortfolioData): PortfolioAnalyticsSummary = withContext(Dispatchers.Default) {
+        PortfolioAnalyticsEngine.computeAnalytics(portfolio)
+    }
+
+    fun computeAnalyticsSync(portfolio: PortfolioData): PortfolioAnalyticsSummary {
         return PortfolioAnalyticsEngine.computeAnalytics(portfolio)
     }
 

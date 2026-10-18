@@ -37,6 +37,7 @@ import com.fin.mf.ui.workspace.dialogs.PortfolioSwitcherBottomSheet
 import com.fin.mf.ui.workspace.dialogs.CreatePortfolioDialog
 import com.fin.mf.ui.workspace.dialogs.RenamePortfolioDialog
 import com.fin.mf.ui.workspace.dialogs.DeletePortfolioDialog
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PieChart
@@ -82,6 +83,8 @@ import com.fin.mf.core.theme.AppearanceSettingsSheet
 import com.fin.mf.core.theme.LocalVaultGradient
 import com.fin.mf.core.theme.VaultThemeManager
 import com.fin.mf.data.MutualFundScheme
+import com.fin.mf.data.PortfolioData
+import com.fin.mf.data.PortfolioAnalyticsSummary
 import com.fin.mf.ui.PortfolioViewModel
 import com.fin.mf.ui.workspace.components.WsAccentRoyal
 import com.fin.mf.ui.workspace.components.WsCrimsonNegative
@@ -130,7 +133,8 @@ fun PortfolioTrackerWorkspace(
     portfolioViewModel: PortfolioViewModel,
     themeManager: VaultThemeManager = VaultThemeManager.getInstance(LocalContext.current),
     initialTabIndex: Int = 0,
-    onNavigateBackToHub: () -> Unit
+    onNavigateBackToHub: () -> Unit,
+    onOpenSettings: () -> Unit = {}
 ) {
     val gradient = LocalVaultGradient.current
     val context = LocalContext.current
@@ -227,6 +231,14 @@ fun PortfolioTrackerWorkspace(
                     }
                 },
                 actions = {
+                    // Universal Data Management (Permanent 1-Tap Import / Export / Audit Hub)
+                    IconButton(onClick = { showCsvDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.FileDownload,
+                            contentDescription = "Data Management (Import/Export/Audit)",
+                            tint = gradient.startColor
+                        )
+                    }
                     // Privacy Mask Toggle
                     IconButton(onClick = { portfolioViewModel.togglePrivacyMask() }) {
                         Icon(
@@ -236,7 +248,9 @@ fun PortfolioTrackerWorkspace(
                         )
                     }
                     // Settings Gear Icon
-                    IconButton(onClick = { showSettingsDialog = true }) {
+                    IconButton(onClick = {
+                        if (onOpenSettings != {}) onOpenSettings() else showSettingsDialog = true
+                    }) {
                         Icon(
                             imageVector = Icons.Default.Settings,
                             contentDescription = "Settings & Controls",
@@ -514,30 +528,40 @@ fun PortfolioTrackerWorkspace(
 
     // Universal Data & Audit Management Hub (Import & Export Engine)
     if (showCsvDialog) {
-        val currentPortfolio = uiState.portfolioData
-        val currentAnalytics = uiState.analytics
-        if (currentPortfolio != null && currentAnalytics != null) {
-            UniversalDataManagementDialog(
-                portfolioData = currentPortfolio,
-                analytics = currentAnalytics,
-                healthScore = 85,
-                onDismissRequest = { showCsvDialog = false },
-                onImportDocumentUri = { uri ->
-                    val filename = uri.lastPathSegment ?: "statement.xlsx"
-                    portfolioViewModel.processSpreadsheetImport(uri, context.contentResolver, filename)
-                    showCsvDialog = false
-                },
-                onImportRawCsvText = { rawText ->
-                    portfolioViewModel.importPortfolioFromCsv(rawText)
-                    showCsvDialog = false
-                }
-            )
-        } else {
-            CsvManagerModal(
-                portfolioViewModel = portfolioViewModel,
-                onDismiss = { showCsvDialog = false }
-            )
-        }
+        val currentPortfolio = uiState.portfolioData ?: PortfolioData(
+            portfolioName = "Primary Vault",
+            ownerName = "Investor",
+            lastSyncedEpochMs = System.currentTimeMillis(),
+            schemes = emptyList()
+        )
+        val currentAnalytics = uiState.analytics ?: PortfolioAnalyticsSummary(
+            totalInvested = 0.0,
+            totalCurrentValue = 0.0,
+            totalGain = 0.0,
+            totalReturnPercent = 0.0,
+            weightedExpenseRatio = 0.0,
+            annualFeeDragRupees = 0.0,
+            assetClassBreakdown = emptyList(),
+            marketCapBreakdown = emptyList(),
+            topHoldings = emptyList(),
+            sectorBreakdown = emptyList(),
+            highOverlapStocksCount = 0
+        )
+        UniversalDataManagementDialog(
+            portfolioData = currentPortfolio,
+            analytics = currentAnalytics,
+            healthScore = 85,
+            onDismissRequest = { showCsvDialog = false },
+            onImportDocumentUri = { uri ->
+                val filename = uri.lastPathSegment ?: "statement.xlsx"
+                portfolioViewModel.processSpreadsheetImport(uri, context.contentResolver, filename)
+                showCsvDialog = false
+            },
+            onImportRawCsvText = { rawText ->
+                portfolioViewModel.importPortfolioFromCsv(rawText)
+                showCsvDialog = false
+            }
+        )
     }
 
     // Asynchronous Ingestion & AMFI Reconciliation Modal Progress HUD

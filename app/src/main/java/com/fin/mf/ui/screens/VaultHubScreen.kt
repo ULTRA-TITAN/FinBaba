@@ -25,15 +25,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import com.fin.mf.ui.workspace.components.HairlineScrollProgressIndicator
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.AutoGraph
@@ -85,12 +91,17 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fin.mf.ui.PortfolioUiState
 import com.fin.mf.ui.PortfolioViewModel
+import com.fin.mf.ui.workspace.components.LuxuryCreditCardHero
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -137,6 +148,7 @@ fun VaultHubScreen(
     onOpenPortfolioTracker: (initialTabIndex: Int) -> Unit,
     onOpenMarketTerminal: () -> Unit = {},
     onOpenNewsTerminal: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
     themeManager: VaultThemeManager = VaultThemeManager.getInstance(LocalContext.current)
 ) {
     val gradient = LocalVaultGradient.current
@@ -157,22 +169,30 @@ fun VaultHubScreen(
                     ),
                     title = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            FinBabaMascotBadge(modifier = Modifier.size(40.dp))
+                            FinBabaMascotBadge(modifier = Modifier.size(42.dp))
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(verticalArrangement = Arrangement.Center) {
                                 Text(
                                     text = "FinBaba",
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = HubSlatePrimary,
-                                    letterSpacing = (-0.4).sp
+                                    fontSize = 24.sp,
+                                    fontFamily = FontFamily.Cursive,
+                                    fontWeight = FontWeight.Bold,
+                                    color = gradient.startColor,
+                                    style = TextStyle(
+                                        shadow = Shadow(
+                                            color = gradient.startColor.copy(alpha = 0.35f),
+                                            offset = Offset(0f, 2f),
+                                            blurRadius = 6f
+                                        )
+                                    )
                                 )
                                 Text(
                                     text = "FIN Studio",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace,
                                     color = HubSlateSecondary,
-                                    letterSpacing = 0.4.sp
+                                    letterSpacing = 1.sp
                                 )
                             }
                         }
@@ -203,7 +223,9 @@ fun VaultHubScreen(
                                 )
                             }
                         }
-                        IconButton(onClick = { showSettingsModal = true }) {
+                        IconButton(onClick = {
+                            if (onOpenSettings != {}) onOpenSettings() else showSettingsModal = true
+                        }) {
                             Icon(
                                 imageVector = Icons.Default.Settings,
                                 contentDescription = "Studio Settings",
@@ -214,244 +236,124 @@ fun VaultHubScreen(
                 )
             }
         ) { innerPadding ->
-            LazyColumn(
+            val listState = rememberLazyListState()
+
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp)
+                    .padding(innerPadding)
             ) {
-                // Live Market Status & NSE/BSE Holiday Ticker Overlay (Controlled via Settings toggle)
-                if (uiState.isMarketStatusTickerEnabled) {
+                // Sleek Top Hairline Scroll Progress Tracker (Module 2)
+                HairlineScrollProgressIndicator(listState = listState)
+
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    // Live Market Status & NSE/BSE Holiday Ticker Overlay (Controlled via Settings toggle)
+                    if (uiState.isMarketStatusTickerEnabled) {
+                        item {
+                            MarketStatusTickerPill()
+                        }
+                    }
+
+                    // 1. Executive Luxury Credit Card Hero (Strict 1.586:1 ID-1 Proportions, Zero Clutter)
                     item {
-                        MarketStatusTickerPill()
+                        val schemeCount = uiState.portfolioData?.schemes?.size ?: 0
+                        val vaultName = uiState.portfolioData?.portfolioName ?: "PRIMARY WEALTH VAULT"
+                        LuxuryCreditCardHero(
+                            title = "EXECUTIVE VAULT",
+                            vaultName = vaultName,
+                            currentValue = analytics?.totalCurrentValue ?: 0.0,
+                            investedValue = analytics?.totalInvested ?: 0.0,
+                            gainValue = analytics?.totalGain ?: 0.0,
+                            returnPercent = analytics?.totalReturnPercent ?: 0.0,
+                            todayGain = analytics?.todayGain,
+                            schemeCount = schemeCount,
+                            isMasked = isMasked
+                        )
                     }
-                }
 
-                // 1. Studio Mascot & Executive Portfolio Summary Banner
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, gradient.startColor.copy(alpha = 0.35f)),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .background(gradient.brush)
-                                .padding(20.dp)
-                        ) {
-                            Column {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        FinBabaMascotBadge(modifier = Modifier.size(46.dp))
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Column {
-                                            Text(
-                                                text = "Portfolio Overview",
-                                                fontSize = 16.sp,
-                                                fontWeight = FontWeight.ExtraBold,
-                                                color = Color.White
-                                            )
-                                            val schemeCount = uiState.portfolioData?.schemes?.size ?: 0
-                                            Text(
-                                                text = "$schemeCount Mutual Funds",
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Medium,
-                                                color = Color.White.copy(alpha = 0.85f)
-                                            )
-                                        }
-                                    }
+                    // Section Title
+                    item {
+                        Column {
+                            val toolVaultTitle = "FinStudio Tools"
+                            val toolVaultSubtitle = "Explore Terminal Command Deck ->"
 
-                                    if (analytics != null) {
-                                        val isPositive = analytics.totalGain >= 0
-                                        val trendColor = if (isPositive) Color(0xFF34D399) else Color(0xFFF87171)
-                                        Surface(
-                                            color = Color.White.copy(alpha = 0.16f),
-                                            shape = RoundedCornerShape(20.dp),
-                                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.35f))
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 11.dp, vertical = 5.dp),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Icon(
-                                                    imageVector = if (isPositive) {
-                                                        Icons.AutoMirrored.Filled.TrendingUp
-                                                    } else {
-                                                        Icons.AutoMirrored.Filled.TrendingDown
-                                                    },
-                                                    contentDescription = null,
-                                                    tint = trendColor,
-                                                    modifier = Modifier.size(15.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(5.dp))
-                                                Text(
-                                                    text = formatHubSignedPercent(analytics.totalReturnPercent),
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.Black,
-                                                    color = Color.White
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
+                            Text(
+                                text = toolVaultTitle,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = HubSlatePrimary
+                            )
+                            Text(
+                                text = toolVaultSubtitle,
+                                fontSize = 11.5.sp,
+                                color = HubSlateSecondary
+                            )
+                        }
+                    }
 
-                                Spacer(modifier = Modifier.height(16.dp))
-                                HorizontalDivider(color = Color.White.copy(alpha = 0.20f))
-                                Spacer(modifier = Modifier.height(16.dp))
+                    // 2. TOOL #1 CARD: Look-Through Tracker (ACTIVE)
+                    item {
+                        StudioToolCard(
+                            toolNumber = "01 // CORE LOOK-THROUGH",
+                            statusLabel = "● LIVE",
+                            isActive = true,
+                            icon = Icons.Default.PieChart,
+                            title = "Mutual Fund Terminal",
+                            insightTag = "Look-Through Overlap & Portfolio Analytics",
+                            accentColor = gradient.startColor,
+                            onClick = { onOpenPortfolioTracker(0) }
+                        )
+                    }
 
-                                if (analytics != null) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column {
-                                            Text(
-                                                text = "Total Portfolio Value",
-                                                fontSize = 12.sp,
-                                                color = Color.White.copy(alpha = 0.8f)
-                                            )
-                                            Spacer(modifier = Modifier.height(2.dp))
-                                            Text(
-                                                text = formatHubInr(analytics.totalCurrentValue, isMasked),
-                                                fontSize = 26.sp,
-                                                fontWeight = FontWeight.ExtraBold,
-                                                color = Color.White
-                                            )
-                                        }
+                    // 3. TOOL #2 CARD: Global Market Terminal (ACTIVE)
+                    item {
+                        StudioToolCard(
+                            toolNumber = "02 // GLOBAL TERMINAL",
+                            statusLabel = "● LIVE",
+                            isActive = true,
+                            icon = Icons.AutoMirrored.Filled.ShowChart,
+                            title = "Global Assets Terminal",
+                            insightTag = "World Markets, Equities & Multi-Timeframe Charts",
+                            accentColor = Color(0xFF059669),
+                            onClick = onOpenMarketTerminal
+                        )
+                    }
 
-                                        Column(horizontalAlignment = Alignment.End) {
-                                            Text(
-                                                text = "Total Gain / Loss",
-                                                fontSize = 12.sp,
-                                                color = Color.White.copy(alpha = 0.8f)
-                                            )
-                                            Spacer(modifier = Modifier.height(2.dp))
-                                            Text(
-                                                text = formatHubInr(analytics.totalGain, isMasked, showPlus = true),
-                                                fontSize = 18.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (analytics.totalGain >= 0) Color(0xFF34D399) else Color(0xFFF87171)
-                                            )
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(10.dp))
-
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(
-                                            text = "Invested Principal: ${formatHubInr(analytics.totalInvested, isMasked)}",
-                                            fontSize = 12.sp,
-                                            color = Color.White.copy(alpha = 0.85f)
-                                        )
-                                        val syncTimeText = remember(uiState.portfolioData?.lastSyncedEpochMs) {
-                                            val ms = uiState.portfolioData?.lastSyncedEpochMs ?: 0L
-                                            if (ms > 0L) {
-                                                SimpleDateFormat("dd MMM, hh:mm a", Locale.US).format(Date(ms))
-                                            } else {
-                                                "Not Synced"
-                                            }
-                                        }
-                                        Text(
-                                            text = "Synced: $syncTimeText",
-                                            fontSize = 11.sp,
-                                            color = Color.White.copy(alpha = 0.95f),
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
+                    // 4. TOOL #3 CARD: SIP Wealth Architect (COMING SOON)
+                    item {
+                        val context = LocalContext.current
+                        StudioToolCard(
+                            toolNumber = "03 // WEALTH LABS",
+                            statusLabel = "◌ PRO",
+                            isActive = false,
+                            icon = Icons.Default.AutoGraph,
+                            title = "SIP Wealth Architect",
+                            insightTag = "Step-Up Compounding Simulator & Goal Engine",
+                            accentColor = Color(0xFFD97706),
+                            onClick = {
+                                Toast.makeText(context, "Tool #3 SIP Wealth Architect preview coming in the next build!", Toast.LENGTH_SHORT).show()
                             }
-                        }
-                    }
-                }
-
-                // Section Title
-                item {
-                    Column {
-                        // =========================================================================
-                        // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
-                        // =========================================================================
-                        val toolVaultTitle = "FinStudio Tools"
-                        val toolVaultSubtitle = "Explore ->"
-                        // =========================================================================
-
-                        Text(
-                            text = toolVaultTitle,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = HubSlatePrimary
-                        )
-                        Text(
-                            text = toolVaultSubtitle,
-                            fontSize = 12.sp,
-                            color = HubSlateSecondary
                         )
                     }
-                }
 
-                // 2. TOOL #1 CARD: Look-Through Tracker (ACTIVE)
-                item {
-                    StudioToolCard(
-                        toolNumber = "TOOL #1",
-                        statusLabel = "ACTIVE",
-                        isActive = true,
-                        icon = Icons.Default.PieChart,
-                        title = "MF Portfolio",
-                        insightTag = "Detailed Mutual Fund Portfolio analysis",
-                        onClick = { onOpenPortfolioTracker(0) }
-                    )
-                }
-
-                // 3. TOOL #2 CARD: Global Market Terminal (ACTIVE)
-                item {
-                    StudioToolCard(
-                        toolNumber = "TOOL #2",
-                        statusLabel = "ACTIVE",
-                        isActive = true,
-                        icon = Icons.AutoMirrored.Filled.ShowChart,
-                        title = "Global Markets",
-                        insightTag = "Explore markets and stocks around the world",
-                        onClick = onOpenMarketTerminal
-                    )
-                }
-
-                // 4. TOOL #3 CARD: SIP Wealth Architect (COMING SOON)
-                item {
-                    val context = LocalContext.current
-                    StudioToolCard(
-                        toolNumber = "TOOL #3",
-                        statusLabel = "COMING SOON",
-                        isActive = false,
-                        icon = Icons.Default.AutoGraph,
-                        title = "SIP Wealth Architect",
-                        insightTag = "Step-Up Compounding Simulator",
-                        onClick = {
-                            Toast.makeText(context, "Tool #3 SIP Wealth Architect preview coming in the next build!", Toast.LENGTH_SHORT).show()
-                        }
-                    )
-                }
-
-                // 5. TOOL #4 CARD: Market Intelligence Wire (ACTIVE)
-                item {
-                    StudioToolCard(
-                        toolNumber = "TOOL #4",
-                        statusLabel = "ACTIVE",
-                        isActive = true,
-                        icon = Icons.Default.Public,
-                        title = "News Letter",
-                        insightTag = "Explore market news through FinHub",
-                        onClick = onOpenNewsTerminal
-                    )
+                    // 5. TOOL #4 CARD: Market Intelligence Wire (ACTIVE)
+                    item {
+                        StudioToolCard(
+                            toolNumber = "04 // WIRE & INTEL",
+                            statusLabel = "● LIVE",
+                            isActive = true,
+                            icon = Icons.Default.Public,
+                            title = "Market Intelligence Wire",
+                            insightTag = "Finnhub Live News, Macro Feed & Sentiment Radar",
+                            accentColor = Color(0xFF7C3AED),
+                            onClick = onOpenNewsTerminal
+                        )
+                    }
                 }
             }
         }
@@ -527,132 +429,116 @@ private fun StudioToolCard(
     icon: ImageVector,
     title: String,
     insightTag: String,
+    accentColor: Color,
     onClick: () -> Unit
 ) {
-    val gradient = LocalVaultGradient.current
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .bounceClick()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = HubSurfaceWhite),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .shadow(
+                elevation = 1.5.dp,
+                shape = RoundedCornerShape(14.dp),
+                ambientColor = Color(0xFF64748B).copy(alpha = 0.15f)
+            )
+            .clip(RoundedCornerShape(14.dp))
+            .bounceClick(scaleDown = 0.98f) { onClick() },
+        shape = RoundedCornerShape(14.dp),
+        color = Color.White.copy(alpha = 0.88f),
+        border = BorderStroke(
+            1.dp,
+            Brush.linearGradient(
+                listOf(
+                    Color.White.copy(alpha = 0.95f),
+                    accentColor.copy(alpha = 0.35f),
+                    Color(0xFFE2E8F0).copy(alpha = 0.60f)
+                )
+            )
+        )
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Top Row: Distinct Tool Icon + Status Pill
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 13.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Left Accent Column: Compact frosted glass icon container (42.dp x 42.dp)
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = accentColor.copy(alpha = 0.12f),
+                border = BorderStroke(1.dp, accentColor.copy(alpha = 0.30f)),
+                modifier = Modifier.size(42.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isActive) gradient.startColor.copy(alpha = 0.12f) else Color(0xFFF1F5F9),
-                        modifier = Modifier.size(42.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = title,
-                                tint = if (isActive) gradient.startColor else HubSlateSecondary,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = Color(0xFFF8FAFC),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
-                    ) {
-                        Text(
-                            text = toolNumber,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = gradient.startColor,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.5.dp)
-                        )
-                    }
-                }
-
-                Surface(
-                    color = if (isActive) HubEmeraldSoft else HubAmberSoft,
-                    shape = RoundedCornerShape(20.dp),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        if (isActive) HubEmeraldPositive.copy(alpha = 0.3f) else HubAmberBadge.copy(alpha = 0.3f)
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = title,
+                        tint = if (isActive) accentColor else HubSlateSecondary,
+                        modifier = Modifier.size(20.dp)
                     )
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (isActive) {
-                            Box(
-                                modifier = Modifier
-                                    .size(6.dp)
-                                    .clip(CircleShape)
-                                    .background(HubEmeraldPositive)
-                            )
-                            Spacer(modifier = Modifier.width(5.dp))
-                        }
-                        Text(
-                            text = statusLabel,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isActive) HubEmeraldPositive else HubAmberBadge
-                        )
-                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
-            // Middle: Bold, simple Tool Name
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            // Center Body: Monospace index tag + Main Title + Single-line description
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
+                Text(
+                    text = toolNumber,
+                    fontSize = 9.5.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.8.sp,
+                    color = Color(0xFF64748B)
+                )
                 Text(
                     text = title,
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = HubSlatePrimary,
-                    modifier = Modifier.weight(1f)
+                    color = Color(0xFF0F172A)
                 )
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = null,
-                    tint = if (isActive) gradient.startColor else HubSlateSecondary.copy(alpha = 0.4f),
-                    modifier = Modifier.size(18.dp)
+                Text(
+                    text = insightTag,
+                    fontSize = 11.5.sp,
+                    color = Color(0xFF475569),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
-            // Bottom: Single-line, high-impact insight tag
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // Right Action Area: Telemetry Indicator + Minimalist Chevron
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Surface(
+                    color = if (isActive) Color(0xFFECFDF5) else Color(0xFFFFFBEB),
+                    shape = RoundedCornerShape(4.dp),
+                    border = BorderStroke(
+                        0.8.dp,
+                        if (isActive) Color(0xFF059669).copy(alpha = 0.35f) else Color(0xFFD97706).copy(alpha = 0.35f)
+                    )
+                ) {
+                    Text(
+                        text = statusLabel,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = 0.6.sp,
+                        color = if (isActive) Color(0xFF059669) else Color(0xFFD97706),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+
                 Icon(
-                    imageVector = Icons.Default.Layers,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
                     contentDescription = null,
-                    tint = HubSlateSecondary,
+                    tint = HubSlateSecondary.copy(alpha = 0.50f),
                     modifier = Modifier.size(13.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = insightTag,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = HubSlateSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
                 )
             }
         }

@@ -2,6 +2,8 @@ package com.fin.mf.ui.workspace.tabs
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +18,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.AccountBalance
@@ -35,6 +42,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -49,6 +57,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -56,6 +65,7 @@ import androidx.compose.ui.unit.sp
 import com.fin.mf.core.theme.LocalVaultGradient
 import com.fin.mf.data.MutualFundScheme
 import com.fin.mf.ui.PortfolioUiState
+import com.fin.mf.ui.workspace.components.HairlineScrollProgressIndicator
 import com.fin.mf.ui.workspace.components.OnboardingTutorialCard
 import com.fin.mf.ui.workspace.components.WsSchemeSummaryCard
 import com.fin.mf.ui.workspace.components.WsSlateBorder
@@ -180,81 +190,72 @@ fun WorkspacePortfolioTab(
                         }
                     },
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    textStyle = TextStyle(
+                        fontSize = 13.sp,
+                        fontFamily = FontFamily.SansSerif,
+                        platformStyle = PlatformTextStyle(includeFontPadding = false),
+                        color = WsSlateTextPrimary
+                    ),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = gradient.startColor,
+                        unfocusedBorderColor = WsSlateBorder,
+                        cursorColor = gradient.startColor
+                    ),
                     shape = RoundedCornerShape(14.dp)
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    categoryFilters.chunked(2).forEach { rowItems ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            rowItems.forEach { item ->
-                                val selected = uiState.selectedAssetClassFilter.equals(item.name, ignoreCase = true)
-                                val count = categoryCounts[item.name] ?: 0
-                                val shape = RoundedCornerShape(10.dp)
+                    categoryFilters.forEach { item ->
+                        val selected = uiState.selectedAssetClassFilter.equals(item.name, ignoreCase = true)
+                        val count = categoryCounts[item.name] ?: 0
 
-                                Surface(
-                                    onClick = { onFilterChange(item.name) },
-                                    shape = shape,
-                                    color = if (selected) gradient.startColor else Color(0xFFF8FAFC),
-                                    border = BorderStroke(
-                                        width = 1.dp,
-                                        color = if (selected) gradient.startColor else WsSlateBorder
-                                    ),
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(36.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .padding(horizontal = 10.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            imageVector = item.icon,
-                                            contentDescription = null,
-                                            tint = if (selected) Color.White else WsSlateTextSecondary,
-                                            modifier = Modifier.size(15.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            text = item.name,
-                                            fontSize = 11.5.sp,
-                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                            color = if (selected) Color.White else WsSlateTextPrimary,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier.weight(1f, fill = false)
-                                        )
-                                        Spacer(modifier = Modifier.weight(1f))
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(6.dp))
-                                                .background(
-                                                    if (selected) Color.White.copy(alpha = 0.25f)
-                                                    else Color(0xFFE2E8F0)
-                                                )
-                                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                                        ) {
-                                            Text(
-                                                text = count.toString(),
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (selected) Color.White else WsSlateTextSecondary
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            if (rowItems.size == 1) {
-                                Spacer(modifier = Modifier.weight(1f))
+                        Surface(
+                            onClick = { onFilterChange(item.name) },
+                            shape = RoundedCornerShape(4.dp),
+                            color = if (selected) gradient.startColor else Color(0xFFF8FAFC),
+                            border = BorderStroke(
+                                width = 1.dp,
+                                color = if (selected) gradient.startColor else WsSlateBorder
+                            ),
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = null,
+                                    tint = if (selected) Color.White else WsSlateTextSecondary,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    text = item.name.uppercase(),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace,
+                                    letterSpacing = 0.8.sp,
+                                    color = if (selected) Color.White else WsSlateTextPrimary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    text = "[$count]",
+                                    fontSize = 9.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = if (selected) Color.White.copy(alpha = 0.85f) else WsSlateTextSecondary
+                                )
                             }
                         }
                     }
@@ -263,6 +264,7 @@ fun WorkspacePortfolioTab(
         }
 
         val pullRefreshState = rememberPullToRefreshState()
+        val listState = rememberLazyListState()
 
         PullToRefreshBox(
             isRefreshing = uiState.isSyncingNavs,
@@ -279,6 +281,7 @@ fun WorkspacePortfolioTab(
             }
         ) {
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -345,6 +348,11 @@ fun WorkspacePortfolioTab(
                     )
                 }
             }
+
+            HairlineScrollProgressIndicator(
+                listState = listState,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
         }
     }
 }

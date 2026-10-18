@@ -17,8 +17,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.fin.mf.ui.workspace.components.HairlineScrollProgressIndicator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -48,7 +50,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -67,7 +72,6 @@ import com.fin.mf.ui.workspace.components.formatWsInr
 import com.fin.mf.ui.workspace.components.formatWsPercent
 import com.fin.mf.ui.workspace.xray.BenchmarkIndexRow
 import com.fin.mf.ui.workspace.xray.ConstituentDrillDownSheet
-import com.fin.mf.ui.workspace.xray.HealthScoreBreakdownSheet
 import com.fin.mf.ui.workspace.xray.PortfolioHealthDiagnostic
 import com.fin.mf.ui.workspace.xray.WhatIfInflowRebalanceModal
 import com.fin.mf.ui.workspace.xray.XRayDiagnosticsEngine
@@ -107,7 +111,6 @@ fun WorkspaceXRayTab(
     }
 
     // Interactive State Modals
-    var showHealthSheet by rememberSaveable { mutableStateOf(false) }
     var showInflowRebalanceModal by rememberSaveable { mutableStateOf(false) }
     var drillDownData by remember {
         mutableStateOf<Triple<String, String, List<AggregatedStockExposure>>?>(null)
@@ -132,22 +135,16 @@ fun WorkspaceXRayTab(
         }
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // 1. Health Scorecard Card
-        item {
-            HealthScorecardCard(
-                diagnostic = diagnostic,
-                analytics = analytics,
-                isMasked = isMasked,
-                onCardClick = { showHealthSheet = true }
-            )
-        }
+    val listState = rememberLazyListState()
 
-        // 2. SEBI Market Cap Alignment Card
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+        // 1. SEBI Market Cap Alignment Card (Promoted to Top)
         item {
             SebiMarketCapAlignmentCard(
                 analytics = analytics,
@@ -253,14 +250,13 @@ fun WorkspaceXRayTab(
         }
     }
 
-    // Modal Sheets
-    if (showHealthSheet) {
-        HealthScoreBreakdownSheet(
-            diagnostic = diagnostic,
-            onDismiss = { showHealthSheet = false }
-        )
-    }
+    HairlineScrollProgressIndicator(
+        listState = listState,
+        modifier = Modifier.align(Alignment.TopCenter)
+    )
+}
 
+    // Modal Sheets
     if (showInflowRebalanceModal) {
         WhatIfInflowRebalanceModal(
             analytics = analytics,
@@ -282,254 +278,9 @@ fun WorkspaceXRayTab(
 }
 
 /**
- * Component 1: Health Scorecard Card.
+ * Component 1: SEBI Market Cap Alignment Card.
  */
-@Composable
-private fun HealthScorecardCard(
-    diagnostic: PortfolioHealthDiagnostic,
-    analytics: PortfolioAnalyticsSummary,
-    isMasked: Boolean,
-    onCardClick: () -> Unit
-) {
-    // =========================================================================
-    // DISPLAY TEXT CONFIGURATION: Safe to edit text between quotes below
-    // =========================================================================
-    val cardTitle = "Health Scorecard"
-    val cardSubtitle = "Multi-factor portfolio quality & balance metric"
-    // =========================================================================
 
-    WsElevatedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onCardClick)
-    ) {
-        Column(modifier = Modifier.padding(18.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Security,
-                        contentDescription = null,
-                        tint = diagnostic.ratingColor,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column {
-                        Text(
-                            text = cardTitle,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = WsSlateTextPrimary
-                        )
-                        Text(
-                            text = cardSubtitle,
-                            fontSize = 11.sp,
-                            color = WsSlateTextSecondary
-                        )
-                    }
-                }
-
-                Surface(
-                    color = diagnostic.ratingColor.copy(alpha = 0.12f),
-                    shape = RoundedCornerShape(20.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, diagnostic.ratingColor.copy(alpha = 0.35f))
-                ) {
-                    Text(
-                        text = diagnostic.rating,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = diagnostic.ratingColor,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                CircularHealthGauge(
-                    score = diagnostic.score,
-                    ratingColor = diagnostic.ratingColor
-                )
-
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        DiagnosticMatrixBox(
-                            modifier = Modifier.weight(1f),
-                            label = "TOTAL VALUE",
-                            primaryText = formatWsInr(analytics.totalCurrentValue, isMasked),
-                            chipText = formatWsPercent(analytics.totalReturnPercent),
-                            chipColor = if (analytics.totalGain >= 0) SemanticFinanceColors.ProfitGreen else SemanticFinanceColors.LossRed
-                        )
-                        DiagnosticMatrixBox(
-                            modifier = Modifier.weight(1f),
-                            label = "STOCK COMMONALITY",
-                            primaryText = "${diagnostic.uniqueStocksCount} / ${diagnostic.grossHoldingsCount} Gross",
-                            chipText = "${diagnostic.duplicateOverlapPct}% Overlap",
-                            chipColor = if (diagnostic.duplicateOverlapPct > 30.0) SemanticFinanceColors.BenchmarkAmber else SemanticFinanceColors.ProfitGreen
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        DiagnosticMatrixBox(
-                            modifier = Modifier.weight(1f),
-                            label = "ACTIVE SHARE",
-                            primaryText = "${String.format(Locale.US, "%.1f%%", diagnostic.activeSharePercent)} vs Nifty 50",
-                            chipText = "High Active",
-                            chipColor = WsPrimaryIndigo
-                        )
-                        DiagnosticMatrixBox(
-                            modifier = Modifier.weight(1f),
-                            label = "EXPENSE (TER)",
-                            primaryText = String.format(Locale.US, "%.2f%%", analytics.weightedExpenseRatio),
-                            chipText = "~${formatWsInr(analytics.annualFeeDragRupees, isMasked)}/yr",
-                            chipColor = WsSlateTextSecondary
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Tap to inspect factor breakdown ➔",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = diagnostic.ratingColor
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun CircularHealthGauge(
-    score: Int,
-    ratingColor: Color,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier.size(86.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
-            val strokeW = 7.dp.toPx()
-            val diameter = size.minDimension - strokeW
-            val topLeft = Offset(strokeW / 2f, strokeW / 2f)
-            val arcSize = Size(diameter, diameter)
-
-            drawArc(
-                color = Color(0xFFE2E8F0),
-                startAngle = -90f,
-                sweepAngle = 360f,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = strokeW, cap = StrokeCap.Round)
-            )
-
-            val sweep = (score.toFloat() / 100f) * 360f
-            drawArc(
-                color = ratingColor,
-                startAngle = -90f,
-                sweepAngle = sweep,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = strokeW, cap = StrokeCap.Round)
-            )
-        }
-
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "$score",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Black,
-                color = WsSlateTextPrimary
-            )
-            Text(
-                text = "/ 100",
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                color = WsSlateTextSecondary
-            )
-        }
-    }
-}
-
-@Composable
-private fun DiagnosticMatrixBox(
-    modifier: Modifier = Modifier,
-    label: String,
-    primaryText: String,
-    chipText: String,
-    chipColor: Color
-) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(10.dp),
-        color = Color(0xFFF8FAFC),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
-    ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            Text(
-                text = label,
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Black,
-                color = WsSlateTextSecondary,
-                letterSpacing = 0.5.sp
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = primaryText,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = WsSlateTextPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Surface(
-                color = chipColor.copy(alpha = 0.12f),
-                shape = RoundedCornerShape(4.dp)
-            ) {
-                Text(
-                    text = chipText,
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = chipColor,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.5.dp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-    }
-}
-
-/**
- * Component 2: SEBI Market Cap Alignment Card.
- */
 @Composable
 private fun SebiMarketCapAlignmentCard(
     analytics: PortfolioAnalyticsSummary,
@@ -1007,15 +758,17 @@ private fun HighDuplicateOverlapCard(
 
                 Surface(
                     color = WsRedSoft,
-                    shape = RoundedCornerShape(20.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, SemanticFinanceColors.LossRed.copy(alpha = 0.35f))
+                    shape = RoundedCornerShape(4.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, SemanticFinanceColors.LossRed.copy(alpha = 0.40f))
                 ) {
                     Text(
-                        text = "${String.format(Locale.US, "%.0f%%", overlapPct)} Overlap",
-                        fontSize = 10.sp,
+                        text = "${String.format(Locale.US, "%.0f%%", overlapPct)} OVERLAP",
+                        fontSize = 9.5.sp,
                         fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = 0.8.sp,
                         color = SemanticFinanceColors.LossRed,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.5.dp)
                     )
                 }
             }
@@ -1068,14 +821,17 @@ private fun HighDuplicateOverlapCard(
                                     ) {
                                         Surface(
                                             color = Color(0xFFEFF6FF),
-                                            shape = RoundedCornerShape(6.dp)
+                                            shape = RoundedCornerShape(4.dp),
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBFDBFE))
                                         ) {
                                             Text(
                                                 text = stock.ticker,
-                                                fontSize = 11.sp,
+                                                fontSize = 10.sp,
                                                 fontWeight = FontWeight.Black,
+                                                fontFamily = FontFamily.Monospace,
+                                                letterSpacing = 0.8.sp,
                                                 color = WsPrimaryIndigo,
-                                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.5.dp)
                                             )
                                         }
                                         Spacer(modifier = Modifier.width(8.dp))
@@ -1184,7 +940,7 @@ private fun ConsolidatedEquitiesCard(
                     listOf("All Top 10", "Gainers", "High P/E").forEach { filter ->
                         Surface(
                             modifier = Modifier.clickable { onFilterSelected(filter) },
-                            shape = RoundedCornerShape(6.dp),
+                            shape = RoundedCornerShape(4.dp),
                             color = if (selectedFilter == filter) gradient.startColor else Color(0xFFF1F5F9),
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
@@ -1192,11 +948,13 @@ private fun ConsolidatedEquitiesCard(
                             )
                         ) {
                             Text(
-                                text = filter,
-                                fontSize = 10.sp,
+                                text = filter.uppercase(),
+                                fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 0.8.sp,
                                 color = if (selectedFilter == filter) Color.White else WsSlateTextSecondary,
-                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.5.dp)
                             )
                         }
                     }
@@ -1205,36 +963,41 @@ private fun ConsolidatedEquitiesCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 equities.forEachIndexed { index, stock ->
+                    val isEven = index % 2 == 0
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onStockClick(stock) },
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFFF8FAFC),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                        shape = RoundedCornerShape(4.dp),
+                        color = if (isEven) Color(0xFFFFFFFF) else Color(0xFFF8FAFC),
+                        border = androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFFE2E8F0))
                     ) {
                         Row(
-                            modifier = Modifier.padding(10.dp),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 7.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.weight(1f, fill = false),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "${index + 1}",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = WsSlateTextSecondary
+                                    text = String.format(Locale.US, "%02d", index + 1),
+                                    style = TextStyle(
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Black,
+                                        fontFamily = FontFamily.Monospace,
+                                        fontFeatureSettings = "tnum",
+                                        color = WsSlateTextSecondary
+                                    )
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Column {
+                                Column(modifier = Modifier.weight(1f, fill = false)) {
                                     Text(
                                         text = "${stock.companyName} (${stock.ticker})",
-                                        fontSize = 12.sp,
+                                        fontSize = 11.5.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = WsSlateTextPrimary,
                                         maxLines = 1,
@@ -1242,23 +1005,42 @@ private fun ConsolidatedEquitiesCard(
                                     )
                                     Text(
                                         text = "${stock.sector} • ${stock.marketCapBucket}",
-                                        fontSize = 10.sp,
-                                        color = WsSlateTextSecondary
+                                        fontSize = 9.5.sp,
+                                        color = WsSlateTextSecondary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
                             }
 
-                            Column(horizontalAlignment = Alignment.End) {
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Column(
+                                modifier = Modifier.weight(1f, fill = false),
+                                horizontalAlignment = Alignment.End
+                            ) {
                                 Text(
                                     text = String.format(Locale.US, "%.2f%%", stock.portfolioWeightPercent),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = WsPrimaryIndigo
+                                    style = TextStyle(
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontFamily = FontFamily.SansSerif,
+                                        fontFeatureSettings = "tnum",
+                                        color = WsPrimaryIndigo
+                                    ),
+                                    textAlign = TextAlign.End
                                 )
                                 Text(
                                     text = formatWsInr(stock.totalRupeeExposure, isMasked),
-                                    fontSize = 10.sp,
-                                    color = WsSlateTextSecondary
+                                    style = TextStyle(
+                                        fontSize = 9.5.sp,
+                                        fontFamily = FontFamily.SansSerif,
+                                        fontFeatureSettings = "tnum",
+                                        color = WsSlateTextSecondary
+                                    ),
+                                    textAlign = TextAlign.End,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
