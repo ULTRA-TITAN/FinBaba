@@ -21,16 +21,16 @@ data class RawBrokerRecord(
 object BrokerFormatNormalizer {
 
     private val SCHEME_NAME_REGEX =
-        Regex("(?i).*(scheme|fund|security|scrip|instrument|folio.*desc).*")
+        Regex("(?i).*(scheme|fund|security|scrip|instrument|folio.*desc|particulars|description).*")
 
     private val UNITS_REGEX =
-        Regex("(?i).*(units|qty|quantity|balance.*unit|total.*unit).*")
+        Regex("(?i).*(units|unit|qty|quantity|balance.*unit|total.*unit|balance|closing).*")
 
     private val INVESTED_COST_REGEX =
-        Regex("(?i).*(invested|cost.*value|purchase.*cost|purchase.*val|amount.*invested|total.*cost).*")
+        Regex("(?i).*(invested|cost.*value|purchase.*cost|purchase.*val|amount.*invested|total.*cost|cost|buy.*value|purchase.*amt|invested.*amount).*")
 
     private val CURRENT_VALUE_REGEX =
-        Regex("(?i).*(current.*val|market.*val|nav.*val|latest.*val).*")
+        Regex("(?i).*(current.*val|market.*val|nav.*val|latest.*val|present.*val|valuation|value|avg.*nav|purchase.*nav|buy.*price|cost.*nav).*")
 
     private val AMFI_OR_ISIN_REGEX =
         Regex("(?i).*(amfi|scheme.*code|isin|fund.*code).*")
@@ -80,10 +80,19 @@ object BrokerFormatNormalizer {
                 ""
             }
 
-            val units = parseNumericValue(rawUnitsStr) ?: 0.0
-            val investedCost = parseNumericValue(rawInvestedStr) ?: 0.0
-            val currentValue = parseNumericValue(rawCurrentStr)
+            var units = parseNumericValue(rawUnitsStr) ?: 0.0
+            var investedCost = parseNumericValue(rawInvestedStr) ?: 0.0
+            var currentValue = parseNumericValue(rawCurrentStr)
             val rawCode = parseAmfiCode(rawCodeStr)
+
+            // If invested cost is missing but current value is present, use current value as fallback
+            if (investedCost <= 0.0 && currentValue != null && currentValue > 0.0) {
+                investedCost = currentValue
+            }
+            // If current value is missing but invested cost is present, use invested cost as fallback
+            if ((currentValue == null || currentValue <= 0.0) && investedCost > 0.0) {
+                currentValue = investedCost
+            }
 
             // Require positive units or positive invested cost to filter out zeroed/closed folios
             if (units <= 0.0 && investedCost <= 0.0) continue

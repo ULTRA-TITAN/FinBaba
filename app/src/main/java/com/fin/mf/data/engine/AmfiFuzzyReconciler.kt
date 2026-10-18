@@ -200,10 +200,24 @@ object AmfiFuzzyReconciler {
             // Blend Token Sort Ratio (60%) + Jaccard Token Overlap (40%)
             var score = (0.60f * tokenSortRatio) + (0.40f * jaccard)
 
-            // Subtle tie-breaker alignment when user raw text specifies Direct/Regular or Growth/IDCW
-            if (queryWantsDirect && !candidate.isDirect) score -= 0.015f
-            if (queryWantsRegular && candidate.isDirect) score -= 0.015f
-            if (queryWantsIdcw != candidate.isIdcw) score -= 0.010f
+            // Subtle tie-breaker alignment:
+            // 1. Direct vs Regular Plan
+            if (queryWantsDirect) {
+                if (candidate.isDirect) score += 0.025f else score -= 0.025f
+            } else if (!queryWantsRegular) {
+                // Default preference for Direct Plan if not explicitly requested as Regular
+                if (candidate.isDirect) score += 0.020f
+            } else {
+                if (!candidate.isDirect) score += 0.025f else score -= 0.025f
+            }
+
+            // 2. Growth vs IDCW / Dividend
+            if (queryWantsIdcw) {
+                if (candidate.isIdcw) score += 0.020f else score -= 0.020f
+            } else {
+                // Default preference for Growth if not explicitly requested as IDCW
+                if (!candidate.isIdcw) score += 0.015f else score -= 0.015f
+            }
 
             scoredCandidates.add(
                 ScoredCandidate(

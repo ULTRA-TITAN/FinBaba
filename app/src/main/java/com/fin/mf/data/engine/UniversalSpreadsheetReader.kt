@@ -4,6 +4,7 @@ import android.util.Xml
 import org.xmlpull.v1.XmlPullParser
 import java.io.BufferedInputStream
 import java.io.BufferedReader
+import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
@@ -22,25 +23,28 @@ object UniversalSpreadsheetReader {
     private const val UTF8_BOM = "\uFEFF"
 
     /**
+     * Reads spreadsheet rows from a [ByteArray] in memory, fully isolating stream
+     * lifecycle from coroutine context switches and preventing stream closure exceptions.
+     */
+    fun readSpreadsheetRowsFromBytes(bytes: ByteArray, filename: String): List<List<String>> {
+        val lowerName = filename.lowercase(Locale.ROOT).trim()
+        val isXlsxByExt = lowerName.endsWith(".xlsx")
+        val isXlsxByMagic = isZipArchive(ByteArrayInputStream(bytes))
+
+        return if (isXlsxByExt || isXlsxByMagic) {
+            readXlsxFromBytes(bytes)
+        } else {
+            readCsvOrTsvStream(ByteArrayInputStream(bytes))
+        }
+    }
+
+    /**
      * Reads spreadsheet rows from an [InputStream] based on the [filename] extension
      * or ZIP magic-byte header detection.
      */
     fun readSpreadsheetRows(inputStream: InputStream, filename: String): List<List<String>> {
-        val bufferedStream = if (inputStream.markSupported()) {
-            inputStream
-        } else {
-            BufferedInputStream(inputStream)
-        }
-
-        val lowerName = filename.lowercase(Locale.ROOT).trim()
-        val isXlsxByExt = lowerName.endsWith(".xlsx")
-        val isXlsxByMagic = isZipArchive(bufferedStream)
-
-        return if (isXlsxByExt || isXlsxByMagic) {
-            readXlsxStream(bufferedStream)
-        } else {
-            readCsvOrTsvStream(bufferedStream)
-        }
+        val bytes = inputStream.readBytes()
+        return readSpreadsheetRowsFromBytes(bytes, filename)
     }
 
     /**
@@ -230,41 +234,47 @@ object UniversalSpreadsheetReader {
         val rawValue: String
     )
 
-    private fun readXlsxStream(inputStream: InputStream): List<List<String>> {
-        val sharedStrings = ArrayList<String>()
-        var rawSheetRows: List<List<RawXlsxCell>> = emptyList()
+    private fun readXlsxFromBytes(bytes: ByteArray): List<List<String>> {
+        var sharedStringsBytes: ByteArray? = null
+        var sheetBytes: ByteArray? = null
+        var firstSheetBytes: ByteArray? = null
 
-        // Non-closing wrapper so XmlPullParser does not close the underlying ZipInputStream
-        val nonClosingStream = object : InputStream() {
-            override fun read(): Int = -1
-        }
-
-        ZipInputStream(inputStream).use { zipStream ->
-            val entryWrapper = NonClosingInputStream(zipStream)
+        // 1. Single scan through ZIP archive to buffer XML bytes in memory
+        ZipInputStream(ByteArrayInputStream(bytes)).use { zipStream ->
             var entry = zipStream.nextEntry
             while (entry != null) {
                 val entryName = entry.name.lowercase(Locale.ROOT)
                 when {
                     entryName == "xl/sharedstrings.xml" -> {
-                        parseSharedStringsXml(entryWrapper, sharedStrings)
+                        sharedStringsBytes = zipStream.readBytes()
                     }
-                    // Prefer sheet1.xml, or fall back to the first worksheet encountered
-                    entryName == "xl/worksheets/sheet1.xml" ||
-                        (entryName.startsWith("xl/worksheets/sheet") &&
-                            entryName.endsWith(".xml") &&
-                            rawSheetRows.isEmpty()) -> {
-                        rawSheetRows = parseSheetXml(entryWrapper)
+                    entryName == "xl/worksheets/sheet1.xml" -> {
+                        sheetBytes = zipStream.readBytes()
+                    }
+                    entryName.startsWith("xl/worksheets/sheet") &&
+                        entryName.endsWith(".xml") &&
+                        firstSheetBytes == null -> {
+                        firstSheetBytes = zipStream.readBytes()
                     }
                 }
                 zipStream.closeEntry()
                 entry = zipStream.nextEntry
             }
         }
-        nonClosingStream.close()
 
+        val targetSheetBytes = sheetBytes ?: firstSheetBytes ?: return emptyList()
+
+        // 2. Parse shared strings if present
+        val sharedStrings = ArrayList<String>()
+        if (sharedStringsBytes != null) {
+            parseSharedStringsXml(ByteArrayInputStream(sharedStringsBytes), sharedStrings)
+        }
+
+        // 3. Parse worksheet XML
+        val rawSheetRows = parseSheetXml(ByteArrayInputStream(targetSheetBytes))
         if (rawSheetRows.isEmpty()) return emptyList()
 
-        // Resolve shared string indices into final row vectors
+        // 4. Resolve shared string indices into final row vectors
         val resolvedRows = ArrayList<List<String>>(rawSheetRows.size)
         for (rawRow in rawSheetRows) {
             if (rawRow.isEmpty()) continue

@@ -1,6 +1,7 @@
 package com.fin.mf.ui
 
 import android.app.Application
+import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
@@ -629,27 +630,19 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     /**
-     * Streams and parses an Excel (.xlsx), CSV, or TSV file, extracts broker holdings,
-     * and performs AMFI token-set fuzzy reconciliation.
+     * Streams and parses an Excel (.xlsx), CSV, or TSV file from a content [Uri],
+     * extracts broker holdings, and performs AMFI token-set fuzzy reconciliation.
+     * Safely reads bytes inside withContext(Dispatchers.IO) to prevent premature stream closure.
      */
-    fun processSpreadsheetImport(inputStream: InputStream, filename: String) {
+    fun processSpreadsheetImport(uri: Uri, contentResolver: ContentResolver, filename: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isReconciling = true) }
             runCatching {
-                val rows = withContext(Dispatchers.IO) {
-                    UniversalSpreadsheetReader.readSpreadsheetRows(inputStream, filename)
+                val bytes = withContext(Dispatchers.IO) {
+                    contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                        ?: throw IllegalStateException("Unable to open file stream for $filename")
                 }
-                val records = withContext(Dispatchers.Default) {
-                    BrokerFormatNormalizer.normalizeRows(rows)
-                }
-                if (records.isEmpty()) {
-                    throw IllegalStateException("No valid mutual fund holding records found in $filename")
-                }
-                val dict = repository.getAmfiSchemeDictionary()
-                val reconciled = withContext(Dispatchers.Default) {
-                    AmfiFuzzyReconciler.reconcileAll(records, dict)
-                }
-                Pair(reconciled, dict)
+                executeReconciliationPipeline(bytes, filename)
             }.onSuccess { (reconciled, dict) ->
                 _uiState.update {
                     it.copy(
@@ -663,6 +656,58 @@ class PortfolioViewModel(application: Application) : AndroidViewModel(applicatio
                 postStatusBanner("Spreadsheet parsing failed: ${error.localizedMessage}")
             }
         }
+    }
+
+    /**
+     * Overload accepting an in-memory [ByteArray] (for testing or cached buffers).
+     */
+    fun processSpreadsheetImport(bytes: ByteArray, filename: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isReconciling = true) }
+            runCatching {
+                executeReconciliationPipeline(bytes, filename)
+            }.onSuccess { (reconciled, dict) ->
+                _uiState.update {
+                    it.copy(
+                        isReconciling = false,
+                        reconciliationItems = reconciled,
+                        amfiDictionary = dict
+                    )
+                }
+            }.onFailure { error ->
+                _uiState.update { it.copy(isReconciling = false) }
+                postStatusBanner("Spreadsheet parsing failed: ${error.localizedMessage}")
+            }
+        }
+    }
+
+    /**
+     * Overload accepting an [InputStream] for backward compatibility.
+     * Reads all bytes immediately before coroutine dispatch to prevent stream closure race conditions.
+     */
+    fun processSpreadsheetImport(inputStream: InputStream, filename: String) {
+        val bytes = inputStream.readBytes()
+        processSpreadsheetImport(bytes, filename)
+    }
+
+    private suspend fun executeReconciliationPipeline(
+        bytes: ByteArray,
+        filename: String
+    ): Pair<List<ReconciledSchemeItem>, List<Pair<Int, String>>> {
+        val rows = withContext(Dispatchers.Default) {
+            UniversalSpreadsheetReader.readSpreadsheetRowsFromBytes(bytes, filename)
+        }
+        val records = withContext(Dispatchers.Default) {
+            BrokerFormatNormalizer.normalizeRows(rows)
+        }
+        if (records.isEmpty()) {
+            throw IllegalStateException("No valid mutual fund holding records found in $filename")
+        }
+        val dict = repository.getAmfiSchemeDictionary()
+        val reconciled = withContext(Dispatchers.Default) {
+            AmfiFuzzyReconciler.reconcileAll(records, dict)
+        }
+        return Pair(reconciled, dict)
     }
 
     /**

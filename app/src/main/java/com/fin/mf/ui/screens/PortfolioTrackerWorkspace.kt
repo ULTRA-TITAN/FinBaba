@@ -521,12 +521,8 @@ fun PortfolioTrackerWorkspace(
                 healthScore = 85,
                 onDismissRequest = { showCsvDialog = false },
                 onImportDocumentUri = { uri ->
-                    runCatching {
-                        context.contentResolver.openInputStream(uri)?.use { stream ->
-                            val filename = uri.lastPathSegment ?: "statement.xlsx"
-                            portfolioViewModel.processSpreadsheetImport(stream, filename)
-                        }
-                    }
+                    val filename = uri.lastPathSegment ?: "statement.xlsx"
+                    portfolioViewModel.processSpreadsheetImport(uri, context.contentResolver, filename)
                     showCsvDialog = false
                 },
                 onImportRawCsvText = { rawText ->

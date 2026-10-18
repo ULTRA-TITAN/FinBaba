@@ -67,9 +67,9 @@ fun SettingsModalDialog(
     val privacyModeTitle = "Privacy Mask Mode"
     val privacyModeSubtitle = "Obscures rupee valuations (₹ ••••••)"
     val dataManagementTitle = "Data Management"
-    val btnCsvText = "Import / Export Portfolio CSV"
+    val btnCsvText = "Import / Export Portfolio"
     val btnClearVaultText = "Clear Active Vault"
-    val appEditionTitle = "FinBaba Studio v2.1.0"
+    val appEditionTitle = "github.com/ULTRA-TITAN"
     // =========================================================================
 
     AlertDialog(
